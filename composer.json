@@ -1,0 +1,21 @@
+{
+  "name": "jzapata/erp_sisupp",
+  "autoload": {
+    "psr-4": {
+      "App\\": "",
+      "App\\Controllers\\": "controllers/",
+      "App\\Models\\": "models/",
+      "App\\Services\\": "services/",
+      "App\\Middlewares\\": "middlewares/",
+      "App\\Config\\": "config/",
+      "App\\Core\\": "core/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Jesús Zapata",
+      "email": "jesusnbz22@gmail.com"
+    }
+  ],
+  "require": {}
+}

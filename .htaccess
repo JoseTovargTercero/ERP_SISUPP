@@ -1,4 +1,36 @@
-RewriteEngine on
+# Activa el motor de reescritura de URLs
+RewriteEngine On
+
+# Establece el directorio base para las reglas de reescritura
+RewriteBase /
+
+# -------------------------------------------------------------
+# REGLAS DE SEGURIDAD
+# -------------------------------------------------------------
+
+# 1. Deshabilitar la visualización de los contenidos de los directorios
+# Evita que los visitantes puedan ver una lista de archivos en una carpeta.
+Options -Indexes
+
+# 2. Bloquear el acceso directo a carpetas sensibles
+# Devuelve un error 403 (Prohibido) si alguien intenta acceder a estas carpetas.
+# Añade aquí todas las carpetas que contengan lógica interna.
+RewriteRule ^(controllers|models|views|core|config)/ - [F,L]
+
+# 3. Bloquear el acceso directo a archivos específicos
+# Protege archivos críticos como el propio Router.php
+RewriteRule ^(Router\.php)$ - [F,L]
+
+
+# -------------------------------------------------------------
+# REGLAS DEL ENRUTADOR (FRONT CONTROLLER)
+# -------------------------------------------------------------
+
+# Condición: si la URL solicitada NO es un archivo existente
+RewriteCond %{REQUEST_FILENAME} !-f
+# Condición: si la URL solicitada NO es un directorio existente
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME}\.php -f
-RewriteRule ^(.*)$ $1.php 
+
+# Regla: Redirige todas las demás solicitudes a index.php
+# Esto permite que tu enrutador PHP maneje la URL.
+RewriteRule . /ERP_SISUPP/index.php [L]
