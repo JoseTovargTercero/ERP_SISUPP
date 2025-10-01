@@ -1,0 +1,12 @@
+* Manejo de Errores Unificado: 
+He agregado un método errorResponse() a la clase Database para manejar todas las respuestas de error. Este método establece el código de estado HTTP y devuelve una respuesta JSON con el formato especificado.
+
+* Manejo de Excepciones:
+ He envuelto todas las operaciones de la base de datos en bloques try...catch para capturar cualquier excepción mysqli_sql_exception que pueda ocurrir. En caso de una excepción, llamo al método errorResponse() para devolver un error 400 con el mensaje de error de la base de datos.
+
+* Respuestas JSON: 
+He modificado todos los métodos en UsuarioModel para devolver respuestas JSON con el formato { value: true|false, message: ... }.
+Transacciones y Rollbacks: He agregado manejo de transacciones a los métodos guardar(), actualizar(), y eliminar(). Si alguna de estas operaciones falla, se realiza un rollback de la transacción. Si la operación tiene éxito, se realiza un commit.
+
+* Códigos de Estado HTTP: 
+La función errorResponse ahora acepta un código de estado HTTP, que se establece utilizando la función http_response_code(). Esto permite indicar el tipo de error (por ejemplo, 400 para un error de consulta, 200 para una operación exitosa con una condición).
