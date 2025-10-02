@@ -1,0 +1,6 @@
+cargar permisos en el login.php - se cargan los permisos y se registran en la session
+verificar permisos.php		- hay que hacer algo asi pero adapatado a MVC
+menu.php			- Se usa para generar el menu
+
+Es importante considerar que algunos módulos pueden incluir múltiples archivos relacionados.
+Por ejemplo, si un usuario tiene acceso a informacionAnimal.php, que muestra una lista de animales, al hacer clic en un animal y acceder a la vista de detalle correspondiente, el usuario también debe tener permiso para ver esa segunda vista.
