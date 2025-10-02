@@ -163,3 +163,50 @@ Respuestas Posibles
 }
 
 Error (400 Bad Request): Si falta el user_id o si el usuario ya fue eliminado.
+
+
+6. Iniciar Sesión
+Función: login()
+
+Endpoint: POST /system_users/login
+
+Descripción: Autentica a un usuario del sistema a partir de su correo y contraseña. Solo permite el acceso a usuarios activos que no hayan sido eliminados.
+
+Parámetros (Cuerpo JSON):
+
+email (string, requerido): El correo electrónico del usuario.
+
+contrasena (string, requerido): La contraseña del usuario.
+
+Respuestas Posibles
+Éxito (200 OK)
+{
+  "value": true,
+  "message": "Inicio de sesión exitoso.",
+  "data": {
+    "user_id": "uuid-user-1",
+    "nombre": "Admin General",
+    "email": "admin@example.com",
+    "nivel": 1,
+    "estado": 1
+  }
+}
+
+Error
+400 Bad Request: Si faltan los campos email o contrasena.
+
+{
+  "value": false,
+  "message": "Correo y contraseña son obligatorios.",
+  "data": null
+}
+
+401 Unauthorized: Si las credenciales son incorrectas, el usuario no existe, está inactivo o ha sido eliminado.
+
+{
+  "value": false,
+  "message": "Credenciales inválidas o usuario inactivo.",
+  "data": null
+}
+
+500 Internal Server Error: Si ocurre un error inesperado en el servidor.

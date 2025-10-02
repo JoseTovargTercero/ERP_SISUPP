@@ -90,6 +90,12 @@
     <script src="public/assets/js/vendor.min.js"></script>
     <script src="public/assets/js/app.min.js"></script>
     <script src="public/assets/js/login.js"></script>
+    <script>
+        const baseUrl = "<?php echo BASE_URL; ?>";
+    </script>
+
+    <script type="module" src="public/assets/js/modules/login.js"></script>
+</body>
 
 </body>
 

@@ -9,7 +9,7 @@
 $menuConfig = [
     [
         'is_title' => true,
-        'title' => 'Navigation'
+        'title' => 'Navegación'
     ],
     [
         'title' => 'Dashboards',
@@ -21,71 +21,19 @@ $menuConfig = [
         ],
         'submenu' => [
             ['title' => 'Analytics', 'url' => 'dashboard-analytics.html'],
-            ['title' => 'CRM', 'url' => 'dashboard-crm.html'],
-            ['title' => 'Ecommerce', 'url' => 'index.html'],
-            ['title' => 'Projects', 'url' => 'dashboard-projects.html'],
         ]
     ],
     [
         'is_title' => true,
-        'title' => 'Apps'
+        'title' => 'Administrador'
     ],
     [
-        'title' => 'Calendar',
-        'icon' => 'uil-calender',
-        'url' => 'apps-calendar.html'
+        'title' => 'Usuarios',
+        'icon' => 'uil-user-circle',
+        'url' => 'users',
+
     ],
-    [
-        'title' => 'Ecommerce',
-        'icon' => 'uil-store',
-        'url' => '#sidebarEcommerce',
-        'submenu' => [
-            ['title' => 'Products', 'url' => 'apps-ecommerce-products.html'],
-            ['title' => 'Products Details', 'url' => 'apps-ecommerce-products-details.html'],
-            ['title' => 'Orders', 'url' => 'apps-ecommerce-orders.html'],
-            ['title' => 'Customers', 'url' => 'apps-ecommerce-customers.html'],
-        ]
-    ],
-    [
-        'is_title' => true,
-        'title' => 'Custom'
-    ],
-    [
-        'title' => 'Pages',
-        'icon' => 'uil-copy-alt',
-        'url' => '#sidebarPages',
-        'submenu' => [
-            ['title' => 'Profile', 'url' => 'pages-profile.html'],
-            ['title' => 'Invoice', 'url' => 'pages-invoice.html'],
-            [
-                'title' => 'Authentication',
-                'url' => '#sidebarPagesAuth',
-                'submenu' => [
-                    ['title' => 'Login', 'url' => 'pages-login.html'],
-                    ['title' => 'Register', 'url' => 'pages-register.html'],
-                    ['title' => 'Logout', 'url' => 'pages-logout.html'],
-                ]
-            ],
-            [
-                'title' => 'Error',
-                'url' => '#sidebarPagesError',
-                'submenu' => [
-                    ['title' => 'Error 404', 'url' => 'pages-404.html'],
-                    ['title' => 'Error 500', 'url' => 'pages-500.html'],
-                ]
-            ],
-        ]
-    ],
-    [
-        'title' => 'Landing',
-        'icon' => 'uil-globe',
-        'url' => 'landing.html',
-        'target' => '_blank', // Para abrir en nueva pestaña
-        'badge' => [
-            'text' => 'New',
-            'class' => 'badge bg-secondary text-light float-end'
-        ]
-    ],
+
 
 ];
 
@@ -224,15 +172,6 @@ function renderMenuItems($items, $level = 1)
 
         </ul>
 
-        <div class="help-box text-white text-center">
-            <a href="javascript: void(0);" class="float-end close-btn text-white">
-                <i class="mdi mdi-close"></i>
-            </a>
-            <img src="assets/images/help-icon.svg" height="90" alt="Helper Icon Image">
-            <h5 class="mt-3">Unlimited Access</h5>
-            <p class="mb-3">Upgrade to plan to get access to unlimited reports</p>
-            <a href="javascript: void(0);" class="btn btn-outline-light btn-sm">Upgrade</a>
-        </div>
         <div class="clearfix"></div>
 
     </div>
