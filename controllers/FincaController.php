@@ -47,9 +47,9 @@ class FincaController
     }
 
     // GET /fincas/show?finca_id=UUID
-    public function mostrar(): void
+    public function mostrar($parametros): void
     {
-        $fincaId = $_GET['finca_id'] ?? '';
+        $fincaId = $parametros['finca_id'] ?? '';
         if ($fincaId === '') {
             $this->jsonResponse(false, 'Parámetro finca_id es obligatorio.', null, 400);
         }
