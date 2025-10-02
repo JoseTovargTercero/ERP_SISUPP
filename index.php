@@ -33,40 +33,19 @@ $router->get('', ['vista' => 'auth/login', 'vistaData' => ['titulo' => 'Iniciar 
 
 
 // Login
-$router->agregarRuta('POST', 'system_users/login', [
-    'controlador' => SystemUserController::class,
-    'accion'      => 'login'
-]);
+$router->post('system_users/login', ['controlador' => SystemUserController::class, 'accion' => 'login']);
 
-// Listar usuarios
-$router->agregarRuta('GET', 'system_users', [
-    'controlador' => SystemUserController::class,
-    'accion'      => 'listar'
-]);
+// usuarios
 
-// Mostrar usuario por UUID
-$router->agregarRuta('GET', 'system_users/user/{user_id}', [
-    'controlador' => SystemUserController::class,
-    'accion'      => 'mostrar'
-]);
+// vista
+$router->get('/users', ['vista' => 'modules/usuarios_view', 'vistaData' => ['titulo' => 'Usuarios del Sistema', 'layout' => true]]);
+// acciones
+$router->get('/system_users', ['controlador' => SystemUserController::class, 'accion' => 'listar']);
+$router->get('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'mostrar']);
+$router->post('/system_users', ['controlador' => SystemUserController::class, 'accion' => 'crear']);
+$router->put('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'actualizar']);
+$router->delete('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'eliminar']);
 
-// Crear usuario
-$router->agregarRuta('POST', 'system_users', [
-    'controlador' => SystemUserController::class,
-    'accion'      => 'crear'
-]);
-
-// Actualizar usuario (usaremos POST en vez de PUT)
-$router->agregarRuta('POST', 'system_users/update/{user_id}', [
-    'controlador' => SystemUserController::class,
-    'accion'      => 'actualizar'
-]);
-
-// Eliminar usuario (soft delete)
-$router->agregarRuta('DELETE', 'system_users/user/{user_id}', [
-    'controlador' => SystemUserController::class,
-    'accion'      => 'eliminar'
-]);
 
 
 // --- Ejecutar el Router ---
