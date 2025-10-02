@@ -11,7 +11,7 @@ final class ClientEnvironmentInfo
         $this->userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
 
         if (empty($geoDbPath)) {
-            $geoDbPath = APP_ROOT . '/app/config/geolite.mmdb';
+            $geoDbPath = APP_ROOT . '/config/geolite.mmdb';
         }
 
         $this->geoDbPath = $geoDbPath;
@@ -126,7 +126,7 @@ final class ClientEnvironmentInfo
     }
     public function applyAuditContext(mysqli $mysqli, $userId): void
     {
-        require_once APP_ROOT . '/app/helpers/session_timezone_helper.php';
+        require_once APP_ROOT . '/helpers/session_timezone_helper.php';
 
         $geo = $this->getGeoInfo();
 
