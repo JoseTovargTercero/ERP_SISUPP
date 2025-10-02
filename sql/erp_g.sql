@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 02-10-2025 a las 16:04:17
+-- Tiempo de generación: 02-10-2025 a las 16:53:31
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -145,6 +145,13 @@ CREATE TABLE `apriscos` (
   `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `apriscos`
+--
+
+INSERT INTO `apriscos` (`aprisco_id`, `finca_id`, `nombre`, `estado`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('78059699-0f15-419e-89a8-fcc2697c4c97', '06fcbfc8-ffc7-4956-b99d-77d879d772b7', 'Aprisco Central Editado rd20er', 'ACTIVO', '2025-10-02 10:52:16', '78059699-0f15-419e-89a8-fcc2697c4c97', '2025-10-02 10:52:16', '78059699-0f15-419e-89a8-fcc2697c4c97', NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -166,6 +173,13 @@ CREATE TABLE `areas` (
   `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `areas`
+--
+
+INSERT INTO `areas` (`area_id`, `aprisco_id`, `nombre_personalizado`, `tipo_area`, `numeracion`, `estado`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('9927c9e7-d35a-4b1c-93b0-c078894cc9ef', '78059699-0f15-419e-89a8-fcc2697c4c97', 'Gestación-Edit-rd20er', 'GESTACION', '2', 'ACTIVA', '2025-10-02 10:52:16', '9927c9e7-d35a-4b1c-93b0-c078894cc9ef', '2025-10-02 10:52:17', '9927c9e7-d35a-4b1c-93b0-c078894cc9ef', NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -184,6 +198,13 @@ CREATE TABLE `fincas` (
   `deleted_at` datetime DEFAULT NULL,
   `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `fincas`
+--
+
+INSERT INTO `fincas` (`finca_id`, `nombre`, `ubicacion`, `estado`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('06fcbfc8-ffc7-4956-b99d-77d879d772b7', 'Finca Demo Editada rd20er', 'Coordenadas XYZ, Municipio ABC', 'ACTIVA', '2025-10-02 10:52:16', '06fcbfc8-ffc7-4956-b99d-77d879d772b7', '2025-10-02 10:52:16', '06fcbfc8-ffc7-4956-b99d-77d879d772b7', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -248,8 +269,21 @@ CREATE TABLE `reportes_dano` (
   `fecha_reporte` datetime NOT NULL DEFAULT current_timestamp(),
   `reportado_por` char(36) DEFAULT NULL,
   `solucionado_por` char(36) DEFAULT NULL,
-  `fecha_cierre` datetime DEFAULT NULL
+  `fecha_cierre` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `updated_by` char(36) DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `reportes_dano`
+--
+
+INSERT INTO `reportes_dano` (`reporte_id`, `finca_id`, `aprisco_id`, `area_id`, `titulo`, `descripcion`, `criticidad`, `estado_reporte`, `fecha_reporte`, `reportado_por`, `solucionado_por`, `fecha_cierre`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('def09c3d-e0e5-48a3-b53a-8953f724a6d9', '06fcbfc8-ffc7-4956-b99d-77d879d772b7', '78059699-0f15-419e-89a8-fcc2697c4c97', '9927c9e7-d35a-4b1c-93b0-c078894cc9ef', 'Daño en bebedero rd20er', 'Fuga intermitente; requiere cambio de manguera.', 'ALTA', 'CERRADO', '2025-10-02 10:52:17', NULL, NULL, '2025-10-02 10:52:17', '2025-10-02 10:52:17', 'def09c3d-e0e5-48a3-b53a-8953f724a6d9', '2025-10-02 10:52:17', 'def09c3d-e0e5-48a3-b53a-8953f724a6d9', NULL, NULL);
 
 -- --------------------------------------------------------
 

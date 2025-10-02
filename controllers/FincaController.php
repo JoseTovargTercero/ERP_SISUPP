@@ -82,9 +82,9 @@ class FincaController
 
     // POST /fincas/update?finca_id=UUID
     // JSON (cualquiera de): { nombre?, ubicacion?, estado?('ACTIVA'|'INACTIVA') }
-    public function actualizar(): void
+    public function actualizar($parametros): void
     {
-        $fincaId = $_GET['finca_id'] ?? '';
+        $fincaId = $parametros['finca_id'] ?? '';
         if ($fincaId === '') {
             $this->jsonResponse(false, 'Parámetro finca_id es obligatorio.', null, 400);
         }
@@ -104,9 +104,9 @@ class FincaController
 
     // POST /fincas/status?finca_id=UUID
     // JSON: { estado: 'ACTIVA'|'INACTIVA' }
-    public function actualizarEstado(): void
+    public function actualizarEstado($parametros): void
     {
-        $fincaId = $_GET['finca_id'] ?? '';
+        $fincaId = $parametros['finca_id'] ?? '';
         if ($fincaId === '') {
             $this->jsonResponse(false, 'Parámetro finca_id es obligatorio.', null, 400);
         }
@@ -126,9 +126,9 @@ class FincaController
     }
 
     // DELETE /fincas/delete?finca_id=UUID
-    public function eliminar(): void
+    public function eliminar($parametros): void
     {
-        $fincaId = $_GET['finca_id'] ?? '';
+        $fincaId = $parametros['finca_id'] ?? '';
         if ($fincaId === '') {
             $this->jsonResponse(false, 'Parámetro finca_id es obligatorio.', null, 400);
         }

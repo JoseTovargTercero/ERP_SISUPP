@@ -47,7 +47,7 @@ $router->get('/users', ['vista' => 'modules/usuarios_view', 'vistaData' => ['tit
 $router->get('/system_users', ['controlador' => SystemUserController::class, 'accion' => 'listar']);
 $router->get('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'mostrar']);
 $router->post('/system_users', ['controlador' => SystemUserController::class, 'accion' => 'crear']);
-$router->put('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'actualizar']);
+$router->post('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'actualizar']);
 $router->delete('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'eliminar']);
 
 
@@ -71,12 +71,12 @@ $router->post('/fincas', [
     'accion' => 'crear'
 ]);
 
-$router->put('/fincas/{finca_id}', [
+$router->post('/fincas/{finca_id}', [
     'controlador' => FincaController::class,
     'accion' => 'actualizar'
 ]);
 
-$router->put('/fincas/{finca_id}/estado', [
+$router->post('/fincas/{finca_id}/estado', [
     'controlador' => FincaController::class,
     'accion' => 'actualizarEstado'
 ]);
@@ -107,12 +107,12 @@ $router->post('/apriscos', [
     'accion' => 'crear'
 ]);
 
-$router->put('/apriscos/{aprisco_id}', [
+$router->post('/apriscos/{aprisco_id}', [
     'controlador' => ApriscoController::class,
     'accion' => 'actualizar'
 ]);
 
-$router->put('/apriscos/{aprisco_id}/estado', [
+$router->post('/apriscos/{aprisco_id}/estado', [
     'controlador' => ApriscoController::class,
     'accion' => 'actualizarEstado'
 ]);
@@ -142,12 +142,12 @@ $router->post('/areas', [
     'accion' => 'crear'
 ]);
 
-$router->put('/areas/{area_id}', [
+$router->post('/areas/{area_id}', [
     'controlador' => AreaController::class,
     'accion' => 'actualizar'
 ]);
 
-$router->put('/areas/{area_id}/estado', [
+$router->post('/areas/{area_id}/estado', [
     'controlador' => AreaController::class,
     'accion' => 'actualizarEstado'
 ]);
@@ -177,12 +177,12 @@ $router->post('/reportes_dano', [
     'accion' => 'crear'
 ]);
 
-$router->put('/reportes_dano/{reporte_id}', [
+$router->post('/reportes_dano/{reporte_id}', [
     'controlador' => ReporteDanoController::class,
     'accion' => 'actualizar'
 ]);
 
-$router->put('/reportes_dano/{reporte_id}/estado', [
+$router->post('/reportes_dano/{reporte_id}/estado', [
     'controlador' => ReporteDanoController::class,
     'accion' => 'actualizarEstado'
 ]);
