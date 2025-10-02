@@ -39,3 +39,32 @@ export function hideLoader() {
     overlay.style.display = 'none'
   }, 300)
 }
+
+// =================================================================================
+// NUEVO: Configuración de Toast con SweetAlert2
+// =================================================================================
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.addEventListener('mouseenter', Swal.stopTimer)
+    toast.addEventListener('mouseleave', Swal.resumeTimer)
+  },
+})
+
+// =================================================================================
+// NUEVO: Función reutilizable para mostrar errores en un Toast
+// =================================================================================
+export function showErrorToast(response) {
+  let message = 'Ocurrió un error inesperado.' // Mensaje genérico
+  if (response && response.message) {
+    message = response.message // Mensaje del backend si existe
+  }
+  Toast.fire({
+    icon: 'error',
+    title: message,
+  })
+}

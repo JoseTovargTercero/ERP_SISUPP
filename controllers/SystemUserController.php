@@ -22,9 +22,9 @@ class SystemUserController
         http_response_code($status);
         header('Content-Type: application/json');
         echo json_encode([
-            'value'   => $value,
+            'value' => $value,
             'message' => $message,
-            'data'    => $data
+            'data' => $data
         ]);
         exit;
     }
@@ -36,7 +36,7 @@ class SystemUserController
     {
         $in = $this->getJsonInput();
         $email = trim($in['email'] ?? '');
-        $password = (string)($in['contrasena'] ?? '');
+        $password = (string) ($in['contrasena'] ?? '');
 
         if ($email === '' || $password === '') {
             $this->jsonResponse(false, 'Correo y contraseña son obligatorios.', null, 400);
@@ -49,10 +49,10 @@ class SystemUserController
             }
 
             // Si quieres sesión simple (opcional):
-             $_SESSION['logged_in'] = true;
-             $_SESSION['user_id']   = $user['user_id'];
-             $_SESSION['nombre']    = $user['nombre'];
-             $_SESSION['nivel']     = $user['nivel'];
+            $_SESSION['logged_in'] = true;
+            $_SESSION['user_id'] = $user['user_id'];
+            $_SESSION['nombre'] = $user['nombre'];
+            $_SESSION['nivel'] = $user['nivel'];
 
             $this->jsonResponse(true, 'Inicio de sesión exitoso.', $user);
         } catch (Throwable $e) {
@@ -63,9 +63,9 @@ class SystemUserController
     // GET /system-users?limit=&offset=&incluirEliminados=0|1
     public function listar(): void
     {
-        $limit  = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
-        $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
-        $incluir = isset($_GET['incluirEliminados']) ? ((int)$_GET['incluirEliminados'] === 1) : false;
+        $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 100;
+        $offset = isset($_GET['offset']) ? (int) $_GET['offset'] : 0;
+        $incluir = isset($_GET['incluirEliminados']) ? ((int) $_GET['incluirEliminados'] === 1) : false;
 
         try {
             $data = $this->model->listar($limit, $offset, $incluir);
@@ -76,16 +76,17 @@ class SystemUserController
     }
 
     // GET /system-users/show?user_id=UUID
-    public function mostrar(): void
+    public function mostrar($parametros): void
     {
-        $userId = $_GET['user_id'] ?? '';
+        $userId = $parametros['user_id'];
         if ($userId === '') {
             $this->jsonResponse(false, 'Parámetro user_id es obligatorio.', null, 400);
         }
 
         try {
             $row = $this->model->obtenerPorId($userId);
-            if (!$row) $this->jsonResponse(false, 'Usuario no encontrado.', null, 404);
+            if (!$row)
+                $this->jsonResponse(false, 'Usuario no encontrado.', null, 404);
             $this->jsonResponse(true, 'Usuario encontrado.', $row);
         } catch (Throwable $e) {
             $this->jsonResponse(false, 'Error al obtener usuario: ' . $e->getMessage(), null, 500);
@@ -111,9 +112,9 @@ class SystemUserController
 
     // PUT/PATCH /system-users/update?user_id=UUID
     // JSON: { nombre?, email?, contrasena?, nivel?, estado? }
-    public function actualizar(): void
+    public function actualizar($parametros): void
     {
-        $userId = $_GET['user_id'] ?? '';
+        $userId = $parametros['user_id'] ?? '';
         if ($userId === '') {
             $this->jsonResponse(false, 'Parámetro user_id es obligatorio.', null, 400);
         }
@@ -133,9 +134,9 @@ class SystemUserController
 
     // PATCH /system-users/status?user_id=UUID
     // JSON: { estado: 0|1 }
-    public function actualizarEstado(): void
+    public function actualizarEstado($parametros): void
     {
-        $userId = $_GET['user_id'] ?? '';
+        $userId = $parametros['user_id'] ?? '';
         if ($userId === '') {
             $this->jsonResponse(false, 'Parámetro user_id es obligatorio.', null, 400);
         }
@@ -145,7 +146,7 @@ class SystemUserController
         }
 
         try {
-            $ok = $this->model->actualizarEstado($userId, (int)$in['estado']);
+            $ok = $this->model->actualizarEstado($userId, (int) $in['estado']);
             $this->jsonResponse(true, 'Estado actualizado correctamente.', ['updated' => $ok]);
         } catch (Throwable $e) {
             $this->jsonResponse(false, 'Error al actualizar estado: ' . $e->getMessage(), null, 500);
@@ -153,16 +154,17 @@ class SystemUserController
     }
 
     // DELETE (soft) /system-users/delete?user_id=UUID
-    public function eliminar(): void
+    public function eliminar($parametros): void
     {
-        $userId = $_GET['user_id'] ?? '';
+        $userId = $parametros['user_id'] ?? '';
         if ($userId === '') {
             $this->jsonResponse(false, 'Parámetro user_id es obligatorio.', null, 400);
         }
 
         try {
             $ok = $this->model->eliminar($userId);
-            if (!$ok) $this->jsonResponse(false, 'No se pudo eliminar (o ya estaba eliminado).', null, 400);
+            if (!$ok)
+                $this->jsonResponse(false, 'No se pudo eliminar (o ya estaba eliminado).', null, 400);
             $this->jsonResponse(true, 'Usuario eliminado correctamente.', ['deleted' => true]);
         } catch (Throwable $e) {
             $this->jsonResponse(false, 'Error al eliminar usuario: ' . $e->getMessage(), null, 500);

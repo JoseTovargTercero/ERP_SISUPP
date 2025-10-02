@@ -42,7 +42,7 @@ $router->post('system_users/login', ['controlador' => SystemUserController::clas
 // usuarios
 
 // vista
-$router->get('/users', ['vista' => 'modules/usuarios_view', 'vistaData' => ['titulo' => 'Usuarios del Sistema', 'layout' => true]]);
+$router->get('/users', ['vista' => 'modules/usuarios_view', 'vistaData' => ['titulo' => 'Usuarios del Sistema']]);
 // acciones
 $router->get('/system_users', ['controlador' => SystemUserController::class, 'accion' => 'listar']);
 $router->get('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'mostrar']);
@@ -58,32 +58,32 @@ $router->delete('/system_users/{user_id}', ['controlador' => SystemUserControlle
 
 $router->get('/fincas', [
     'controlador' => FincaController::class,
-    'accion'      => 'listar'
+    'accion' => 'listar'
 ]);
 
 $router->get('/fincas/{finca_id}', [
     'controlador' => FincaController::class,
-    'accion'      => 'mostrar'
+    'accion' => 'mostrar'
 ]);
 
 $router->post('/fincas', [
     'controlador' => FincaController::class,
-    'accion'      => 'crear'
+    'accion' => 'crear'
 ]);
 
 $router->put('/fincas/{finca_id}', [
     'controlador' => FincaController::class,
-    'accion'      => 'actualizar'
+    'accion' => 'actualizar'
 ]);
 
 $router->put('/fincas/{finca_id}/estado', [
     'controlador' => FincaController::class,
-    'accion'      => 'actualizarEstado'
+    'accion' => 'actualizarEstado'
 ]);
 
 $router->delete('/fincas/{finca_id}', [
     'controlador' => FincaController::class,
-    'accion'      => 'eliminar'
+    'accion' => 'eliminar'
 ]);
 
 
@@ -94,32 +94,32 @@ $router->delete('/fincas/{finca_id}', [
 
 $router->get('/apriscos', [
     'controlador' => ApriscoController::class,
-    'accion'      => 'listar'
+    'accion' => 'listar'
 ]);
 
 $router->get('/apriscos/{aprisco_id}', [
     'controlador' => ApriscoController::class,
-    'accion'      => 'mostrar'
+    'accion' => 'mostrar'
 ]);
 
 $router->post('/apriscos', [
     'controlador' => ApriscoController::class,
-    'accion'      => 'crear'
+    'accion' => 'crear'
 ]);
 
 $router->put('/apriscos/{aprisco_id}', [
     'controlador' => ApriscoController::class,
-    'accion'      => 'actualizar'
+    'accion' => 'actualizar'
 ]);
 
 $router->put('/apriscos/{aprisco_id}/estado', [
     'controlador' => ApriscoController::class,
-    'accion'      => 'actualizarEstado'
+    'accion' => 'actualizarEstado'
 ]);
 
 $router->delete('/apriscos/{aprisco_id}', [
     'controlador' => ApriscoController::class,
-    'accion'      => 'eliminar'
+    'accion' => 'eliminar'
 ]);
 
 
@@ -129,32 +129,32 @@ $router->delete('/apriscos/{aprisco_id}', [
 
 $router->get('/areas', [
     'controlador' => AreaController::class,
-    'accion'      => 'listar'
+    'accion' => 'listar'
 ]);
 
 $router->get('/areas/{area_id}', [
     'controlador' => AreaController::class,
-    'accion'      => 'mostrar'
+    'accion' => 'mostrar'
 ]);
 
 $router->post('/areas', [
     'controlador' => AreaController::class,
-    'accion'      => 'crear'
+    'accion' => 'crear'
 ]);
 
 $router->put('/areas/{area_id}', [
     'controlador' => AreaController::class,
-    'accion'      => 'actualizar'
+    'accion' => 'actualizar'
 ]);
 
 $router->put('/areas/{area_id}/estado', [
     'controlador' => AreaController::class,
-    'accion'      => 'actualizarEstado'
+    'accion' => 'actualizarEstado'
 ]);
 
 $router->delete('/areas/{area_id}', [
     'controlador' => AreaController::class,
-    'accion'      => 'eliminar'
+    'accion' => 'eliminar'
 ]);
 
 
@@ -164,32 +164,32 @@ $router->delete('/areas/{area_id}', [
 
 $router->get('/reportes_dano', [
     'controlador' => ReporteDanoController::class,
-    'accion'      => 'listar'
+    'accion' => 'listar'
 ]);
 
 $router->get('/reportes_dano/{reporte_id}', [
     'controlador' => ReporteDanoController::class,
-    'accion'      => 'mostrar'
+    'accion' => 'mostrar'
 ]);
 
 $router->post('/reportes_dano', [
     'controlador' => ReporteDanoController::class,
-    'accion'      => 'crear'
+    'accion' => 'crear'
 ]);
 
 $router->put('/reportes_dano/{reporte_id}', [
     'controlador' => ReporteDanoController::class,
-    'accion'      => 'actualizar'
+    'accion' => 'actualizar'
 ]);
 
 $router->put('/reportes_dano/{reporte_id}/estado', [
     'controlador' => ReporteDanoController::class,
-    'accion'      => 'actualizarEstado'
+    'accion' => 'actualizarEstado'
 ]);
 
 $router->delete('/reportes_dano/{reporte_id}', [
     'controlador' => ReporteDanoController::class,
-    'accion'      => 'eliminar'
+    'accion' => 'eliminar'
 ]);
 
 
