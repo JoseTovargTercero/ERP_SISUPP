@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 01-10-2025 a las 16:50:51
+-- Tiempo de generación: 02-10-2025 a las 16:04:17
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -371,6 +371,8 @@ ALTER TABLE `apriscos`
 --
 ALTER TABLE `areas`
   ADD PRIMARY KEY (`area_id`),
+  ADD UNIQUE KEY `uq_area_tipo_num` (`aprisco_id`,`tipo_area`,`numeracion`),
+  ADD UNIQUE KEY `uq_area_nombre_personalizado` (`aprisco_id`,`nombre_personalizado`),
   ADD KEY `idx_area_aprisco` (`aprisco_id`);
 
 --
@@ -408,7 +410,9 @@ ALTER TABLE `reportes_dano`
   ADD PRIMARY KEY (`reporte_id`),
   ADD KEY `fk_rep_aprisco` (`aprisco_id`),
   ADD KEY `fk_rep_area` (`area_id`),
-  ADD KEY `idx_rep_refs` (`finca_id`,`aprisco_id`,`area_id`);
+  ADD KEY `idx_rep_refs` (`finca_id`,`aprisco_id`,`area_id`),
+  ADD KEY `idx_rep_estado_fecha` (`estado_reporte`,`fecha_reporte`),
+  ADD KEY `idx_rep_criticidad` (`criticidad`);
 
 --
 -- Indices de la tabla `revisiones_servicio`
