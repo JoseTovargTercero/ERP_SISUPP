@@ -52,9 +52,6 @@ class ViewRenderer
         // Si se usa una plantilla, cárgala. La plantilla puede usar la variable $content.
         $layoutPath = $this->basePath . str_replace('/', DIRECTORY_SEPARATOR, $layout) . '.php';
 
-        var_dump($layoutPath);
-
-
         if (file_exists($layoutPath)) {
             // La plantilla ahora puede incluir parciales y mostrar la variable $content
             include $layoutPath;
