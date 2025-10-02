@@ -16,7 +16,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <div class="table-responsive">
+                    <div class="">
                         <table id="tablaUsuarios" class="table table-striped table-hover" style="width:100%">
                             <thead>
                                 <tr>
