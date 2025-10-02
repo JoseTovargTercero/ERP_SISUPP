@@ -27,8 +27,14 @@ class Database
 
     private function loadEnv($filePath)
     {
+        // Si no existe el archivo con punto, probamos sin punto
         if (!file_exists($filePath)) {
-            $this->errorResponse(500, ".env file not found at $filePath");
+            $altFilePath = str_replace('.env', 'env', $filePath);
+            if (file_exists($altFilePath)) {
+                $filePath = $altFilePath;
+            } else {
+                $this->errorResponse(500, ".env or env file not found at $filePath");
+            }
         }
 
         $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -42,7 +48,6 @@ class Database
             $_ENV[trim($key)] = trim($value);
         }
     }
-
 
     public static function getInstance()
     {
@@ -82,4 +87,3 @@ class Database
         exit;
     }
 }
-?>
