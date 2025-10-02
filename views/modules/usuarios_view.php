@@ -4,7 +4,7 @@
             <div class="page-title-box">
                 <div class="page-title-right">
                     <button type="button" class="btn btn-primary" id="btnNuevoUsuario">
-                        <i class="bi bi-plus-circle"></i> Nuevo Usuario
+                        <i class="mdi mdi-plus"></i> Nuevo Usuario
                     </button>
                 </div>
                 <h4 class="page-title">USUARIOS</h4>

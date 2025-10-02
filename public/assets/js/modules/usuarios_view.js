@@ -36,11 +36,10 @@ document.addEventListener('DOMContentLoaded', function () {
       {
         data: 'user_id',
         render: function (data, type, row) {
-          // Botones de acciones
           return `
-                        <button class="btn btn-info btn-sm btn-ver" data-id="${data}" title="Ver Detalles"><i class="bi bi-eye"></i></button>
-                        <button class="btn btn-warning btn-sm btn-editar" data-id="${data}" title="Editar"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-danger btn-sm btn-eliminar" data-id="${data}" title="Eliminar"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-info btn-sm btn-ver" data-id="${data}" title="Ver Detalles"><i class="mdi mdi-eye"></i></button>
+                        <button class="btn btn-warning btn-sm btn-editar" data-id="${data}" title="Editar"><i class="mdi mdi-pencil"></i></button>
+                        <button class="btn btn-danger btn-sm btn-eliminar" data-id="${data}" title="Eliminar"><i class="mdi mdi-delete"></i></button>
                     `
         },
         orderable: false,
