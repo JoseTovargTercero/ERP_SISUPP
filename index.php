@@ -2,6 +2,10 @@
 
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/controllers/SystemUserController.php';
+require_once __DIR__ . '/controllers/AreaController.php';
+require_once __DIR__ . '/controllers/FincaController.php';
+require_once __DIR__ . '/controllers/ApriscoController.php';
+require_once __DIR__ . '/controllers/ReporteDanoController.php';
 use App\Core\ViewRenderer;
 use App\Router;
 
