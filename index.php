@@ -192,6 +192,62 @@ $router->delete('/reportes_dano/{reporte_id}', [
     'accion' => 'eliminar'
 ]);
 
+// ============================
+// Rutas para Menu
+// ============================
+
+$router->get('/menus', [
+    'controlador' => MenuController::class,
+    'accion' => 'listar'
+]);
+
+$router->get('/menus/{menu_id}', [
+    'controlador' => MenuController::class,
+    'accion' => 'mostrar'
+]);
+
+$router->post('/menus', [
+    'controlador' => MenuController::class,
+    'accion' => 'crear'
+]);
+
+$router->post('/menus/{menu_id}', [
+    'controlador' => MenuController::class,
+    'accion' => 'actualizar'
+]);
+
+$router->delete('/menus/{menu_id}', [
+    'controlador' => MenuController::class,
+    'accion' => 'eliminar'
+]);
+
+// ============================
+// Rutas para Menu
+// ============================
+
+// Crear en lote
+$router->post('/users-permisos', [
+    'controlador' => UsersPermisosController::class,
+    'accion' => 'asignar'
+]);
+
+// Listar permisos (con datos del menú) de un usuario
+$router->get('/users-permisos/user/{user_id}', [
+    'controlador' => UsersPermisosController::class,
+    'accion' => 'listarPorUsuario'
+]);
+
+// Eliminar un permiso puntual
+$router->delete('/users-permisos/{users_permisos_id}', [
+    'controlador' => UsersPermisosController::class,
+    'accion' => 'eliminarUno'
+]);
+
+// Eliminar todos los permisos de un usuario
+$router->delete('/users-permisos/user/{user_id}', [
+    'controlador' => UsersPermisosController::class,
+    'accion' => 'eliminarPorUsuario'
+]);
 
 
 // --- Ejecutar el Router ---

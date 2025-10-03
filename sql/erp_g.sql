@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 02-10-2025 a las 16:53:31
+-- Tiempo de generación: 03-10-2025 a las 16:54:03
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -209,6 +209,27 @@ INSERT INTO `fincas` (`finca_id`, `nombre`, `ubicacion`, `estado`, `created_at`,
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `menu`
+--
+
+CREATE TABLE `menu` (
+  `menu_id` char(36) NOT NULL,
+  `categoria` enum('area','finca','aprisco','reporte_dano','montas','partos','animales','alertas','usuarios','respaldos') DEFAULT NULL,
+  `nombre` varchar(255) DEFAULT NULL,
+  `url` varchar(255) DEFAULT NULL,
+  `icono` varchar(255) DEFAULT NULL,
+  `user_level` int(11) NOT NULL DEFAULT 0,
+  `created_at` datetime DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `updated_by` char(36) DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `deleted_by` char(36) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `montas`
 --
 
@@ -310,7 +331,7 @@ CREATE TABLE `revisiones_servicio` (
 CREATE TABLE `system_users` (
   `user_id` char(36) NOT NULL,
   `nombre` varchar(255) DEFAULT NULL,
-  `email` varchar(255) CHARACTER SET utf8 COLLATE utf8_spanish2_ci DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
   `contrasena` varchar(255) DEFAULT NULL,
   `nivel` int(11) DEFAULT NULL,
   `estado` int(11) NOT NULL DEFAULT 1,
@@ -320,7 +341,7 @@ CREATE TABLE `system_users` (
   `updated_by` char(36) DEFAULT NULL,
   `deleted_at` datetime DEFAULT NULL,
   `deleted_by` char(36) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `system_users`
@@ -333,6 +354,24 @@ INSERT INTO `system_users` (`user_id`, `nombre`, `email`, `contrasena`, `nivel`,
 ('42', 'ASDRUBAL MARTINEZ', 'asdrubalmartinez486@gmail.com', '$2y$10$yUnVJhDWX6xkB4BEch2HPeAbEGNA311qcjs1DXVIsTmaah6jzHwzW', 2, 1, NULL, NULL, NULL, NULL, NULL, NULL),
 ('43', 'user ejecucion', 'magomagel1983@gmail.com', '$2y$10$EyP1MOY39kuw4uREdk7ao.UUzQ10YNIZ95IZLM70MUPo5J6YzEBVG', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
 ('45', 'user proyectos', 'proyecto@correo.com', '$2y$10$EyP1MOY39kuw4uREdk7ao.UUzQ10YNIZ95IZLM70MUPo5J6YzEBVG', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `users_permisos`
+--
+
+CREATE TABLE `users_permisos` (
+  `users_permisos_id` char(36) NOT NULL,
+  `user_id` char(36) NOT NULL,
+  `menu_id` char(36) NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `updated_by` char(36) DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `deleted_by` char(36) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Índices para tablas volcadas
@@ -416,6 +455,12 @@ ALTER TABLE `fincas`
   ADD PRIMARY KEY (`finca_id`);
 
 --
+-- Indices de la tabla `menu`
+--
+ALTER TABLE `menu`
+  ADD PRIMARY KEY (`menu_id`);
+
+--
 -- Indices de la tabla `montas`
 --
 ALTER TABLE `montas`
@@ -462,6 +507,14 @@ ALTER TABLE `revisiones_servicio`
 ALTER TABLE `system_users`
   ADD PRIMARY KEY (`user_id`),
   ADD UNIQUE KEY `usuario` (`email`);
+
+--
+-- Indices de la tabla `users_permisos`
+--
+ALTER TABLE `users_permisos`
+  ADD PRIMARY KEY (`users_permisos_id`),
+  ADD UNIQUE KEY `uq_user_menu` (`user_id`,`menu_id`),
+  ADD KEY `fk_up_menu` (`menu_id`);
 
 --
 -- Restricciones para tablas volcadas
@@ -555,6 +608,13 @@ ALTER TABLE `reportes_dano`
 --
 ALTER TABLE `revisiones_servicio`
   ADD CONSTRAINT `fk_rev_periodo` FOREIGN KEY (`periodo_id`) REFERENCES `periodos_servicio` (`periodo_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `users_permisos`
+--
+ALTER TABLE `users_permisos`
+  ADD CONSTRAINT `fk_up_menu` FOREIGN KEY (`menu_id`) REFERENCES `menu` (`menu_id`),
+  ADD CONSTRAINT `fk_up_user` FOREIGN KEY (`user_id`) REFERENCES `system_users` (`user_id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
