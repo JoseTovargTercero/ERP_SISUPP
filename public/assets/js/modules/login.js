@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       $.ajax({
-        url: baseUrl + '/system_users/login',
+        url: baseUrl + 'system_users/login',
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(formData),
