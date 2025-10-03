@@ -96,6 +96,25 @@ class ApriscoModel
         $stmt->close();
         return $data;
     }
+public function getOptions($fincaId = null)
+{
+    $sql = "SELECT aprisco_id, nombre 
+            FROM {$this->table} 
+            WHERE deleted_at IS NULL";
+    $params = [];
+
+    if ($fincaId) {
+        $sql .= " AND finca_id = ?";
+        $stmt = $this->db->prepare($sql . " ORDER BY nombre ASC");
+        $stmt->bind_param("s", $fincaId);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    } else {
+        $sql .= " ORDER BY nombre ASC";
+        $stmt = $this->db->query($sql);
+        return $stmt->fetch_all(MYSQLI_ASSOC);
+    }
+}
 
     public function obtenerPorId(string $apriscoId): ?array
     {

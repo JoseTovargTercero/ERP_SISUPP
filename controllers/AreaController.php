@@ -64,6 +64,16 @@ class AreaController
             $this->jsonResponse(false, 'Error al obtener área: ' . $e->getMessage(), null, 500);
         }
     }
+public function options()
+{
+    try {
+        $apriscoId = $_GET['aprisco_id'] ?? null;
+        $data = $this->model->getOptions($apriscoId);
+        $this->jsonResponse(true, '', ['data' => $data]);
+    } catch (Exception $e) {
+        $this->errorResponse(500, $e->getMessage());
+    }
+}
 
     // POST /areas
     // JSON: { aprisco_id, tipo_area, nombre_personalizado?, numeracion?, estado?('ACTIVA'|'INACTIVA') }

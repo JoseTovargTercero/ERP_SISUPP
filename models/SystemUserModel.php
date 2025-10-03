@@ -244,23 +244,27 @@ class SystemUserModel
         $stmt->close();
         return $ok;
     }
+/* ============ Login básico (sin sesiones) ============ */
+public function loginBasico(string $email, string $password): ?array
+{
+    $row = $this->obtenerPorEmail($email);
+    if (!$row) return null;                                // email no existe
+    if ($row['deleted_at'] !== null) return null;          // usuario eliminado/borrado lógico
 
-    /* ============ Login básico (sin sesiones) ============ */
-    public function loginBasico(string $email, string $password): ?array
-    {
-        $row = $this->obtenerPorEmail($email);
-        if (!$row) return null;
-        if ($row['deleted_at'] !== null) return null;
-        if ((int)$row['estado'] === 0) return null;
-
-        if (!password_verify($password, $row['contrasena'])) return null;
-
-        return [
-            'user_id' => $row['user_id'],
-            'nombre'  => $row['nombre'],
-            'email'   => $row['email'],
-            'nivel'   => (int)$row['nivel'],
-            'estado'  => (int)$row['estado'],
-        ];
+    // Si está desactivado, avisamos explícitamente
+    if ((int)$row['estado'] === 0) {
+        throw new DomainException('USER_DISABLED', 1001);
     }
+
+    if (!password_verify($password, $row['contrasena'])) return null; // contraseña inválida
+
+    return [
+        'user_id' => $row['user_id'],
+        'nombre'  => $row['nombre'],
+        'email'   => $row['email'],
+        'nivel'   => (int)$row['nivel'],
+        'estado'  => (int)$row['estado'],
+    ];
+}
+
 }

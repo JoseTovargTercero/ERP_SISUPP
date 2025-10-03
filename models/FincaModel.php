@@ -64,6 +64,15 @@ class FincaModel
         $stmt->close();
         return $data;
     }
+public function getOptions()
+{
+    $sql = "SELECT finca_id, nombre 
+            FROM {$this->table} 
+            WHERE deleted_at IS NULL 
+            ORDER BY nombre ASC";
+    $stmt = $this->db->query($sql);
+    return $stmt->fetch_all(MYSQLI_ASSOC);
+}
 
     /**
      * Obtiene una finca por ID.

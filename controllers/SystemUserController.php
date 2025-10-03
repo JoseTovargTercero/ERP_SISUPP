@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/SystemUserModel.php';
+require_once __DIR__ . '/../models/UsersPermisosModel.php';
 
 class SystemUserController
 {
@@ -32,33 +33,60 @@ class SystemUserController
     /* ============ Endpoints ============ */
 
     // POST /system-users/login
-    public function login(): void
-    {
-        $in = $this->getJsonInput();
-        $email = trim($in['email'] ?? '');
-        $password = (string) ($in['contrasena'] ?? '');
+// POST /system-users/login
+public function login(): void
+{
+    $in = $this->getJsonInput();
+    $email = trim($in['email'] ?? '');
+    $password = (string) ($in['contrasena'] ?? '');
 
-        if ($email === '' || $password === '') {
-            $this->jsonResponse(false, 'Correo y contraseña son obligatorios.', null, 400);
-        }
-
-        try {
-            $user = $this->model->loginBasico($email, $password);
-            if (!$user) {
-                $this->jsonResponse(false, 'Credenciales inválidas o usuario inactivo.', null, 401);
-            }
-
-            // Si quieres sesión simple (opcional):
-            $_SESSION['logged_in'] = true;
-            $_SESSION['user_id'] = $user['user_id'];
-            $_SESSION['nombre'] = $user['nombre'];
-            $_SESSION['nivel'] = $user['nivel'];
-
-            $this->jsonResponse(true, 'Inicio de sesión exitoso.', $user);
-        } catch (Throwable $e) {
-            $this->jsonResponse(false, 'Error al iniciar sesión: ' . $e->getMessage(), null, 500);
-        }
+    if ($email === '' || $password === '') {
+        $this->jsonResponse(false, 'Correo y contraseña son obligatorios.', null, 400);
+        return;
     }
+
+    try {
+        $user = $this->model->loginBasico($email, $password);
+
+        // Credenciales inválidas o usuario inexistente/borrado
+        if (!$user) {
+            $this->jsonResponse(false, 'Credenciales inválidas o usuario inactivo.', null, 401);
+            return;
+        }
+
+        // Verificar permisos asignados usando UsersPermisosModel::listarPermisosConMenu
+        // Ajusta la forma de obtener $db o el constructor según tu proyecto
+        $permisosModel = new UsersPermisosModel($this->db);
+        $permisos = $permisosModel->listarPermisosConMenu($user['user_id']);
+
+        if (empty($permisos)) {
+            $this->jsonResponse(false, 'El usuario no puede ingresar porque no tiene permisos asignados.', null, 403);
+            return;
+        }
+
+        // Si quieres sesión simple (opcional):
+        $_SESSION['logged_in'] = true;
+        $_SESSION['user_id']   = $user['user_id'];
+        $_SESSION['nombre']    = $user['nombre'];
+        $_SESSION['nivel']     = $user['nivel'];
+
+        // Puedes incluir los permisos en la respuesta si te sirve en el front
+        $user['permisos'] = $permisos;
+
+        $this->jsonResponse(true, 'Inicio de sesión exitoso.', $user);
+    } catch (DomainException $e) {
+        // Caso específico: usuario desactivado
+        if ($e->getCode() === 1001 || $e->getMessage() === 'USER_DISABLED') {
+            $this->jsonResponse(false, 'Este usuario ha sido desactivado y no puede ingresar.', null, 403);
+            return;
+        }
+        // Otros DomainException (por si en el futuro agregas más)
+        $this->jsonResponse(false, 'No se pudo iniciar sesión: ' . $e->getMessage(), null, 400);
+    } catch (Throwable $e) {
+        $this->jsonResponse(false, 'Error al iniciar sesión: ' . $e->getMessage(), null, 500);
+    }
+}
+
 
     // GET /system-users?limit=&offset=&incluirEliminados=0|1
     public function listar(): void

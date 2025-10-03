@@ -43,6 +43,7 @@ $router->post('system_users/login', ['controlador' => SystemUserController::clas
 
 // vista
 $router->get('/users', ['vista' => 'modules/usuarios_view', 'vistaData' => ['titulo' => 'Usuarios del Sistema']]);
+$router->get('/fincas_vista', ['vista' => 'modules/fincas_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
 // acciones
 $router->get('/system_users', ['controlador' => SystemUserController::class, 'accion' => 'listar']);
 $router->get('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'mostrar']);
@@ -247,6 +248,28 @@ $router->delete('/users-permisos/{users_permisos_id}', [
 $router->delete('/users-permisos/user/{user_id}', [
     'controlador' => UsersPermisosController::class,
     'accion' => 'eliminarPorUsuario'
+]);
+
+// ============================
+// Endpoints auxiliares OPTIONS
+// ============================
+
+// Fincas (para selects)
+$router->get('/fincas/options', [
+    'controlador' => FincaController::class,
+    'accion' => 'options'
+]);
+
+// Apriscos (para selects dependientes de finca)
+$router->get('/apriscos/options', [
+    'controlador' => ApriscoController::class,
+    'accion' => 'options'
+]);
+
+// Áreas (para selects dependientes de aprisco)
+$router->get('/areas/options', [
+    'controlador' => AreaController::class,
+    'accion' => 'options'
 ]);
 
 

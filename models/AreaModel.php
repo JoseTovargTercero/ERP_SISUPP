@@ -115,6 +115,24 @@ class AreaModel
         $stmt->close();
         return $data;
     }
+public function getOptions($apriscoId = null)
+{
+    $sql = "SELECT area_id,
+                   COALESCE(nombre_personalizado, numeracion, area_id) AS label
+            FROM {$this->table}
+            WHERE deleted_at IS NULL";
+    if ($apriscoId) {
+        $sql .= " AND aprisco_id = ?";
+        $stmt = $this->db->prepare($sql . " ORDER BY label ASC");
+        $stmt->bind_param("s", $apriscoId);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    } else {
+        $sql .= " ORDER BY label ASC";
+        $stmt = $this->db->query($sql);
+        return $stmt->fetch_all(MYSQLI_ASSOC);
+    }
+}
 
     public function obtenerPorId(string $areaId): ?array
     {

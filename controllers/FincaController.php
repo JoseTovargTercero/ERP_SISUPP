@@ -63,6 +63,17 @@ class FincaController
         }
     }
 
+    public function options()
+{
+    try {
+        $data = $this->model->getOptions();
+        $this->jsonResponse(true, '', ['data' => $data]);
+    } catch (Exception $e) {
+        $this->errorResponse(500, $e->getMessage());
+    }
+}
+
+
     // POST /fincas/create
     // JSON: { nombre, ubicacion?, estado?('ACTIVA'|'INACTIVA') }
     public function crear(): void

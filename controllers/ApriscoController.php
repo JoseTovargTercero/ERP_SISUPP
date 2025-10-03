@@ -61,6 +61,16 @@ class ApriscoController
             $this->jsonResponse(false, 'Error al obtener aprisco: ' . $e->getMessage(), null, 500);
         }
     }
+public function options()
+{
+    try {
+        $fincaId = $_GET['finca_id'] ?? null;
+        $data = $this->model->getOptions($fincaId);
+        $this->jsonResponse(true, '', ['data' => $data]);
+    } catch (Exception $e) {
+        $this->errorResponse(500, $e->getMessage());
+    }
+}
 
     // POST /apriscos
     // JSON: { finca_id, nombre, estado?('ACTIVO'|'INACTIVO') }
