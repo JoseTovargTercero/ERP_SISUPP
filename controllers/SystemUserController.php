@@ -56,7 +56,7 @@ public function login(): void
 
         // Verificar permisos asignados usando UsersPermisosModel::listarPermisosConMenu
         // Ajusta la forma de obtener $db o el constructor según tu proyecto
-        $permisosModel = new UsersPermisosModel($this->db);
+        $permisosModel = new UsersPermisosModel();
         $permisos = $permisosModel->listarPermisosConMenu($user['user_id']);
 
         if (empty($permisos)) {

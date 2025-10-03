@@ -59,7 +59,7 @@ class UsersPermisosModel
 
     private function existeMenu(string $menuId): bool
     {
-        $sql = "SELECT 1 FROM menus WHERE menu_id = ? AND (deleted_at IS NULL OR deleted_at = '') LIMIT 1";
+        $sql = "SELECT 1 FROM menu WHERE menu_id = ? AND (deleted_at IS NULL OR deleted_at = '') LIMIT 1";
         $stmt = $this->db->prepare($sql);
         if (!$stmt) throw new mysqli_sql_exception("Error al preparar verificación de menú: " . $this->db->error);
         $stmt->bind_param('s', $menuId);
@@ -145,7 +145,7 @@ class UsersPermisosModel
         $sql = "SELECT up.users_permisos_id, up.user_id,
                        m.menu_id, m.categoria, m.nombre, m.url, m.icono, m.user_level
                 FROM {$this->table} up
-                INNER JOIN menus m ON m.menu_id = up.menu_id
+                INNER JOIN menu m ON m.menu_id = up.menu_id
                 WHERE up.user_id = ? AND (m.deleted_at IS NULL OR m.deleted_at = '')";
         $stmt = $this->db->prepare($sql);
         if (!$stmt) throw new mysqli_sql_exception("Error al preparar listado: " . $this->db->error);
