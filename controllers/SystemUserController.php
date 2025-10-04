@@ -90,6 +90,23 @@ public function login(): void
     }
 }
 
+    // POST /system-users/logout
+    // POST /system-users/logout
+    public function logout(): void
+    {
+        try {
+            $ok = $this->model->logout();
+
+            // Redirigir al inicio de sesión o a la página principal
+            $baseUrl = defined('BASE_URL') ? BASE_URL : '/';
+            header("Location: " . $baseUrl);
+            exit;
+
+        } catch (Throwable $e) {
+            $this->jsonResponse(false, 'Error al cerrar sesión: ' . $e->getMessage(), null, 500);
+        }
+    }
+
 
 
     // GET /system-users?limit=&offset=&incluirEliminados=0|1

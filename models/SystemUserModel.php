@@ -63,6 +63,27 @@ class SystemUserModel
         $stmt->close();
         return $data;
     }
+        /* ============ Logout ============ */
+    public function logout(): bool
+    {
+        try {
+            // Si no hay sesión activa, la iniciamos para poder destruirla
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+
+            // Limpiar todas las variables de sesión
+            $_SESSION = [];
+
+            // Destruir completamente la sesión
+            session_destroy();
+
+            return true;
+        } catch (Throwable $e) {
+            error_log("Error al cerrar sesión: " . $e->getMessage());
+            return false;
+        }
+    }
 
     public function obtenerPorId(string $userId): ?array
     {

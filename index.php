@@ -61,6 +61,11 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/system_users', ['controlador' => SystemUserController::class, 'accion' => 'crear']);
     $router->put('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'actualizar']);
     $router->delete('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'eliminar']);
+    $router->get('/logout', [
+    'controlador' => SystemUserController::class,
+    'accion' => 'logout'
+]);
+
 
     // endpoints de fincas
     $router->get('/fincas', ['controlador' => FincaController::class, 'accion' => 'listar']);
