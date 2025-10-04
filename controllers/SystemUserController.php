@@ -55,8 +55,8 @@ public function login(): void
             return;
         }
 
-        // Si el nivel es 1 (Administrador), se omite la verificación de permisos
-        if ((int)$user['nivel'] !== 1) {
+        // Si el nivel es 0 (Administrador), se omite la verificación de permisos
+        if ((int)$user['nivel'] !== 0) {
             $permisosModel = new UsersPermisosModel();
             $permisos = $permisosModel->listarPermisosConMenu($user['user_id']);
 
@@ -67,7 +67,7 @@ public function login(): void
 
             $user['permisos'] = $permisos;
         } else {
-            // Acceso completo para nivel 1
+            // Acceso completo para nivel 0
             $user['permisos'] = ['*']; // Indica acceso total
         }
 
