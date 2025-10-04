@@ -3,6 +3,9 @@ import { showErrorToast, formatDate } from '../helpers/helpers.js'
 
 let DT_FINCAS, DT_APRISCOS, DT_AREAS, DT_REPORTES
 
+// Helper central para rutas API
+const api = (path) => `${baseUrl}api/${path}`
+
 document.addEventListener('DOMContentLoaded', () => {
   initButtons()
   wireCancelButtons()
@@ -29,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
 async function jget(url){
   const r = await fetch(url)
   const j = await r.json().catch(()=>({}))
-  // Adaptado al contrato { value, message, data }
   if (!j || j.value !== true) {
     const msg = j?.message || 'Error de servidor'
     throw new Error(msg)
@@ -66,7 +68,7 @@ async function loadFincasTab(){
   if (!DT_FINCAS) {
     DT_FINCAS = $('#tablaFincas').DataTable({
       ajax: {
-        url: `${baseUrl}fincas`,
+        url: api('fincas'),
         dataSrc: (json) => json?.data ?? []
       },
       columns: [
@@ -92,7 +94,7 @@ async function loadApriscosTab(){
   if (!DT_APRISCOS) {
     DT_APRISCOS = $('#tablaApriscos').DataTable({
       ajax: {
-        url: `${baseUrl}apriscos`,
+        url: api('apriscos'),
         data: function (d) {
           const fincaId = $('#filtroApriscosFinca').val() || ''
           if (fincaId) d.finca_id = fincaId
@@ -100,7 +102,6 @@ async function loadApriscosTab(){
         dataSrc: (json) => json?.data ?? []
       },
       columns: [
-        // el backend retorna nombre_finca (no finca_nombre)
         { data: 'nombre_finca', defaultContent: '-' },
         { data: 'nombre' },
         {
@@ -124,7 +125,7 @@ async function loadAreasTab(){
   if (!DT_AREAS) {
     DT_AREAS = $('#tablaAreas').DataTable({
       ajax: {
-        url: `${baseUrl}areas`,
+        url: api('areas'),
         data: function (d) {
           const fincaId = $('#filtroAreasFinca').val() || ''
           const apriscoId = $('#filtroAreasAprisco').val() || ''
@@ -134,7 +135,6 @@ async function loadAreasTab(){
         dataSrc: (json) => json?.data ?? []
       },
       columns: [
-        // usar siempre nombres, nunca UUID
         { data: 'nombre_finca',   defaultContent:'-' },
         { data: 'nombre_aprisco', defaultContent:'-' },
         { data: 'tipo_area' },
@@ -164,7 +164,7 @@ async function loadReportesTab(){
   if (!DT_REPORTES) {
     DT_REPORTES = $('#tablaReportes').DataTable({
       ajax: {
-        url: `${baseUrl}reportes_dano`,
+        url: api('reportes_dano'),
         data: function (d) {
           const f = $('#filtroRepFinca').val() || ''
           const a = $('#filtroRepAprisco').val() || ''
@@ -279,20 +279,15 @@ function initButtons() {
    Solo cerrar en “Cancelar”
 ========================= */
 function wireCancelButtons(){
-  // Asegura que cualquier botón .btn-cancelar solo cierre el modal
-  // (sin refrescar tablas ni enviar formularios)
   $(document).on('click', '.btn-cancelar', function (e) {
     e.preventDefault()
     e.stopPropagation()
-    // Evita que un botón sin type explícito actúe como submit
     if (!this.getAttribute('type')) this.setAttribute('type','button')
-
     const modalEl = this.closest('.modal')
     if (modalEl) {
       const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)
       inst.hide()
     }
-    // No se hace reload de ninguna tabla aquí a propósito
   })
 }
 
@@ -301,7 +296,7 @@ function wireCancelButtons(){
 ========================= */
 async function cargarFincasSelect(selector, includeEmpty=false) {
   try {
-    const resp = await jget(`${baseUrl}fincas`)
+    const resp = await jget(api('fincas'))
     const list = resp?.data ?? []
     const $sel = $(selector)
     $sel.empty()
@@ -315,14 +310,13 @@ async function cargarFincasSelect(selector, includeEmpty=false) {
 async function cargarApriscosSelect(selector, fincaId, includeEmpty=false) {
   try {
     const url = fincaId 
-      ? `${baseUrl}apriscos?finca_id=${encodeURIComponent(fincaId)}`
-      : `${baseUrl}apriscos`
+      ? api(`apriscos?finca_id=${encodeURIComponent(fincaId)}`)
+      : api('apriscos')
     const resp = await jget(url)
     const list = resp?.data ?? []
     const $sel = $(selector)
     $sel.empty()
     if (includeEmpty) $sel.append(new Option(selector.includes('filtro') ? 'Todos' : '', ''))
-    // usar nombre (no UUID)
     list.forEach(x => $sel.append(new Option(x.nombre, x.aprisco_id)))
   } catch (err) {
     showErrorToast({ message: err.message })
@@ -332,15 +326,14 @@ async function cargarApriscosSelect(selector, fincaId, includeEmpty=false) {
 async function cargarAreasSelect(selector, apriscoId, includeEmpty=false) {
   try {
     const url = apriscoId 
-      ? `${baseUrl}areas?aprisco_id=${encodeURIComponent(apriscoId)}`
-      : `${baseUrl}areas`
+      ? api(`areas?aprisco_id=${encodeURIComponent(apriscoId)}`)
+      : api('areas')
     const resp = await jget(url)
     const list = resp?.data ?? []
     const $sel = $(selector)
     $sel.empty()
     if (includeEmpty) $sel.append(new Option(selector.includes('filtro') ? 'Todas' : '', ''))
     list.forEach(x => {
-      // etiqueta agradable: nombre_personalizado / numeracion (o "Área" + numeración)
       const nice = x.nombre_personalizado || (x.numeracion ? `Área ${x.numeracion}` : x.area_id)
       $sel.append(new Option(nice, x.area_id))
     })
@@ -361,7 +354,7 @@ async function submitFinca(e){
     estado: $('#finca_estado').val(),
   }
   const isEdit = !!body.finca_id
-  const url    = isEdit ? `${baseUrl}fincas/${body.finca_id}` : `${baseUrl}fincas`
+  const url    = isEdit ? api(`fincas/${body.finca_id}`) : api('fincas')
   try {
     const res = await jsend(url, 'POST', body)
     bootstrap.Modal.getInstance(document.getElementById('modalFinca')).hide()
@@ -381,7 +374,7 @@ async function submitAprisco(e){
     estado: $('#aprisco_estado').val(),
   }
   const isEdit = !!body.aprisco_id
-  const url    = isEdit ? `${baseUrl}apriscos/${body.aprisco_id}` : `${baseUrl}apriscos`
+  const url    = isEdit ? api(`apriscos/${body.aprisco_id}`) : api('apriscos')
   try {
     const res = await jsend(url, 'POST', body)
     bootstrap.Modal.getInstance(document.getElementById('modalAprisco')).hide()
@@ -403,7 +396,7 @@ async function submitArea(e){
     estado: $('#area_estado').val(),
   }
   const isEdit = !!body.area_id
-  const url    = isEdit ? `${baseUrl}areas/${body.area_id}` : `${baseUrl}areas`
+  const url    = isEdit ? api(`areas/${body.area_id}`) : api('areas')
   try {
     const res = await jsend(url, 'POST', body)
     bootstrap.Modal.getInstance(document.getElementById('modalArea')).hide()
@@ -427,7 +420,7 @@ async function submitReporte(e){
     estado_reporte: $('#rep_estado').val(),
   }
   const isEdit = !!body.reporte_id
-  const url    = isEdit ? `${baseUrl}reportes_dano/${body.reporte_id}` : `${baseUrl}reportes_dano`
+  const url    = isEdit ? api(`reportes_dano/${body.reporte_id}`) : api('reportes_dano')
   try {
     const res = await jsend(url, 'POST', body)
     bootstrap.Modal.getInstance(document.getElementById('modalReporte')).hide()
@@ -479,7 +472,7 @@ async function handleRowAction(e){
     if (!ok.isConfirmed) return
 
     try {
-      const url = `${baseUrl}${tipoRoute(tipo)}/${id}`
+      const url = api(`${tipoRoute(tipo)}/${id}`)
       const res = await jdel(url)
       reloadDT(tipo)
       Swal.fire('Eliminado', res.message || 'Registro eliminado', 'success')
@@ -492,8 +485,8 @@ async function handleRowAction(e){
 
   // Ver / Editar → obtener registro
   try {
-    const url = `${baseUrl}${tipoRoute(tipo)}/${id}`
-    const res = await jget(url)         // { value, message, data }
+    const url = api(`${tipoRoute(tipo)}/${id}`)
+    const res = await jget(url)
     const row = res.data
     if ($btn.hasClass('btn-ver')) {
       Swal.fire({
@@ -543,7 +536,7 @@ async function refreshTabSelects(tipo){
    Vista de detalle bonita
 ========================= */
 function renderDetailCard(tipo, d = {}){
-  const V = (x) => (x ?? '-')  // helper
+  const V = (x) => (x ?? '-')
   if (tipo === 'finca') {
     return `
       <div class="detail-card">
@@ -582,7 +575,6 @@ function renderDetailCard(tipo, d = {}){
       </div>
     `
   }
-  // reporte
   return `
     <div class="detail-card">
       <div class="detail-grid">
