@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Inicialización de la DataTable
   const tablaUsuarios = $('#tablaUsuarios').DataTable({
     ajax: {
-      url: baseUrl + '/system_users', // <-- CAMBIO AQUÍ
+      url: baseUrl + 'api/system_users', // <-- CAMBIO AQUÍ
       dataSrc: 'data',
     },
     columns: [
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
             case 1:
               return 'Administrador'
             case 2:
-              return 'Moderador'
+              return 'Usuario'
             default:
               return 'Desconocido'
           }
@@ -74,12 +74,12 @@ document.addEventListener('DOMContentLoaded', function () {
     e.preventDefault()
     const userId = $('#user_id').val()
 
-    let url = baseUrl + '/system_users' // <-- CAMBIO AQUÍ
+    let url = baseUrl + 'system_users' // <-- CAMBIO AQUÍ
     let method = 'POST'
 
     if (userId) {
       // Si hay ID, es una actualización
-      url = baseUrl + `system_users/${userId}` // <-- CAMBIO AQUÍ
+      url = baseUrl + `api/system_users/${userId}` // <-- CAMBIO AQUÍ
       method = 'PUT'
     }
     // Serializar datos del formulario a un objeto JSON
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (action.includes('btn-ver')) {
       // VER DETALLES
       $.ajax({
-        url: baseUrl + `system_users/${userId}`, // <-- CAMBIO AQUÍ
+        url: baseUrl + `api/system_users/${userId}`, // <-- CAMBIO AQUÍ
         method: 'GET',
         success: function (response) {
           const data = response.data
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
           $('#detalle_nombre').text(data.nombre)
           $('#detalle_email').text(data.email)
           $('#detalle_nivel').text(
-            data.nivel == 1 ? 'Administrador' : 'Moderador'
+            data.nivel == 1 ? 'Administrador' : 'Usuario'
           )
           $('#detalle_estado').html(
             data.estado == 1
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function () {
     } else if (action.includes('btn-editar')) {
       // EDITAR USUARIO
       $.ajax({
-        url: baseUrl + `system_users/${userId}`, // <-- CAMBIO AQUi
+        url: baseUrl + `api/system_users/${userId}`, // <-- CAMBIO AQUi
         method: 'GET',
         success: function (response) {
           const data = response.data
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }).then((result) => {
         if (result.isConfirmed) {
           $.ajax({
-            url: baseUrl + `system_users/${userId}`, // <-- CAMBIO AQUÍ
+            url: baseUrl + `api/system_users/${userId}`, // <-- CAMBIO AQUÍ
             method: 'DELETE',
             success: function (response) {
               Swal.fire('Eliminado', response.message, 'success')

@@ -67,9 +67,9 @@
                     <div class="mb-3">
                         <label for="nivel" class="form-label">Nivel</label>
                         <select class="form-select" id="nivel" name="nivel" required>
-                            <option value="1">Administrador</option>
-                            <option value="2">Moderador</option>
-                            <option value="3">Editor</option>
+                            <option value="0">Administrador</option>
+                            <option value="1">Usuario</option>
+
                         </select>
                     </div>
 
