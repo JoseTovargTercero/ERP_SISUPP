@@ -37,10 +37,15 @@ document.addEventListener('DOMContentLoaded', function () {
         data: 'user_id',
         render: function (data, type, row) {
           return `
-                        <button class="btn btn-info btn-sm btn-ver" data-id="${data}" title="Ver Detalles"><i class="mdi mdi-eye"></i></button>
-                        <button class="btn btn-warning btn-sm btn-editar" data-id="${data}" title="Editar"><i class="mdi mdi-pencil"></i></button>
-                        <button class="btn btn-danger btn-sm btn-eliminar" data-id="${data}" title="Eliminar"><i class="mdi mdi-delete"></i></button>
-                    `
+            <div class="btn-group">
+                <button class="btn btn-info btn-sm btn-ver" data-id="${data}" title="Ver Detalles"><i class="mdi mdi-eye"></i></button>
+                <button class="btn btn-warning btn-sm btn-editar" data-id="${data}" title="Editar"><i class="mdi mdi-pencil"></i></button>
+                
+                <button class="btn btn-success btn-sm btn-permisos" data-id="${data}" data-nombre="${row.nombre}" title="Asignar Permisos"><i class="mdi mdi-lock-open-outline"></i></button>
+
+                <button class="btn btn-danger btn-sm btn-eliminar" data-id="${data}" title="Eliminar"><i class="mdi mdi-delete"></i></button>
+            </div>
+        `
         },
         orderable: false,
         searchable: false,
@@ -60,6 +65,69 @@ document.addEventListener('DOMContentLoaded', function () {
   )
   const formUsuario = document.getElementById('formUsuario')
 
+  // Inicialización del nuevo modal
+  const modalPermisos = new bootstrap.Modal(
+    document.getElementById('modalPermisos')
+  )
+
+  const renderizarAcordeonPermisos = (todosLosMenus, permisosUsuario) => {
+    const contenedorAcordeon = $('#accordionPermisos')
+    contenedorAcordeon.html('')
+
+    const permisosAsignados = new Set(
+      permisosUsuario.map((p) => p.menu.menu_id)
+    )
+    const menusPorCategoria = todosLosMenus.reduce((acc, menu) => {
+      const categoria = menu.categoria || 'Sin Categoría'
+      if (!acc[categoria]) acc[categoria] = []
+      acc[categoria].push(menu)
+      return acc
+    }, {})
+
+    Object.keys(menusPorCategoria).forEach((categoria, index) => {
+      const collapseId = `collapse-${index}`
+      const headerId = `header-${index}`
+
+      const isFirst = index === 0
+      const linkClass = isFirst ? '' : 'collapsed'
+      const expandedState = isFirst ? 'true' : 'false'
+      const collapseClass = isFirst ? 'show' : ''
+
+      const checkboxesHtml = menusPorCategoria[categoria]
+        .map((menu) => {
+          const isChecked = permisosAsignados.has(menu.menu_id) ? 'checked' : ''
+          return `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="${menu.menu_id}" id="menu-${menu.menu_id}" ${isChecked}>
+                        <label class="form-check-label" for="menu-${menu.menu_id}">${menu.nombre}</label>
+                    </div>`
+        })
+        .join('')
+
+      // Nueva estructura HTML con el ícono de flecha
+      const itemHtml = `
+                <div class="card mb-0">
+                    <div class="card-header" id="${headerId}">
+                        <h5 class="m-0">
+                            <a class="custom-accordion-title ${linkClass} d-block py-1"
+                                data-bs-toggle="collapse" href="#${collapseId}"
+                                aria-expanded="${expandedState}" aria-controls="${collapseId}">
+                                ${categoria.toLocaleUpperCase()}
+                                <i class="mdi mdi-chevron-down accordion-arrow"></i>
+                            </a>
+                        </h5>
+                    </div>
+                    <div id="${collapseId}" class="collapse ${collapseClass}"
+                        aria-labelledby="${headerId}" data-bs-parent="#accordionPermisos">
+                        <div class="card-body">
+                            ${checkboxesHtml}
+                        </div>
+                    </div>
+                </div>
+            `
+      contenedorAcordeon.append(itemHtml)
+    })
+  }
   // 1. ABRIR MODAL PARA CREAR NUEVO USUARIO
   $('#btnNuevoUsuario').on('click', function () {
     formUsuario.reset()
@@ -74,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function () {
     e.preventDefault()
     const userId = $('#user_id').val()
 
-    let url = baseUrl + 'system_users' // <-- CAMBIO AQUÍ
+    let url = baseUrl + 'api/system_users' // <-- CAMBIO AQUÍ
     let method = 'POST'
 
     if (userId) {
@@ -119,6 +187,7 @@ document.addEventListener('DOMContentLoaded', function () {
   $('#tablaUsuarios tbody').on('click', 'button', function () {
     const action = $(this).attr('class')
     const userId = $(this).data('id')
+    const userName = $(this).data('nombre') // Obtenemos el nombre del data attribute
 
     if (action.includes('btn-ver')) {
       // VER DETALLES
@@ -171,6 +240,37 @@ document.addEventListener('DOMContentLoaded', function () {
           showErrorToast(xhr.responseJSON)
         },
       })
+    } else if (action.includes('btn-permisos')) {
+      // <-- NUEVO BLOQUE
+      // ABRIR Y PREPARAR MODAL DE PERMISOS
+      $('#permisos_user_id').val(userId)
+      $('#modalPermisosLabel span').text(userName)
+      $('#accordionPermisos').html(
+        '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></div>'
+      )
+      modalPermisos.show()
+
+      // Realizar dos llamadas AJAX en paralelo para obtener todos los menús y los permisos del usuario
+      Promise.all([
+        $.ajax({ url: baseUrl + 'api/menus' }), // Endpoint para obtener todos los menús
+        $.ajax({ url: baseUrl + `api/users-permisos/user/${userId}` }), // Endpoint para los permisos del usuario
+      ])
+        .then(function (responses) {
+          const todosLosMenus = responses[0].data
+          const permisosUsuario = responses[1].data
+
+          // Una vez que ambas llamadas terminan, renderizar el contenido
+          renderizarAcordeonPermisos(todosLosMenus, permisosUsuario)
+        })
+        .catch(function (error) {
+          $('#accordionPermisos').html(
+            '<p class="text-danger text-center">Error al cargar los permisos.</p>'
+          )
+          console.error('Error al obtener datos de permisos:', error)
+          showErrorToast({
+            message: 'No se pudieron cargar los datos de permisos.',
+          })
+        })
     } else if (action.includes('btn-eliminar')) {
       // ELIMINAR USUARIO
       Swal.fire({
@@ -198,5 +298,43 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       })
     }
+  })
+
+  $('#btnGuardarPermisos').on('click', function () {
+    const userId = $('#permisos_user_id').val()
+    const menuIdsSeleccionados = []
+
+    // Recolectar todos los IDs de los menús seleccionados (checkboxes marcados)
+    $('#accordionPermisos .form-check-input:checked').each(function () {
+      menuIdsSeleccionados.push($(this).val())
+    })
+
+    const payload = {
+      user_id: userId,
+      menu_ids: menuIdsSeleccionados,
+    }
+
+    // Usar el endpoint para asignar permisos
+    $.ajax({
+      url: baseUrl + 'api/users-permisos', // Endpoint POST para asignar
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(payload),
+      success: function (response) {
+        if (response.value) {
+          modalPermisos.hide()
+          Swal.fire({
+            icon: 'success',
+            title: '¡Éxito!',
+            text: 'Permisos actualizados correctamente.',
+          })
+        } else {
+          showErrorToast(response)
+        }
+      },
+      error: function (xhr) {
+        showErrorToast(xhr.responseJSON)
+      },
+    })
   })
 })

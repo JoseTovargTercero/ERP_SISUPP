@@ -113,6 +113,35 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalPermisos" tabindex="-1" aria-labelledby="modalPermisosLabel" aria-hidden="true"
+    data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalPermisosLabel">Asignar Permisos para: <span></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="permisos_user_id">
+                <p class="text-muted">Selecciona los módulos a los que el usuario tendrá acceso.</p>
+
+                <div class="accordion custom-accordion" id="accordionPermisos">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarPermisos">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     const baseUrl = "<?php echo BASE_URL; ?>";
 </script>
