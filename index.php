@@ -8,7 +8,9 @@ require_once __DIR__ . '/controllers/ApriscoController.php';
 require_once __DIR__ . '/controllers/ReporteDanoController.php';
 require_once __DIR__ . '/controllers/MenuController.php';
 require_once __DIR__ . '/controllers/UsersPermisosController.php';
+require_once __DIR__ . '/middlewares/AuthMiddleware.php';
 use App\Core\ViewRenderer;
+
 use App\Router;
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -36,22 +38,22 @@ $viewRenderer = new ViewRenderer('views/');
 $router = new Router($viewRenderer);
 
 
+
 $router->get('/login', ['vista' => 'auth/login', 'vistaData' => ['titulo' => 'Iniciar Sesión', 'layout' => false]]);
 $router->get('/', ['vista' => 'auth/login', 'vistaData' => ['titulo' => 'Iniciar Sesión', 'layout' => false]]);
 $router->get('', ['vista' => 'auth/login', 'vistaData' => ['titulo' => 'Iniciar Sesión', 'layout' => false]]);
-
 
 // Login
 $router->post('system_users/login', ['controlador' => SystemUserController::class, 'accion' => 'login']);
 
 // vistas
-$router->get('/users', ['vista' => 'modules/usuarios_view', 'vistaData' => ['titulo' => 'Usuarios del Sistema']]);
 
-$router->get('/modulos', ['vista' => 'modules/menus_view', 'vistaData' => ['titulo' => 'Modulos del Sistema']]);
+$router->group(['middleware' => AuthMiddleware::class], function ($router) {
+    $router->get('/users', ['vista' => 'modules/usuarios_view', 'vistaData' => ['titulo' => 'Usuarios del Sistema']]);
+    $router->get('/modulos', ['vista' => 'modules/menus_view', 'vistaData' => ['titulo' => 'Modulos del Sistema']]);
+    $router->get('/fincas', ['vista' => 'modules/fincas_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
 
-$router->get('/fincas', ['vista' => 'modules/fincas_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
-
-
+});
 
 $router->group(['prefix' => '/api'], function ($router) {
     // Aquí puedes definir rutas que compartan el prefijo /api

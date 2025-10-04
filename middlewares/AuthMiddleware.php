@@ -1,51 +1,77 @@
 <?php
-namespace App\Middlewares;
+
+require_once 'Middleware.php';
+
+
 
 class AuthMiddleware implements Middleware
 {
     /**
-     * @var array Lista de roles permitidos para acceder a la ruta.
+     * Maneja la lógica de autenticación y autorización para una ruta protegida.
+     * @param string $ruta La ruta a la que el usuario intenta acceder.
      */
-    protected $allowedRoles;
-
-    /**
-     * El constructor acepta un array de roles permitidos.
-     * Si el array está vacío, significa que cualquier usuario autenticado puede pasar.
-     * @param array $allowedRoles
-     */
-    public function __construct(array $allowedRoles = [])
+    public function handle($ruta)
     {
-        $this->allowedRoles = $allowedRoles;
+
+        // 1. Verificar si existe una sesión activa.
+        // Si el middleware fue llamado, la ruta es protegida y requiere sesión.
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['nivel'])) {
+            $this->redirigirALogin();
+        }
+
+        // 2. Si el usuario es Administrador (nivel 0), permitir acceso total.
+        if ((string) $_SESSION['nivel'] === '0') {
+            return; // Acceso concedido, el administrador puede pasar.
+        }
+
+        // 3. Para otros usuarios, verificar permisos específicos en la sesión.
+        $permisosUsuario = $_SESSION['user_modules'] ?? [];
+
+        $accesoPermitido = false;
+        foreach ($permisosUsuario as $permiso) {
+            // Comprobación de coincidencia exacta (ej. '/dashboard')
+            // formatear ruta
+            $ruta = ltrim($ruta, '/');
+            if ($ruta === $permiso) {
+                $accesoPermitido = true;
+                break;
+            }
+            // Comprobación de sub-rutas (ej. '/users/123' comienza con '/users/')
+            var_dump($permiso);
+            if (str_starts_with($ruta, rtrim($permiso, '/') . '/')) {
+                $accesoPermitido = true;
+                break;
+            }
+        }
+
+        // 4. Si no se encontró un permiso válido, denegar el acceso.
+        if (!$accesoPermitido) {
+
+            $this->accesoDenegado();
+
+        }
+
+        // Si las comprobaciones pasan, la ejecución del script continúa.
     }
 
-    public function handle()
+    /**
+     * Redirige al usuario a la página de login.
+     */
+    private function redirigirALogin()
     {
-        // 1. Primero, verificar que el usuario haya iniciado sesión.
-        if (!isset($_SESSION['user_id']) || !isset($_SESSION['roles_user'])) {
-            session_unset();
-            session_destroy();
-            header('Location: ./login');
-            exit();
+        session_unset();
+        session_destroy();
+        header('Location: ' . BASE_URL . 'login');
+        exit();
+    }
 
-            // 2. Si se especificaron roles, verificar que el usuario tenga uno de ellos.
-        }
-        // Si el array de roles permitidos está vacío, permitimos el paso a cualquier usuario autenticado.
-        $userRole = $_SESSION['roles_user'];
-        if (!empty($this->allowedRoles)) {
-            if (!in_array(strtolower($userRole), $this->allowedRoles)) {
-                // Si el rol del usuario no está en la lista, lo enviamos al login.
-                // Podrías tener una lógica más avanzada aquí, como redirigir a una página de "acceso denegado".
-                session_unset();
-                session_destroy();
-                header('Location: ./login');
-                exit();
-            }
-
-
-        }
-
-
-
-        // Si todas las comprobaciones pasan, la petición puede continuar.
+    /**
+     * Maneja los casos de acceso denegado redirigiendo a una ruta
+     * que provocará una respuesta 404 del Router.
+     */
+    private function accesoDenegado()
+    {
+        header('Location: ' . BASE_URL . '404');
+        exit();
     }
 }

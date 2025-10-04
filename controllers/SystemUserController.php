@@ -35,60 +35,69 @@ class SystemUserController
     // POST /system-users/login
 // POST /system-users/login
 // POST /system-users/login
-public function login(): void
-{
-    $in = $this->getJsonInput();
-    $email = trim($in['email'] ?? '');
-    $password = (string)($in['contrasena'] ?? '');
+    public function login(): void
+    {
+        $in = $this->getJsonInput();
+        $email = trim($in['email'] ?? '');
+        $password = (string) ($in['contrasena'] ?? '');
 
-    if ($email === '' || $password === '') {
-        $this->jsonResponse(false, 'Correo y contraseña son obligatorios.', null, 400);
-        return;
-    }
-
-    try {
-        $user = $this->model->loginBasico($email, $password);
-
-        // Credenciales inválidas o usuario inexistente/borrado
-        if (!$user) {
-            $this->jsonResponse(false, 'Credenciales inválidas o usuario inactivo.', null, 401);
+        if ($email === '' || $password === '') {
+            $this->jsonResponse(false, 'Correo y contraseña son obligatorios.', null, 400);
             return;
         }
 
-        // Si el nivel es 0 (Administrador), se omite la verificación de permisos
-        if ((int)$user['nivel'] !== 0) {
-            $permisosModel = new UsersPermisosModel();
-            $permisos = $permisosModel->listarPermisosConMenu($user['user_id']);
+        try {
+            $user = $this->model->loginBasico($email, $password);
 
-            if (empty($permisos)) {
-                $this->jsonResponse(false, 'El usuario no puede ingresar porque no tiene permisos asignados.', null, 403);
+            // Credenciales inválidas o usuario inexistente/borrado
+            if (!$user) {
+                $this->jsonResponse(false, 'Credenciales inválidas o usuario inactivo.', null, 401);
                 return;
             }
 
-            $user['permisos'] = $permisos;
-        } else {
-            // Acceso completo para nivel 0
-            $user['permisos'] = ['*']; // Indica acceso total
+            // Si el nivel es 0 (Administrador), se omite la verificación de permisos
+            if ((int) $user['nivel'] !== 0) {
+                $permisosModel = new UsersPermisosModel();
+                $permisos = $permisosModel->listarPermisosConMenu($user['user_id']);
+
+                if (empty($permisos)) {
+                    $this->jsonResponse(false, 'El usuario no puede ingresar porque no tiene permisos asignados.', null, 403);
+                    return;
+                }
+
+                $user['permisos'] = $permisos;
+            } else {
+                // Acceso completo para nivel 0
+                $user['permisos'] = ['*']; // Indica acceso total
+            }
+
+            // Crear sesión
+            $_SESSION['logged_in'] = true;
+            $_SESSION['user_id'] = $user['user_id'];
+            $_SESSION['nombre'] = $user['nombre'];
+            $_SESSION['nivel'] = $user['nivel'];
+
+
+            $urlsPermitidas = [];
+            $permisosData = $user['permisos'];
+            foreach ($permisosData as $permiso) {
+                $urlsPermitidas[] = $permiso['menu']['url'];
+            }
+            $_SESSION['user_modules'] = $urlsPermitidas;
+
+
+            $this->jsonResponse(true, 'Inicio de sesión exitoso.', $user);
+
+        } catch (DomainException $e) {
+            if ($e->getCode() === 1001 || $e->getMessage() === 'USER_DISABLED') {
+                $this->jsonResponse(false, 'Este usuario ha sido desactivado y no puede ingresar.', null, 403);
+                return;
+            }
+            $this->jsonResponse(false, 'No se pudo iniciar sesión: ' . $e->getMessage(), null, 400);
+        } catch (Throwable $e) {
+            $this->jsonResponse(false, 'Error al iniciar sesión: ' . $e->getMessage(), null, 500);
         }
-
-        // Crear sesión
-        $_SESSION['logged_in'] = true;
-        $_SESSION['user_id']   = $user['user_id'];
-        $_SESSION['nombre']    = $user['nombre'];
-        $_SESSION['nivel']     = $user['nivel'];
-
-        $this->jsonResponse(true, 'Inicio de sesión exitoso.', $user);
-
-    } catch (DomainException $e) {
-        if ($e->getCode() === 1001 || $e->getMessage() === 'USER_DISABLED') {
-            $this->jsonResponse(false, 'Este usuario ha sido desactivado y no puede ingresar.', null, 403);
-            return;
-        }
-        $this->jsonResponse(false, 'No se pudo iniciar sesión: ' . $e->getMessage(), null, 400);
-    } catch (Throwable $e) {
-        $this->jsonResponse(false, 'Error al iniciar sesión: ' . $e->getMessage(), null, 500);
     }
-}
 
     // POST /system-users/logout
     // POST /system-users/logout
