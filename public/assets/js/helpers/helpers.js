@@ -68,3 +68,9 @@ export function showErrorToast(response) {
     title: message,
   })
 }
+
+// función para formatear fecha a DD/MM/YYYY usando tolocaleDateString
+export function formatDate(dateString) {
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
+  return new Date(dateString).toLocaleDateString('es-ES', options)
+}

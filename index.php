@@ -6,6 +6,7 @@ require_once __DIR__ . '/controllers/AreaController.php';
 require_once __DIR__ . '/controllers/FincaController.php';
 require_once __DIR__ . '/controllers/ApriscoController.php';
 require_once __DIR__ . '/controllers/ReporteDanoController.php';
+require_once __DIR__ . '/controllers/MenuController.php';
 use App\Core\ViewRenderer;
 use App\Router;
 
@@ -43,7 +44,6 @@ $router->post('system_users/login', ['controlador' => SystemUserController::clas
 
 // vista
 $router->get('/users', ['vista' => 'modules/usuarios_view', 'vistaData' => ['titulo' => 'Usuarios del Sistema']]);
-$router->get('/fincas_vista', ['vista' => 'modules/fincas_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
 // acciones
 $router->get('/system_users', ['controlador' => SystemUserController::class, 'accion' => 'listar']);
 $router->get('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'mostrar']);
@@ -57,6 +57,10 @@ $router->delete('/system_users/{user_id}', ['controlador' => SystemUserControlle
 // Rutas para Fincas
 // ============================
 
+// VISTAS
+$router->get('/fincas_vista', ['vista' => 'modules/fincas_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
+
+// ENDPOINTS
 $router->get('/fincas', [
     'controlador' => FincaController::class,
     'accion' => 'listar'
@@ -196,6 +200,9 @@ $router->delete('/reportes_dano/{reporte_id}', [
 // ============================
 // Rutas para Menu
 // ============================
+
+$router->get('/modulos', ['vista' => 'modules/menus_view', 'vistaData' => ['titulo' => 'Modulos del Sistema']]);
+
 
 $router->get('/menus', [
     'controlador' => MenuController::class,
