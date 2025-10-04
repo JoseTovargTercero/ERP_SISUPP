@@ -7,6 +7,7 @@ require_once __DIR__ . '/controllers/FincaController.php';
 require_once __DIR__ . '/controllers/ApriscoController.php';
 require_once __DIR__ . '/controllers/ReporteDanoController.php';
 require_once __DIR__ . '/controllers/MenuController.php';
+require_once __DIR__ . '/controllers/UsersPermisosController.php';
 use App\Core\ViewRenderer;
 use App\Router;
 
@@ -62,9 +63,9 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->put('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'actualizar']);
     $router->delete('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'eliminar']);
     $router->get('/logout', [
-    'controlador' => SystemUserController::class,
-    'accion' => 'logout'
-]);
+        'controlador' => SystemUserController::class,
+        'accion' => 'logout'
+    ]);
 
 
     // endpoints de fincas
