@@ -5,6 +5,7 @@ let DT_FINCAS, DT_APRISCOS, DT_AREAS, DT_REPORTES
 
 document.addEventListener('DOMContentLoaded', () => {
   initButtons()
+  wireCancelButtons()
 
   // Hooks de lazy-load por pane
   document.getElementById('pane-fincas')?.addEventListener('lazyload', loadFincasTab)
@@ -271,6 +272,27 @@ function initButtons() {
   })
   $('#area_finca_id').on('change', async function(){
     await cargarApriscosSelect('#area_aprisco_id', this.value)
+  })
+}
+
+/* =========================
+   Solo cerrar en “Cancelar”
+========================= */
+function wireCancelButtons(){
+  // Asegura que cualquier botón .btn-cancelar solo cierre el modal
+  // (sin refrescar tablas ni enviar formularios)
+  $(document).on('click', '.btn-cancelar', function (e) {
+    e.preventDefault()
+    e.stopPropagation()
+    // Evita que un botón sin type explícito actúe como submit
+    if (!this.getAttribute('type')) this.setAttribute('type','button')
+
+    const modalEl = this.closest('.modal')
+    if (modalEl) {
+      const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)
+      inst.hide()
+    }
+    // No se hace reload de ninguna tabla aquí a propósito
   })
 }
 
@@ -642,10 +664,10 @@ async function openEditModal(tipo, d){
 /* =========================
    Reset forms
 ========================= */
-function resetFincaForm(){ $('#formFinca')[0].reset(); $('#finca_id').val('') }
-function resetApriscoForm(){ $('#formAprisco')[0].reset(); $('#aprisco_id').val('') }
-function resetAreaForm(){ $('#formArea')[0].reset(); $('#area_id').val('') }
-function resetReporteForm(){ $('#formReporte')[0].reset(); $('#reporte_id').val('') }
+function resetFincaForm(){ $('#formFinca')[0]?.reset(); $('#finca_id').val('') }
+function resetApriscoForm(){ $('#formAprisco')[0]?.reset(); $('#aprisco_id').val('') }
+function resetAreaForm(){ $('#formArea')[0]?.reset(); $('#area_id').val('') }
+function resetReporteForm(){ $('#formReporte')[0]?.reset(); $('#reporte_id').val('') }
 
 /* =========================
    Util

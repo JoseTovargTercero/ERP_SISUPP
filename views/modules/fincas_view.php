@@ -232,7 +232,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-secondary btn-cancelar" data-bs-dismiss="modal">Cancelar</button>
+
           <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
       </form>
@@ -268,7 +269,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-secondary btn-cancelar" data-bs-dismiss="modal">Cancelar</button>
+
           <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
       </form>
@@ -321,7 +323,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-secondary btn-cancelar" data-bs-dismiss="modal">Cancelar</button>
+
           <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
       </form>
@@ -385,7 +388,8 @@
 
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-secondary btn-cancelar" data-bs-dismiss="modal">Cancelar</button>
+
           <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
       </form>
