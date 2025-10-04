@@ -31,11 +31,16 @@ $menuConfig = [
         'title' => 'Usuarios',
         'icon' => 'uil-user-circle',
         'url' => 'users',
-
     ],
-
+    [
+        'title' => 'Fincas',
+        'icon' => 'uil-building',
+        'url' => 'fincas_vista',
+    ]
 
 ];
+
+
 
 
 // =================================================================

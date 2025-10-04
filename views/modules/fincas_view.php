@@ -13,22 +13,26 @@
   </div>
 
   <!-- Tabs -->
-  <ul class="nav nav-tabs mb-3" id="agroTabs" role="tablist">
+  <ul class="nav nav-tabs" id="agroTabs" role="tablist">
     <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="tab-fincas" data-bs-toggle="tab" data-bs-target="#pane-fincas" type="button" role="tab">Fincas</button>
+      <button class="nav-link active" id="tab-fincas" data-bs-toggle="tab" data-bs-target="#pane-fincas" type="button"
+        role="tab">Fincas</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-apriscos" data-bs-toggle="tab" data-bs-target="#pane-apriscos" type="button" role="tab">Apriscos</button>
+      <button class="nav-link" id="tab-apriscos" data-bs-toggle="tab" data-bs-target="#pane-apriscos" type="button"
+        role="tab">Apriscos</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-areas" data-bs-toggle="tab" data-bs-target="#pane-areas" type="button" role="tab">Áreas</button>
+      <button class="nav-link" id="tab-areas" data-bs-toggle="tab" data-bs-target="#pane-areas" type="button"
+        role="tab">Áreas</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-reportes" data-bs-toggle="tab" data-bs-target="#pane-reportes" type="button" role="tab">Reportes de Daño</button>
+      <button class="nav-link" id="tab-reportes" data-bs-toggle="tab" data-bs-target="#pane-reportes" type="button"
+        role="tab">Reportes de Daño</button>
     </li>
   </ul>
 
-  <div class="tab-content">
+  <div class="tab-content p-0">
     <!-- FINCAS -->
     <div class="tab-pane fade show active" id="pane-fincas" role="tabpanel" aria-labelledby="tab-fincas">
       <div class="card">
@@ -194,183 +198,192 @@
 
 <!-- Finca -->
 <div class="modal fade" id="modalFinca" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog"><div class="modal-content">
-    <div class="modal-header">
-      <h5 class="modal-title" id="modalFincaLabel">Crear Nueva Finca</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalFincaLabel">Crear Nueva Finca</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formFinca">
+        <div class="modal-body">
+          <input type="hidden" id="finca_id" name="finca_id">
+          <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="finca_nombre" name="nombre" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Ubicación</label>
+            <input type="text" class="form-control" id="finca_ubicacion" name="ubicacion">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Estado</label>
+            <select class="form-select" id="finca_estado" name="estado" required>
+              <option value="ACTIVA">Activa</option>
+              <option value="INACTIVA">Inactiva</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
     </div>
-    <form id="formFinca">
-      <div class="modal-body">
-        <input type="hidden" id="finca_id" name="finca_id">
-        <div class="mb-3">
-          <label class="form-label">Nombre</label>
-          <input type="text" class="form-control" id="finca_nombre" name="nombre" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Ubicación</label>
-          <input type="text" class="form-control" id="finca_ubicacion" name="ubicacion">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Estado</label>
-          <select class="form-select" id="finca_estado" name="estado" required>
-            <option value="ACTIVA">Activa</option>
-            <option value="INACTIVA">Inactiva</option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-primary" type="submit">Guardar</button>
-      </div>
-    </form>
-  </div></div>
+  </div>
 </div>
 
 <!-- Aprisco -->
 <div class="modal fade" id="modalAprisco" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog"><div class="modal-content">
-    <div class="modal-header">
-      <h5 class="modal-title" id="modalApriscoLabel">Crear Nuevo Aprisco</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalApriscoLabel">Crear Nuevo Aprisco</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formAprisco">
+        <div class="modal-body">
+          <input type="hidden" id="aprisco_id" name="aprisco_id">
+          <div class="mb-3">
+            <label class="form-label">Finca</label>
+            <select class="form-select" id="aprisco_finca_id" name="finca_id" required></select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nombre del Aprisco</label>
+            <input type="text" class="form-control" id="aprisco_nombre" name="nombre" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Estado</label>
+            <select class="form-select" id="aprisco_estado" name="estado" required>
+              <option value="ACTIVO">Activo</option>
+              <option value="INACTIVO">Inactivo</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
     </div>
-    <form id="formAprisco">
-      <div class="modal-body">
-        <input type="hidden" id="aprisco_id" name="aprisco_id">
-        <div class="mb-3">
-          <label class="form-label">Finca</label>
-          <select class="form-select" id="aprisco_finca_id" name="finca_id" required></select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Nombre del Aprisco</label>
-          <input type="text" class="form-control" id="aprisco_nombre" name="nombre" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Estado</label>
-          <select class="form-select" id="aprisco_estado" name="estado" required>
-            <option value="ACTIVO">Activo</option>
-            <option value="INACTIVO">Inactivo</option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-primary" type="submit">Guardar</button>
-      </div>
-    </form>
-  </div></div>
+  </div>
 </div>
 
 <!-- Área -->
 <div class="modal fade" id="modalArea" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog"><div class="modal-content">
-    <div class="modal-header">
-      <h5 class="modal-title" id="modalAreaLabel">Crear Nueva Área</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-    </div>
-    <form id="formArea">
-      <div class="modal-body">
-        <input type="hidden" id="area_id" name="area_id">
-        <div class="mb-3">
-          <label class="form-label">Finca</label>
-          <select class="form-select" id="area_finca_id" required></select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Aprisco</label>
-          <select class="form-select" id="area_aprisco_id" name="aprisco_id" required></select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Tipo</label>
-          <select class="form-select" id="area_tipo_area" name="tipo_area" required>
-            <option value="LEVANTE_CEBA">Levante/Ceba</option>
-            <option value="GESTACION">Gestación</option>
-            <option value="MATERNIDAD">Maternidad</option>
-            <option value="REPRODUCCION">Reproducción</option>
-            <option value="CHIQUERO">Chiquero</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Nombre Personalizado / Numeración</label>
-          <div class="d-flex gap-2">
-            <input type="text" class="form-control" id="area_nombre_personalizado" name="nombre_personalizado" placeholder="Opcional">
-            <input type="text" class="form-control" id="area_numeracion" name="numeracion" placeholder="Opcional">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalAreaLabel">Crear Nueva Área</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formArea">
+        <div class="modal-body">
+          <input type="hidden" id="area_id" name="area_id">
+          <div class="mb-3">
+            <label class="form-label">Finca</label>
+            <select class="form-select" id="area_finca_id" required></select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Aprisco</label>
+            <select class="form-select" id="area_aprisco_id" name="aprisco_id" required></select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" id="area_tipo_area" name="tipo_area" required>
+              <option value="LEVANTE_CEBA">Levante/Ceba</option>
+              <option value="GESTACION">Gestación</option>
+              <option value="MATERNIDAD">Maternidad</option>
+              <option value="REPRODUCCION">Reproducción</option>
+              <option value="CHIQUERO">Chiquero</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nombre Personalizado / Numeración</label>
+            <div class="d-flex gap-2">
+              <input type="text" class="form-control" id="area_nombre_personalizado" name="nombre_personalizado"
+                placeholder="Opcional">
+              <input type="text" class="form-control" id="area_numeracion" name="numeracion" placeholder="Opcional">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Estado</label>
+            <select class="form-select" id="area_estado" name="estado" required>
+              <option value="ACTIVA">Activa</option>
+              <option value="INACTIVA">Inactiva</option>
+            </select>
           </div>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Estado</label>
-          <select class="form-select" id="area_estado" name="estado" required>
-            <option value="ACTIVA">Activa</option>
-            <option value="INACTIVA">Inactiva</option>
-          </select>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-primary" type="submit">Guardar</button>
-      </div>
-    </form>
-  </div></div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- Reporte -->
 <div class="modal fade" id="modalReporte" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog"><div class="modal-content">
-    <div class="modal-header">
-      <h5 class="modal-title" id="modalReporteLabel">Nuevo Reporte de Daño</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalReporteLabel">Nuevo Reporte de Daño</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formReporte">
+        <div class="modal-body">
+          <input type="hidden" id="reporte_id" name="reporte_id">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label">Finca</label>
+              <select class="form-select" id="rep_finca_id" name="finca_id"></select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Aprisco</label>
+              <select class="form-select" id="rep_aprisco_id" name="aprisco_id"></select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Área</label>
+              <select class="form-select" id="rep_area_id" name="area_id"></select>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <label class="form-label">Título</label>
+            <input type="text" class="form-control" id="rep_titulo" name="titulo" required>
+          </div>
+          <div class="mt-3">
+            <label class="form-label">Descripción</label>
+            <textarea class="form-control" id="rep_descripcion" name="descripcion" rows="3" required></textarea>
+          </div>
+
+          <div class="row g-2 mt-3">
+            <div class="col-md-6">
+              <label class="form-label">Criticidad</label>
+              <select class="form-select" id="rep_criticidad" name="criticidad" required>
+                <option value="BAJA">Baja</option>
+                <option value="MEDIA">Media</option>
+                <option value="ALTA">Alta</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Estado</label>
+              <select class="form-select" id="rep_estado" name="estado_reporte" required>
+                <option value="ABIERTO">Abierto</option>
+                <option value="EN_PROCESO">En Proceso</option>
+                <option value="CERRADO">Cerrado</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
     </div>
-    <form id="formReporte">
-      <div class="modal-body">
-        <input type="hidden" id="reporte_id" name="reporte_id">
-        <div class="row g-2">
-          <div class="col-md-4">
-            <label class="form-label">Finca</label>
-            <select class="form-select" id="rep_finca_id" name="finca_id"></select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Aprisco</label>
-            <select class="form-select" id="rep_aprisco_id" name="aprisco_id"></select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Área</label>
-            <select class="form-select" id="rep_area_id" name="area_id"></select>
-          </div>
-        </div>
-
-        <div class="mt-3">
-          <label class="form-label">Título</label>
-          <input type="text" class="form-control" id="rep_titulo" name="titulo" required>
-        </div>
-        <div class="mt-3">
-          <label class="form-label">Descripción</label>
-          <textarea class="form-control" id="rep_descripcion" name="descripcion" rows="3" required></textarea>
-        </div>
-
-        <div class="row g-2 mt-3">
-          <div class="col-md-6">
-            <label class="form-label">Criticidad</label>
-            <select class="form-select" id="rep_criticidad" name="criticidad" required>
-              <option value="BAJA">Baja</option>
-              <option value="MEDIA">Media</option>
-              <option value="ALTA">Alta</option>
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Estado</label>
-            <select class="form-select" id="rep_estado" name="estado_reporte" required>
-              <option value="ABIERTO">Abierto</option>
-              <option value="EN_PROCESO">En Proceso</option>
-              <option value="CERRADO">Cerrado</option>
-            </select>
-          </div>
-        </div>
-
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-primary" type="submit">Guardar</button>
-      </div>
-    </form>
-  </div></div>
+  </div>
 </div>
 
 <script>

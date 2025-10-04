@@ -48,7 +48,7 @@ $router->get('/fincas_vista', ['vista' => 'modules/fincas_view', 'vistaData' => 
 $router->get('/system_users', ['controlador' => SystemUserController::class, 'accion' => 'listar']);
 $router->get('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'mostrar']);
 $router->post('/system_users', ['controlador' => SystemUserController::class, 'accion' => 'crear']);
-$router->post('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'actualizar']);
+$router->put('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'actualizar']);
 $router->delete('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'eliminar']);
 
 
