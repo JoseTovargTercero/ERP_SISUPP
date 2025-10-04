@@ -125,7 +125,7 @@
                 <input type="hidden" id="permisos_user_id">
                 <p class="text-muted">Selecciona los módulos a los que el usuario tendrá acceso.</p>
 
-                <div class="accordion" id="accordionPermisos">
+                <div class="accordion custom-accordion" id="accordionPermisos">
                     <div class="text-center">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Cargando...</span>

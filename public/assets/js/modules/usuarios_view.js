@@ -70,64 +70,64 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('modalPermisos')
   )
 
-  // Función para renderizar el acordeón de permisos
   const renderizarAcordeonPermisos = (todosLosMenus, permisosUsuario) => {
     const contenedorAcordeon = $('#accordionPermisos')
-    contenedorAcordeon.html('') // Limpiar contenido anterior
+    contenedorAcordeon.html('')
 
-    // Crear un Set con los menu_id que el usuario ya tiene para una búsqueda rápida
     const permisosAsignados = new Set(
       permisosUsuario.map((p) => p.menu.menu_id)
     )
-
-    // Agrupar todos los menús por categoría
     const menusPorCategoria = todosLosMenus.reduce((acc, menu) => {
       const categoria = menu.categoria || 'Sin Categoría'
-      if (!acc[categoria]) {
-        acc[categoria] = []
-      }
+      if (!acc[categoria]) acc[categoria] = []
       acc[categoria].push(menu)
       return acc
     }, {})
 
-    // Generar el HTML del acordeón
     Object.keys(menusPorCategoria).forEach((categoria, index) => {
       const collapseId = `collapse-${index}`
       const headerId = `header-${index}`
 
-      // Construir la lista de checkboxes para esta categoría
+      const isFirst = index === 0
+      const linkClass = isFirst ? '' : 'collapsed'
+      const expandedState = isFirst ? 'true' : 'false'
+      const collapseClass = isFirst ? 'show' : ''
+
       const checkboxesHtml = menusPorCategoria[categoria]
         .map((menu) => {
           const isChecked = permisosAsignados.has(menu.menu_id) ? 'checked' : ''
           return `
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" value="${menu.menu_id}" id="menu-${menu.menu_id}" ${isChecked}>
-                    <label class="form-check-label" for="menu-${menu.menu_id}">
-                        ${menu.nombre}
-                    </label>
-                </div>
-            `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="${menu.menu_id}" id="menu-${menu.menu_id}" ${isChecked}>
+                        <label class="form-check-label" for="menu-${menu.menu_id}">${menu.nombre}</label>
+                    </div>`
         })
         .join('')
 
+      // Nueva estructura HTML con el ícono de flecha
       const itemHtml = `
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="${headerId}">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}">
-                        ${categoria}
-                    </button>
-                </h2>
-                <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headerId}" data-bs-parent="#accordionPermisos">
-                    <div class="accordion-body">
-                        ${checkboxesHtml}
+                <div class="card mb-0">
+                    <div class="card-header" id="${headerId}">
+                        <h5 class="m-0">
+                            <a class="custom-accordion-title ${linkClass} d-block py-1"
+                                data-bs-toggle="collapse" href="#${collapseId}"
+                                aria-expanded="${expandedState}" aria-controls="${collapseId}">
+                                ${categoria.toLocaleUpperCase()}
+                                <i class="mdi mdi-chevron-down accordion-arrow"></i>
+                            </a>
+                        </h5>
+                    </div>
+                    <div id="${collapseId}" class="collapse ${collapseClass}"
+                        aria-labelledby="${headerId}" data-bs-parent="#accordionPermisos">
+                        <div class="card-body">
+                            ${checkboxesHtml}
+                        </div>
                     </div>
                 </div>
-            </div>
-        `
+            `
       contenedorAcordeon.append(itemHtml)
     })
   }
-
   // 1. ABRIR MODAL PARA CREAR NUEVO USUARIO
   $('#btnNuevoUsuario').on('click', function () {
     formUsuario.reset()
@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function () {
     e.preventDefault()
     const userId = $('#user_id').val()
 
-    let url = baseUrl + 'system_users' // <-- CAMBIO AQUÍ
+    let url = baseUrl + 'api/system_users' // <-- CAMBIO AQUÍ
     let method = 'POST'
 
     if (userId) {
@@ -316,17 +316,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Usar el endpoint para asignar permisos
     $.ajax({
-      url: baseUrl + 'users-permisos', // Endpoint POST para asignar
+      url: baseUrl + 'api/users-permisos', // Endpoint POST para asignar
       method: 'POST',
       contentType: 'application/json',
       data: JSON.stringify(payload),
       success: function (response) {
-        modalPermisos.hide()
-        Swal.fire({
-          icon: 'success',
-          title: '¡Éxito!',
-          text: 'Permisos actualizados correctamente.',
-        })
+        if (response.value) {
+          modalPermisos.hide()
+          Swal.fire({
+            icon: 'success',
+            title: '¡Éxito!',
+            text: 'Permisos actualizados correctamente.',
+          })
+        } else {
+          showErrorToast(response)
+        }
       },
       error: function (xhr) {
         showErrorToast(xhr.responseJSON)
