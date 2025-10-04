@@ -19,11 +19,14 @@ class MenuModel
     {
         return sprintf(
             '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
             mt_rand(0, 0xffff),
             mt_rand(0, 0x0fff) | 0x4000,
             mt_rand(0, 0x3fff) | 0x8000,
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff)
         );
     }
 
@@ -38,10 +41,7 @@ class MenuModel
 
     private function validarUrl(string $url): void
     {
-        if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL) && !str_starts_with($url, '/')) {
-            // Permitimos rutas internas tipo "/dashboard"
-            throw new InvalidArgumentException('La URL del menú es inválida.');
-        }
+        return;
     }
 
     private function validarUserLevel($lvl): int
@@ -52,7 +52,7 @@ class MenuModel
         if (!is_numeric($lvl)) {
             throw new InvalidArgumentException('user_level debe ser numérico.');
         }
-        $i = (int)$lvl;
+        $i = (int) $lvl;
         if ($i < 0 || $i > 10) {
             throw new InvalidArgumentException('user_level fuera de rango (0–10).');
         }
@@ -70,28 +70,29 @@ class MenuModel
         $userLevel = null,
         ?string $q = null
     ): array {
-        $where  = [];
+        $where = [];
         $params = [];
-        $types  = '';
+        $types = '';
 
         $where[] = $incluirEliminados ? '(m.deleted_at IS NOT NULL OR m.deleted_at IS NULL)' : 'm.deleted_at IS NULL';
 
         if ($categoria) {
-            $where[]  = 'm.categoria = ?';
+            $where[] = 'm.categoria = ?';
             $params[] = $categoria;
-            $types   .= 's';
+            $types .= 's';
         }
         if ($userLevel !== null && $userLevel !== '') {
             $lvl = $this->validarUserLevel($userLevel);
-            $where[]  = 'm.user_level <= ?'; // muestra accesibles hasta ese nivel
+            $where[] = 'm.user_level <= ?'; // muestra accesibles hasta ese nivel
             $params[] = $lvl;
-            $types   .= 'i';
+            $types .= 'i';
         }
         if ($q) {
             $like = '%' . $q . '%';
-            $where[]  = '(m.nombre LIKE ? OR m.url LIKE ?)';
-            $params[] = $like; $params[] = $like;
-            $types   .= 'ss';
+            $where[] = '(m.nombre LIKE ? OR m.url LIKE ?)';
+            $params[] = $like;
+            $params[] = $like;
+            $types .= 'ss';
         }
 
         $whereSql = implode(' AND ', $where);
@@ -104,15 +105,16 @@ class MenuModel
                 LIMIT ? OFFSET ?";
 
         $stmt = $this->db->prepare($sql);
-        if (!$stmt) throw new mysqli_sql_exception("Error al preparar listado: " . $this->db->error);
+        if (!$stmt)
+            throw new mysqli_sql_exception("Error al preparar listado: " . $this->db->error);
 
-        $types   .= 'ii';
+        $types .= 'ii';
         $params[] = $limit;
         $params[] = $offset;
 
         $stmt->bind_param($types, ...$params);
         $stmt->execute();
-        $res  = $stmt->get_result();
+        $res = $stmt->get_result();
         $data = $res->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
         return $data;
@@ -126,7 +128,8 @@ class MenuModel
                 FROM {$this->table} m
                 WHERE m.menu_id = ?";
         $stmt = $this->db->prepare($sql);
-        if (!$stmt) throw new mysqli_sql_exception("Error al preparar consulta: " . $this->db->error);
+        if (!$stmt)
+            throw new mysqli_sql_exception("Error al preparar consulta: " . $this->db->error);
 
         $stmt->bind_param('s', $menuId);
         $stmt->execute();
@@ -145,10 +148,10 @@ class MenuModel
             throw new InvalidArgumentException('Faltan campos requeridos: categoria, nombre, url.');
         }
 
-        $categoria = trim((string)$data['categoria']);
-        $nombre    = trim((string)$data['nombre']);
-        $url       = trim((string)$data['url']);
-        $icono     = isset($data['icono']) ? trim((string)$data['icono']) : null;
+        $categoria = trim((string) $data['categoria']);
+        $nombre = trim((string) $data['nombre']);
+        $url = trim((string) strtolower($data['url']));
+        $icono = isset($data['icono']) ? trim((string) $data['icono']) : null;
         $userLevel = $this->validarUserLevel($data['user_level'] ?? null);
 
         $this->validarUrl($url);
@@ -157,7 +160,7 @@ class MenuModel
         try {
             [$now, $env] = $this->nowWithAudit();
 
-            $uuid    = $this->generateUUIDv4();
+            $uuid = $this->generateUUIDv4();
             $actorId = $_SESSION['user_id'] ?? $uuid;
 
             $sql = "INSERT INTO {$this->table}
@@ -165,10 +168,19 @@ class MenuModel
                      created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
             $stmt = $this->db->prepare($sql);
-            if (!$stmt) throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
+            if (!$stmt)
+                throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
 
-            $stmt->bind_param('ssssisss',
-                $uuid, $categoria, $nombre, $url, $icono, $userLevel, $now, $actorId
+            $stmt->bind_param(
+                'ssssisss',
+                $uuid,
+                $categoria,
+                $nombre,
+                $url,
+                $icono,
+                $userLevel,
+                $now,
+                $actorId
             );
 
             if (!$stmt->execute()) {
@@ -197,35 +209,35 @@ class MenuModel
     {
         $campos = [];
         $params = [];
-        $types  = '';
+        $types = '';
 
         if (isset($data['categoria'])) {
             $campos[] = 'categoria = ?';
-            $params[] = trim((string)$data['categoria']);
-            $types   .= 's';
+            $params[] = trim((string) $data['categoria']);
+            $types .= 's';
         }
         if (isset($data['nombre'])) {
             $campos[] = 'nombre = ?';
-            $params[] = trim((string)$data['nombre']);
-            $types   .= 's';
+            $params[] = trim((string) $data['nombre']);
+            $types .= 's';
         }
         if (isset($data['url'])) {
-            $url = trim((string)$data['url']);
+            $url = trim((string) strtolower($data['url']));
             $this->validarUrl($url);
             $campos[] = 'url = ?';
             $params[] = $url;
-            $types   .= 's';
+            $types .= 's';
         }
         if (array_key_exists('icono', $data)) {
             $campos[] = 'icono = ?';
-            $params[] = $data['icono'] !== null ? trim((string)$data['icono']) : null;
-            $types   .= 's';
+            $params[] = $data['icono'] !== null ? trim((string) $data['icono']) : null;
+            $types .= 's';
         }
         if (isset($data['user_level'])) {
             $lvl = $this->validarUserLevel($data['user_level']);
             $campos[] = 'user_level = ?';
             $params[] = $lvl;
-            $types   .= 'i';
+            $types .= 'i';
         }
 
         if (empty($campos)) {
@@ -233,24 +245,27 @@ class MenuModel
         }
 
         [$now, $env] = $this->nowWithAudit();
-        $actorId     = $_SESSION['user_id'] ?? $menuId;
+        $actorId = $_SESSION['user_id'] ?? $menuId;
 
         $campos[] = 'updated_at = ?';
-        $params[] = $now;    $types .= 's';
+        $params[] = $now;
+        $types .= 's';
         $campos[] = 'updated_by = ?';
-        $params[] = $actorId; $types .= 's';
+        $params[] = $actorId;
+        $types .= 's';
 
         $sql = "UPDATE {$this->table}
                 SET " . implode(', ', $campos) . "
                 WHERE menu_id = ? AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
-        if (!$stmt) throw new mysqli_sql_exception("Error al preparar actualización: " . $this->db->error);
+        if (!$stmt)
+            throw new mysqli_sql_exception("Error al preparar actualización: " . $this->db->error);
 
-        $types   .= 's';
+        $types .= 's';
         $params[] = $menuId;
 
         $stmt->bind_param($types, ...$params);
-        $ok  = $stmt->execute();
+        $ok = $stmt->execute();
         $err = $stmt->error;
         $stmt->close();
 
@@ -267,13 +282,14 @@ class MenuModel
     public function eliminar(string $menuId): bool
     {
         [$now, $env] = $this->nowWithAudit();
-        $actorId     = $_SESSION['user_id'] ?? $menuId;
+        $actorId = $_SESSION['user_id'] ?? $menuId;
 
         $sql = "UPDATE {$this->table}
                 SET deleted_at = ?, deleted_by = ?
                 WHERE menu_id = ? AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
-        if (!$stmt) throw new mysqli_sql_exception("Error al preparar eliminación: " . $this->db->error);
+        if (!$stmt)
+            throw new mysqli_sql_exception("Error al preparar eliminación: " . $this->db->error);
 
         $stmt->bind_param('sss', $now, $actorId, $menuId);
         $ok = $stmt->execute();

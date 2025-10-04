@@ -48,7 +48,7 @@ $router->get('/users', ['vista' => 'modules/usuarios_view', 'vistaData' => ['tit
 
 $router->get('/modulos', ['vista' => 'modules/menus_view', 'vistaData' => ['titulo' => 'Modulos del Sistema']]);
 
-$router->get('/fincas_vista', ['vista' => 'modules/fincas_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
+$router->get('/fincas', ['vista' => 'modules/fincas_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
 
 
 

@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // 1. INICIALIZACIÓN DE DATATABLE
   const tablaMenus = $('#tablaMenus').DataTable({
     ajax: {
-      url: baseUrl + '/menus', // Endpoint para listar menús
+      url: baseUrl + 'api/menus', // Endpoint para listar menús
       dataSrc: 'data',
     },
     columns: [
@@ -62,13 +62,13 @@ document.addEventListener('DOMContentLoaded', function () {
     e.preventDefault()
     const menuId = $('#menu_id').val()
 
-    let url = baseUrl + '/menus'
+    let url = baseUrl + 'api/menus'
     // El método siempre es POST según la documentación (para crear y actualizar)
     let method = 'POST'
 
     if (menuId) {
       // Para actualizar, la URL incluye el ID
-      url = `${baseUrl}menus/${menuId}`
+      url = `${baseUrl}api/menus/${menuId}`
     }
 
     const formData = {}
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (action.includes('btn-ver')) {
       // VER DETALLES
       $.ajax({
-        url: `${baseUrl}menus/${menuId}`,
+        url: `${baseUrl}api/menus/${menuId}`,
         method: 'GET',
         success: function (response) {
           const data = response.data
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function () {
     } else if (action.includes('btn-editar')) {
       // EDITAR MENÚ
       $.ajax({
-        url: `${baseUrl}menus/${menuId}`,
+        url: `${baseUrl}api/menus/${menuId}`,
         method: 'GET',
         success: function (response) {
           const data = response.data
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }).then((result) => {
         if (result.isConfirmed) {
           $.ajax({
-            url: `${baseUrl}menus/${menuId}`,
+            url: `${baseUrl}api/menus/${menuId}`,
             method: 'DELETE',
             success: function (response) {
               Swal.fire('Eliminado', response.message, 'success')
