@@ -15,8 +15,9 @@ require_once APP_ROOT . 'models/UsersPermisosModel.php';
 // =================================================================
 // Asumimos que los datos del usuario se guardan en la sesión tras el login
 $isLoggedIn = isset($_SESSION['user_id']);
-$userLevel = $isLoggedIn ? (int) $_SESSION['user_level'] : -1; // -1 para no autenticado
+$userLevel = $isLoggedIn ? (int) $_SESSION['nivel'] : -1; // -1 para no autenticado
 $userId = $isLoggedIn ? $_SESSION['user_id'] : null;
+
 
 $flatMenuItems = [];
 
@@ -31,6 +32,7 @@ if ($isLoggedIn) {
         $permisosModel = new UsersPermisosModel();
         // Usamos el método que ya une los datos del menú
         $permisos = $permisosModel->listarPermisosConMenu($userId);
+
         // Extraemos solo la información del menú de cada permiso
         foreach ($permisos as $permiso) {
             $flatMenuItems[] = $permiso['menu'];

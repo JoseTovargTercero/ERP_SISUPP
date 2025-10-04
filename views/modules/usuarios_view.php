@@ -98,7 +98,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p><strong>ID:</strong> <span id="detalle_user_id"></span></p>
                 <p><strong>Nombre:</strong> <span id="detalle_nombre"></span></p>
                 <p><strong>Email:</strong> <span id="detalle_email"></span></p>
                 <p><strong>Nivel:</strong> <span id="detalle_nivel"></span></p>

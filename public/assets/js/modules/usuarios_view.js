@@ -14,11 +14,12 @@ document.addEventListener('DOMContentLoaded', function () {
       {
         data: 'nivel',
         render: function (data, type, row) {
-          // Puedes mapear los niveles a nombres más descriptivos
-          switch (data) {
-            case 1:
+          switch (
+            String(data) // Convertido a String para comparación segura
+          ) {
+            case '0':
               return 'Administrador'
-            case 2:
+            case '1':
               return 'Usuario'
             default:
               return 'Desconocido'
@@ -41,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <button class="btn btn-info btn-sm btn-ver" data-id="${data}" title="Ver Detalles"><i class="mdi mdi-eye"></i></button>
                 <button class="btn btn-warning btn-sm btn-editar" data-id="${data}" title="Editar"><i class="mdi mdi-pencil"></i></button>
                 
-                <button class="btn btn-success btn-sm btn-permisos" data-id="${data}" data-nombre="${row.nombre}" title="Asignar Permisos"><i class="mdi mdi-lock-open-outline"></i></button>
+                <button class="btn btn-success btn-sm btn-permisos" data-id="${data}" data-nombre="${row.nombre}" data-nivel="${row.nivel}" title="Asignar Permisos"><i class="mdi mdi-lock-open-outline"></i></button>
 
                 <button class="btn btn-danger btn-sm btn-eliminar" data-id="${data}" title="Eliminar"><i class="mdi mdi-delete"></i></button>
             </div>
@@ -187,7 +188,8 @@ document.addEventListener('DOMContentLoaded', function () {
   $('#tablaUsuarios tbody').on('click', 'button', function () {
     const action = $(this).attr('class')
     const userId = $(this).data('id')
-    const userName = $(this).data('nombre') // Obtenemos el nombre del data attribute
+    const userName = $(this).data('nombre')
+    const userLevel = $(this).data('nivel')
 
     if (action.includes('btn-ver')) {
       // VER DETALLES
@@ -196,11 +198,11 @@ document.addEventListener('DOMContentLoaded', function () {
         method: 'GET',
         success: function (response) {
           const data = response.data
-          $('#detalle_user_id').text(data.user_id)
+
           $('#detalle_nombre').text(data.nombre)
           $('#detalle_email').text(data.email)
           $('#detalle_nivel').text(
-            data.nivel == 1 ? 'Administrador' : 'Usuario'
+            data.nivel == 0 ? 'Administrador' : 'Usuario'
           )
           $('#detalle_estado').html(
             data.estado == 1
@@ -241,36 +243,47 @@ document.addEventListener('DOMContentLoaded', function () {
         },
       })
     } else if (action.includes('btn-permisos')) {
-      // <-- NUEVO BLOQUE
-      // ABRIR Y PREPARAR MODAL DE PERMISOS
+      // ===============================================================
+      // ==      LÓGICA ACTUALIZADA PARA MANEJAR NIVEL 0      ==
+      // ===============================================================
       $('#permisos_user_id').val(userId)
       $('#modalPermisosLabel span').text(userName)
-      $('#accordionPermisos').html(
-        '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></div>'
-      )
       modalPermisos.show()
 
-      // Realizar dos llamadas AJAX en paralelo para obtener todos los menús y los permisos del usuario
-      Promise.all([
-        $.ajax({ url: baseUrl + 'api/menus' }), // Endpoint para obtener todos los menús
-        $.ajax({ url: baseUrl + `api/users-permisos/user/${userId}` }), // Endpoint para los permisos del usuario
-      ])
-        .then(function (responses) {
-          const todosLosMenus = responses[0].data
-          const permisosUsuario = responses[1].data
+      // Comparamos como string para evitar problemas con tipos de datos (e.g., 0 vs "0")
+      if (String(userLevel) === '0') {
+        // Si es admin, mostrar mensaje y ocultar botón de guardar
+        const adminMessage = `
+                    <div class="alert alert-info" role="alert">
+                        <i class="mdi mdi-account-star me-2"></i>
+                        Este usuario es <strong>Administrador</strong> y ya posee acceso a todos los módulos.
+                    </div>
+                `
+        $('#accordionPermisos').html(adminMessage)
+        $('#btnGuardarPermisos').hide() // Ocultar el botón
+      } else {
+        // Si no es admin, cargar los permisos como antes
+        $('#accordionPermisos').html(
+          '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"></div></div>'
+        )
+        $('#btnGuardarPermisos').show() // Asegurarse de que el botón esté visible
 
-          // Una vez que ambas llamadas terminan, renderizar el contenido
-          renderizarAcordeonPermisos(todosLosMenus, permisosUsuario)
-        })
-        .catch(function (error) {
-          $('#accordionPermisos').html(
-            '<p class="text-danger text-center">Error al cargar los permisos.</p>'
-          )
-          console.error('Error al obtener datos de permisos:', error)
-          showErrorToast({
-            message: 'No se pudieron cargar los datos de permisos.',
+        Promise.all([
+          $.ajax({ url: baseUrl + '/api/menus' }),
+          $.ajax({ url: baseUrl + `/api/users-permisos/user/${userId}` }),
+        ])
+          .then(function (responses) {
+            renderizarAcordeonPermisos(responses[0].data, responses[1].data)
           })
-        })
+          .catch(function (error) {
+            $('#accordionPermisos').html(
+              '<p class="text-danger text-center">Error al cargar los permisos.</p>'
+            )
+            showErrorToast({
+              message: 'No se pudieron cargar los datos de permisos.',
+            })
+          })
+      }
     } else if (action.includes('btn-eliminar')) {
       // ELIMINAR USUARIO
       Swal.fire({
