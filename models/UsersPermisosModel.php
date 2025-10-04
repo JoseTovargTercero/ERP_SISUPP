@@ -46,7 +46,7 @@ class UsersPermisosModel
 
     private function existeUsuario(string $userId): bool
     {
-        $sql = "SELECT 1 FROM users WHERE user_id = ? AND (deleted_at IS NULL OR deleted_at = '') LIMIT 1";
+        $sql = "SELECT 1 FROM system_users WHERE user_id = ? AND (deleted_at IS NULL OR deleted_at = '') LIMIT 1";
         $stmt = $this->db->prepare($sql);
         if (!$stmt) throw new mysqli_sql_exception("Error al preparar verificación de usuario: " . $this->db->error);
         $stmt->bind_param('s', $userId);
