@@ -34,11 +34,12 @@ class SystemUserController
 
     // POST /system-users/login
 // POST /system-users/login
+// POST /system-users/login
 public function login(): void
 {
     $in = $this->getJsonInput();
     $email = trim($in['email'] ?? '');
-    $password = (string) ($in['contrasena'] ?? '');
+    $password = (string)($in['contrasena'] ?? '');
 
     if ($email === '' || $password === '') {
         $this->jsonResponse(false, 'Correo y contraseña son obligatorios.', null, 400);
@@ -54,38 +55,41 @@ public function login(): void
             return;
         }
 
-        // Verificar permisos asignados usando UsersPermisosModel::listarPermisosConMenu
-        // Ajusta la forma de obtener $db o el constructor según tu proyecto
-        $permisosModel = new UsersPermisosModel();
-        $permisos = $permisosModel->listarPermisosConMenu($user['user_id']);
+        // Si el nivel es 1 (Administrador), se omite la verificación de permisos
+        if ((int)$user['nivel'] !== 1) {
+            $permisosModel = new UsersPermisosModel();
+            $permisos = $permisosModel->listarPermisosConMenu($user['user_id']);
 
-        if (empty($permisos)) {
-            $this->jsonResponse(false, 'El usuario no puede ingresar porque no tiene permisos asignados.', null, 403);
-            return;
+            if (empty($permisos)) {
+                $this->jsonResponse(false, 'El usuario no puede ingresar porque no tiene permisos asignados.', null, 403);
+                return;
+            }
+
+            $user['permisos'] = $permisos;
+        } else {
+            // Acceso completo para nivel 1
+            $user['permisos'] = ['*']; // Indica acceso total
         }
 
-        // Si quieres sesión simple (opcional):
+        // Crear sesión
         $_SESSION['logged_in'] = true;
         $_SESSION['user_id']   = $user['user_id'];
         $_SESSION['nombre']    = $user['nombre'];
         $_SESSION['nivel']     = $user['nivel'];
 
-        // Puedes incluir los permisos en la respuesta si te sirve en el front
-        $user['permisos'] = $permisos;
-
         $this->jsonResponse(true, 'Inicio de sesión exitoso.', $user);
+
     } catch (DomainException $e) {
-        // Caso específico: usuario desactivado
         if ($e->getCode() === 1001 || $e->getMessage() === 'USER_DISABLED') {
             $this->jsonResponse(false, 'Este usuario ha sido desactivado y no puede ingresar.', null, 403);
             return;
         }
-        // Otros DomainException (por si en el futuro agregas más)
         $this->jsonResponse(false, 'No se pudo iniciar sesión: ' . $e->getMessage(), null, 400);
     } catch (Throwable $e) {
         $this->jsonResponse(false, 'Error al iniciar sesión: ' . $e->getMessage(), null, 500);
     }
 }
+
 
 
     // GET /system-users?limit=&offset=&incluirEliminados=0|1

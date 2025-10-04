@@ -1,5 +1,5 @@
 // agro_tabs_view.js
-import { showErrorToast } from '../helpers/helpers.js'
+import { showErrorToast, formatDate } from '../helpers/helpers.js'
 
 let DT_FINCAS, DT_APRISCOS, DT_AREAS, DT_REPORTES
 
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('pane-areas')?.addEventListener('lazyload', loadAreasTab)
   document.getElementById('pane-reportes')?.addEventListener('lazyload', loadReportesTab)
 
-  // Refrescos cuando regresas a un tab ya cargado
+  // Refrescos al volver a un tab ya cargado
   document.addEventListener('tab:refresh', ({ detail }) => {
     const { paneId } = detail || {}
     if (paneId === 'pane-fincas'   && DT_FINCAS)   DT_FINCAS.ajax.reload(null,false)
@@ -25,11 +25,38 @@ document.addEventListener('DOMContentLoaded', () => {
 /* =========================
    Helpers de fetch JSON
 ========================= */
-async function jget(url)  { return fetch(url).then(r => r.json()) }
-async function jsend(url, method, body) {
-  return fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }).then(r => r.json())
+async function jget(url){
+  const r = await fetch(url)
+  const j = await r.json().catch(()=>({}))
+  // Adaptado al contrato { value, message, data }
+  if (!j || j.value !== true) {
+    const msg = j?.message || 'Error de servidor'
+    throw new Error(msg)
+  }
+  return j
 }
-async function jdel(url)  { return fetch(url, { method:'DELETE' }).then(r => r.json()) }
+async function jsend(url, method, body){
+  const r = await fetch(url, {
+    method,
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify(body)
+  })
+  const j = await r.json().catch(()=>({}))
+  if (!j || j.value !== true) {
+    const msg = j?.message || 'Operación no completada'
+    throw new Error(msg)
+  }
+  return j
+}
+async function jdel(url){
+  const r = await fetch(url, { method:'DELETE' })
+  const j = await r.json().catch(()=>({}))
+  if (!j || j.value !== true) {
+    const msg = j?.message || 'No se pudo eliminar'
+    throw new Error(msg)
+  }
+  return j
+}
 
 /* =========================
    Carga por TAB (lazy)
@@ -37,7 +64,10 @@ async function jdel(url)  { return fetch(url, { method:'DELETE' }).then(r => r.j
 async function loadFincasTab(){
   if (!DT_FINCAS) {
     DT_FINCAS = $('#tablaFincas').DataTable({
-      ajax: { url: `${baseUrl}fincas`, dataSrc: 'data' },
+      ajax: {
+        url: `${baseUrl}fincas`,
+        dataSrc: (json) => json?.data ?? []
+      },
       columns: [
         { data: 'nombre' },
         { data: 'ubicacion', defaultContent: '' },
@@ -56,7 +86,6 @@ async function loadFincasTab(){
 }
 
 async function loadApriscosTab(){
-  // Filtros del tab (no dependemos de que otros tabs estén listos)
   await cargarFincasSelect('#filtroApriscosFinca', true)
 
   if (!DT_APRISCOS) {
@@ -67,10 +96,11 @@ async function loadApriscosTab(){
           const fincaId = $('#filtroApriscosFinca').val() || ''
           if (fincaId) d.finca_id = fincaId
         },
-        dataSrc: 'data'
+        dataSrc: (json) => json?.data ?? []
       },
       columns: [
-        { data: 'finca_nombre', defaultContent: '-' },
+        // el backend retorna nombre_finca (no finca_nombre)
+        { data: 'nombre_finca', defaultContent: '-' },
         { data: 'nombre' },
         {
           data: 'estado',
@@ -87,7 +117,6 @@ async function loadApriscosTab(){
 }
 
 async function loadAreasTab(){
-  // Cargar selects del tab (independiente del resto)
   await cargarFincasSelect('#filtroAreasFinca', true)
   await cargarApriscosSelect('#filtroAreasAprisco','', true)
 
@@ -101,13 +130,17 @@ async function loadAreasTab(){
           if (fincaId)   d.finca_id = fincaId
           if (apriscoId) d.aprisco_id = apriscoId
         },
-        dataSrc: 'data'
+        dataSrc: (json) => json?.data ?? []
       },
       columns: [
-        { data: 'finca_nombre', defaultContent:'-' },
-        { data: 'aprisco_nombre', defaultContent:'-' },
+        // usar siempre nombres, nunca UUID
+        { data: 'nombre_finca',   defaultContent:'-' },
+        { data: 'nombre_aprisco', defaultContent:'-' },
         { data: 'tipo_area' },
-        { data: null, render: (row)=> (row.nombre_personalizado || '-') + ' / ' + (row.numeracion || '-') },
+        { 
+          data: null, 
+          render: (row)=> (row.nombre_personalizado || '-') + ' / ' + (row.numeracion || '-') 
+        },
         {
           data: 'estado',
           render: v => v === 'ACTIVA'
@@ -123,7 +156,6 @@ async function loadAreasTab(){
 }
 
 async function loadReportesTab(){
-  // Cargar selects del tab (independiente del resto)
   await cargarFincasSelect('#filtroRepFinca', true)
   await cargarApriscosSelect('#filtroRepAprisco','', true)
   await cargarAreasSelect('#filtroRepArea','', true)
@@ -144,14 +176,14 @@ async function loadReportesTab(){
           if (e) d.estado_reporte = e
           if (c) d.criticidad = c
         },
-        dataSrc: 'data'
+        dataSrc: (json) => json?.data ?? []
       },
       columns: [
-        { data: 'fecha_reporte', render: v => v ? new Date(v).toLocaleString() : '-' },
+        { data: 'fecha_reporte', render: v => v ? formatDate(v) : '-' },
         { data: 'titulo' },
-        { data: 'finca_nombre', defaultContent:'-' },
+        { data: 'finca_nombre',   defaultContent:'-' },
         { data: 'aprisco_nombre', defaultContent:'-' },
-        { data: 'area_label', defaultContent:'-' },
+        { data: 'area_label',     defaultContent:'-' },
         { data: 'criticidad', render: v => critBadge(v) },
         { data: 'estado_reporte', render: v => estadoRepBadge(v) },
         { data: 'reporte_id', render: id => actionBtns('reporte', id), orderable:false, searchable:false }
@@ -167,7 +199,6 @@ async function loadReportesTab(){
    Botones / Eventos
 ========================= */
 function initButtons() {
-  // Refrescar todo (sólo refresca lo ya cargado)
   document.getElementById('btnRefrescarTodo').addEventListener('click', () => {
     DT_FINCAS?.ajax.reload(null,false)
     DT_APRISCOS?.ajax.reload(null,false)
@@ -210,7 +241,7 @@ function initButtons() {
   /* ---- Delegación acciones ---- */
   $(document).on('click', 'button.btn-ver,button.btn-editar,button.btn-eliminar', handleRowAction)
 
-  /* ---- Filtros en cascada (dentro del mismo tab) ---- */
+  /* ---- Filtros en cascada ---- */
   $('#filtroApriscosFinca').on('change', ()=> DT_APRISCOS?.ajax.reload())
 
   $('#filtroAreasFinca').on('change', async function(){
@@ -230,7 +261,7 @@ function initButtons() {
   })
   $('#filtroRepArea,#filtroRepEstado,#filtroRepCrit').on('change', ()=> DT_REPORTES?.ajax.reload())
 
-  /* ---- Cascada en modal de Reporte ---- */
+  /* ---- Cascadas en modales ---- */
   $('#rep_finca_id').on('change', async function(){
     await cargarApriscosSelect('#rep_aprisco_id', this.value, true)
     await cargarAreasSelect('#rep_area_id', $('#rep_aprisco_id').val(), true)
@@ -238,8 +269,6 @@ function initButtons() {
   $('#rep_aprisco_id').on('change', async function(){
     await cargarAreasSelect('#rep_area_id', this.value, true)
   })
-
-  /* ---- Cascada en modal de Área ---- */
   $('#area_finca_id').on('change', async function(){
     await cargarApriscosSelect('#area_aprisco_id', this.value)
   })
@@ -248,52 +277,58 @@ function initButtons() {
 /* =========================
    Carga de selects (dinámicos)
 ========================= */
-// Cargar Fincas (sin /options)
 async function cargarFincasSelect(selector, includeEmpty=false) {
-  const url = `${baseUrl}fincas`; // usa listar
-  const resp = await jget(url);
-  const list = (resp && resp.data) ? resp.data : [];
-  const $sel = $(selector); 
-  $sel.empty();
-  if (includeEmpty) $sel.append(new Option(selector.includes('filtro') ? 'Todas' : '', ''));
-  // asumo que el listar retorna { finca_id, nombre }
-  list.forEach(x => $sel.append(new Option(x.nombre, x.finca_id)));
+  try {
+    const resp = await jget(`${baseUrl}fincas`)
+    const list = resp?.data ?? []
+    const $sel = $(selector)
+    $sel.empty()
+    if (includeEmpty) $sel.append(new Option(selector.includes('filtro') ? 'Todas' : '', ''))
+    list.forEach(x => $sel.append(new Option(x.nombre, x.finca_id)))
+  } catch (err) {
+    showErrorToast({ message: err.message })
+  }
 }
 
-// Cargar Apriscos (sin /options) — acepta filtro por finca_id
 async function cargarApriscosSelect(selector, fincaId, includeEmpty=false) {
-  const url = fincaId 
-    ? `${baseUrl}apriscos?finca_id=${encodeURIComponent(fincaId)}`
-    : `${baseUrl}apriscos`;
-  const resp = await jget(url);
-  const list = (resp && resp.data) ? resp.data : [];
-  const $sel = $(selector); 
-  $sel.empty();
-  if (includeEmpty) $sel.append(new Option(selector.includes('filtro') ? 'Todos' : '', ''));
-  // asumo que el listar retorna { aprisco_id, nombre }
-  list.forEach(x => $sel.append(new Option(x.nombre, x.aprisco_id)));
+  try {
+    const url = fincaId 
+      ? `${baseUrl}apriscos?finca_id=${encodeURIComponent(fincaId)}`
+      : `${baseUrl}apriscos`
+    const resp = await jget(url)
+    const list = resp?.data ?? []
+    const $sel = $(selector)
+    $sel.empty()
+    if (includeEmpty) $sel.append(new Option(selector.includes('filtro') ? 'Todos' : '', ''))
+    // usar nombre (no UUID)
+    list.forEach(x => $sel.append(new Option(x.nombre, x.aprisco_id)))
+  } catch (err) {
+    showErrorToast({ message: err.message })
+  }
 }
 
-// Cargar Áreas (sin /options) — acepta filtro por aprisco_id
 async function cargarAreasSelect(selector, apriscoId, includeEmpty=false) {
-  const url = apriscoId 
-    ? `${baseUrl}areas?aprisco_id=${encodeURIComponent(apriscoId)}`
-    : `${baseUrl}areas`;
-  const resp = await jget(url);
-  const list = (resp && resp.data) ? resp.data : [];
-  const $sel = $(selector); 
-  $sel.empty();
-  if (includeEmpty) $sel.append(new Option(selector.includes('filtro') ? 'Todas' : '', ''));
-  // asumo que el listar retorna { area_id, nombre_personalizado, numeracion }
-  list.forEach(x => {
-    const label = x.label || (x.nombre_personalizado || x.numeracion || x.area_id);
-    $sel.append(new Option(label, x.area_id));
-  });
+  try {
+    const url = apriscoId 
+      ? `${baseUrl}areas?aprisco_id=${encodeURIComponent(apriscoId)}`
+      : `${baseUrl}areas`
+    const resp = await jget(url)
+    const list = resp?.data ?? []
+    const $sel = $(selector)
+    $sel.empty()
+    if (includeEmpty) $sel.append(new Option(selector.includes('filtro') ? 'Todas' : '', ''))
+    list.forEach(x => {
+      // etiqueta agradable: nombre_personalizado / numeracion (o "Área" + numeración)
+      const nice = x.nombre_personalizado || (x.numeracion ? `Área ${x.numeracion}` : x.area_id)
+      $sel.append(new Option(nice, x.area_id))
+    })
+  } catch (err) {
+    showErrorToast({ message: err.message })
+  }
 }
-
 
 /* =========================
-   Submit handlers (POST para actualizar)
+   Submit handlers (POST)
 ========================= */
 async function submitFinca(e){
   e.preventDefault()
@@ -305,12 +340,14 @@ async function submitFinca(e){
   }
   const isEdit = !!body.finca_id
   const url    = isEdit ? `${baseUrl}fincas/${body.finca_id}` : `${baseUrl}fincas`
-  const res = await jsend(url, 'POST', body)
-  if (res.estado === 'exito' || res.success) {
+  try {
+    const res = await jsend(url, 'POST', body)
     bootstrap.Modal.getInstance(document.getElementById('modalFinca')).hide()
     DT_FINCAS?.ajax.reload(null,false)
-    Swal.fire('Éxito', res.mensaje || res.message || 'Guardado', 'success')
-  } else { showErrorToast(res) }
+    Swal.fire('Éxito', res.message || 'Guardado', 'success')
+  } catch (err) {
+    showErrorToast({ message: err.message })
+  }
 }
 
 async function submitAprisco(e){
@@ -323,12 +360,14 @@ async function submitAprisco(e){
   }
   const isEdit = !!body.aprisco_id
   const url    = isEdit ? `${baseUrl}apriscos/${body.aprisco_id}` : `${baseUrl}apriscos`
-  const res = await jsend(url, 'POST', body)
-  if (res.estado === 'exito' || res.success) {
+  try {
+    const res = await jsend(url, 'POST', body)
     bootstrap.Modal.getInstance(document.getElementById('modalAprisco')).hide()
     DT_APRISCOS?.ajax.reload(null,false)
-    Swal.fire('Éxito', res.mensaje || res.message || 'Guardado', 'success')
-  } else { showErrorToast(res) }
+    Swal.fire('Éxito', res.message || 'Guardado', 'success')
+  } catch (err) {
+    showErrorToast({ message: err.message })
+  }
 }
 
 async function submitArea(e){
@@ -343,21 +382,23 @@ async function submitArea(e){
   }
   const isEdit = !!body.area_id
   const url    = isEdit ? `${baseUrl}areas/${body.area_id}` : `${baseUrl}areas`
-  const res = await jsend(url, 'POST', body)
-  if (res.estado === 'exito' || res.success) {
+  try {
+    const res = await jsend(url, 'POST', body)
     bootstrap.Modal.getInstance(document.getElementById('modalArea')).hide()
     DT_AREAS?.ajax.reload(null,false)
-    Swal.fire('Éxito', res.mensaje || res.message || 'Guardado', 'success')
-  } else { showErrorToast(res) }
+    Swal.fire('Éxito', res.message || 'Guardado', 'success')
+  } catch (err) {
+    showErrorToast({ message: err.message })
+  }
 }
 
 async function submitReporte(e){
   e.preventDefault()
   const body = {
     reporte_id: $('#reporte_id').val() || undefined,
-    finca_id: $('#rep_finca_id').val() || null,
+    finca_id:   $('#rep_finca_id').val() || null,
     aprisco_id: $('#rep_aprisco_id').val() || null,
-    area_id: $('#rep_area_id').val() || null,
+    area_id:    $('#rep_area_id').val() || null,
     titulo: $('#rep_titulo').val(),
     descripcion: $('#rep_descripcion').val(),
     criticidad: $('#rep_criticidad').val(),
@@ -365,12 +406,14 @@ async function submitReporte(e){
   }
   const isEdit = !!body.reporte_id
   const url    = isEdit ? `${baseUrl}reportes_dano/${body.reporte_id}` : `${baseUrl}reportes_dano`
-  const res = await jsend(url, 'POST', body)
-  if (res.estado === 'exito' || res.success) {
+  try {
+    const res = await jsend(url, 'POST', body)
     bootstrap.Modal.getInstance(document.getElementById('modalReporte')).hide()
     DT_REPORTES?.ajax.reload(null,false)
-    Swal.fire('Éxito', res.mensaje || res.message || 'Guardado', 'success')
-  } else { showErrorToast(res) }
+    Swal.fire('Éxito', res.message || 'Guardado', 'success')
+  } catch (err) {
+    showErrorToast({ message: err.message })
+  }
 }
 
 /* =========================
@@ -385,6 +428,7 @@ function actionBtns(tipo, id) {
     </div>
   `
 }
+
 function critBadge(v) {
   if (v === 'ALTA')  return '<span class="badge bg-danger">Alta</span>'
   if (v === 'MEDIA') return '<span class="badge bg-warning text-dark">Media</span>'
@@ -412,30 +456,35 @@ async function handleRowAction(e){
     })
     if (!ok.isConfirmed) return
 
-    const url = `${baseUrl}${tipoRoute(tipo)}/${id}`
-    const res = await jdel(url)
-    if (res.estado === 'exito' || res.success) {
+    try {
+      const url = `${baseUrl}${tipoRoute(tipo)}/${id}`
+      const res = await jdel(url)
       reloadDT(tipo)
-      Swal.fire('Eliminado', res.mensaje || res.message || 'Registro eliminado', 'success')
-      // Opcional: si el tab tiene selects, refrescamos sus opciones
+      Swal.fire('Eliminado', res.message || 'Registro eliminado', 'success')
       if (tipo !== 'reporte') await refreshTabSelects(tipo)
-    } else { showErrorToast(res) }
+    } catch (err) {
+      showErrorToast({ message: err.message })
+    }
     return
   }
 
   // Ver / Editar → obtener registro
-  const url = `${baseUrl}${tipoRoute(tipo)}/${id}`
-  const res = await jget(url)
-  if (!(res && res.data)) { showErrorToast(res); return }
-
-  if ($btn.hasClass('btn-ver')) {
-    Swal.fire({
-      title: 'Detalle',
-      html: `<pre style="text-align:left;white-space:pre-wrap">${escapeHtml(JSON.stringify(res.data, null, 2))}</pre>`,
-      width: 700
-    })
-  } else if ($btn.hasClass('btn-editar')) {
-    await openEditModal(tipo, res.data)
+  try {
+    const url = `${baseUrl}${tipoRoute(tipo)}/${id}`
+    const res = await jget(url)         // { value, message, data }
+    const row = res.data
+    if ($btn.hasClass('btn-ver')) {
+      Swal.fire({
+        title: 'Detalle',
+        html: renderDetailCard(tipo, row),
+        width: 720,
+        showCloseButton: true
+      })
+    } else if ($btn.hasClass('btn-editar')) {
+      await openEditModal(tipo, row)
+    }
+  } catch (err) {
+    showErrorToast({ message: err.message })
   }
 }
 
@@ -457,7 +506,6 @@ async function refreshTabSelects(tipo){
     await cargarFincasSelect('#filtroAreasFinca',   true)
     await cargarFincasSelect('#filtroRepFinca',     true)
   } else if (tipo==='aprisco'){
-    // Actualizar combos que dependen de apriscos
     const fincaAreas = $('#filtroAreasFinca').val() || ''
     await cargarApriscosSelect('#filtroAreasAprisco', fincaAreas, true)
 
@@ -467,6 +515,76 @@ async function refreshTabSelects(tipo){
     const apriscoRep = $('#filtroRepAprisco').val() || ''
     await cargarAreasSelect('#filtroRepArea', apriscoRep, true)
   }
+}
+
+/* =========================
+   Vista de detalle bonita
+========================= */
+function renderDetailCard(tipo, d = {}){
+  const V = (x) => (x ?? '-')  // helper
+  if (tipo === 'finca') {
+    return `
+      <div class="detail-card">
+        <div class="detail-grid">
+          <div><span class="label">Nombre</span><span class="value">${V(d.nombre)}</span></div>
+          <div><span class="label">Estado</span><span class="value">${badgeEstadoFinca(d.estado)}</span></div>
+          <div><span class="label">Ubicación</span><span class="value">${V(d.ubicacion)}</span></div>
+          <div><span class="label">Creado</span><span class="value">${d.created_at ? formatDate(d.created_at) : '-'}</span></div>
+        </div>
+      </div>
+    `
+  }
+  if (tipo === 'aprisco') {
+    return `
+      <div class="detail-card">
+        <div class="detail-grid">
+          <div><span class="label">Finca</span><span class="value">${V(d.nombre_finca)}</span></div>
+          <div><span class="label">Estado</span><span class="value">${badgeEstadoAprisco(d.estado)}</span></div>
+          <div><span class="label">Nombre</span><span class="value">${V(d.nombre)}</span></div>
+          <div><span class="label">Creado</span><span class="value">${d.created_at ? formatDate(d.created_at) : '-'}</span></div>
+        </div>
+      </div>
+    `
+  }
+  if (tipo === 'area') {
+    return `
+      <div class="detail-card">
+        <div class="detail-grid">
+          <div><span class="label">Finca</span><span class="value">${V(d.nombre_finca)}</span></div>
+          <div><span class="label">Aprisco</span><span class="value">${V(d.nombre_aprisco)}</span></div>
+          <div><span class="label">Tipo</span><span class="value">${V(d.tipo_area)}</span></div>
+          <div><span class="label">Nombre/Numeración</span><span class="value">${V(d.nombre_personalizado)} / ${V(d.numeracion)}</span></div>
+          <div><span class="label">Estado</span><span class="value">${badgeEstadoFinca(d.estado)}</span></div>
+          <div><span class="label">Creado</span><span class="value">${d.created_at ? formatDate(d.created_at) : '-'}</span></div>
+        </div>
+      </div>
+    `
+  }
+  // reporte
+  return `
+    <div class="detail-card">
+      <div class="detail-grid">
+        <div><span class="label">Título</span><span class="value">${V(d.titulo)}</span></div>
+        <div><span class="label">Fecha</span><span class="value">${d.fecha_reporte ? formatDate(d.fecha_reporte) : '-'}</span></div>
+        <div><span class="label">Finca</span><span class="value">${V(d.finca_nombre)}</span></div>
+        <div><span class="label">Aprisco</span><span class="value">${V(d.aprisco_nombre)}</span></div>
+        <div><span class="label">Área</span><span class="value">${V(d.area_label)}</span></div>
+        <div><span class="label">Criticidad</span><span class="value">${critBadge(V(d.criticidad))}</span></div>
+        <div><span class="label">Estado</span><span class="value">${estadoRepBadge(V(d.estado_reporte))}</span></div>
+        <div style="grid-column:1/-1"><span class="label">Descripción</span><div class="value" style="white-space:pre-wrap">${V(d.descripcion)}</div></div>
+      </div>
+    </div>
+  `
+}
+function badgeEstadoFinca(v){
+  return v === 'ACTIVA'
+    ? '<span class="badge bg-success">Activa</span>'
+    : '<span class="badge bg-secondary">Inactiva</span>'
+}
+function badgeEstadoAprisco(v){
+  return v === 'ACTIVO'
+    ? '<span class="badge bg-success">Activo</span>'
+    : '<span class="badge bg-secondary">Inactivo</span>'
 }
 
 /* =========================
@@ -532,4 +650,6 @@ function resetReporteForm(){ $('#formReporte')[0].reset(); $('#reporte_id').val(
 /* =========================
    Util
 ========================= */
-function escapeHtml(str){ return str ? str.replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])) : '' }
+function escapeHtml(str){ 
+  return str ? str.replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])) : '' 
+}

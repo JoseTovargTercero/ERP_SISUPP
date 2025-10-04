@@ -63,14 +63,15 @@ class AreaModel
 
     /**
      * Lista áreas (por defecto excluye eliminadas).
-     * Filtros opcionales: aprisco_id, tipo_area
+     * Filtros opcionales: aprisco_id, tipo_area, finca_id
      */
     public function listar(
         int $limit = 100,
         int $offset = 0,
         bool $incluirEliminados = false,
         ?string $apriscoId = null,
-        ?string $tipoArea = null
+        ?string $tipoArea = null,
+        ?string $fincaId = null
     ): array {
         $where  = [];
         $params = [];
@@ -89,14 +90,32 @@ class AreaModel
             $params[] = $tipoArea;
             $types   .= 's';
         }
+        if ($fincaId) {
+            // filtra por finca del aprisco
+            $where[]  = 'ap.finca_id = ?';
+            $params[] = $fincaId;
+            $types   .= 's';
+        }
 
         $whereSql = implode(' AND ', $where);
 
-        $sql = "SELECT a.area_id, a.aprisco_id, ap.nombre AS nombre_aprisco,
-                       a.nombre_personalizado, a.tipo_area, a.numeracion, a.estado,
-                       a.created_at, a.created_by, a.updated_at, a.updated_by
+        $sql = "SELECT 
+                    a.area_id,
+                    a.aprisco_id,
+                    ap.nombre AS nombre_aprisco,
+                    ap.finca_id,
+                    f.nombre AS nombre_finca,
+                    a.nombre_personalizado,
+                    a.tipo_area,
+                    a.numeracion,
+                    a.estado,
+                    a.created_at,
+                    a.created_by,
+                    a.updated_at,
+                    a.updated_by
                 FROM {$this->table} a
                 LEFT JOIN apriscos ap ON ap.aprisco_id = a.aprisco_id
+                LEFT JOIN fincas f    ON f.finca_id    = ap.finca_id
                 WHERE {$whereSql}
                 ORDER BY a.created_at DESC, a.tipo_area ASC, a.numeracion ASC
                 LIMIT ? OFFSET ?";
@@ -115,33 +134,47 @@ class AreaModel
         $stmt->close();
         return $data;
     }
-public function getOptions($apriscoId = null)
-{
-    $sql = "SELECT area_id,
-                   COALESCE(nombre_personalizado, numeracion, area_id) AS label
-            FROM {$this->table}
-            WHERE deleted_at IS NULL";
-    if ($apriscoId) {
-        $sql .= " AND aprisco_id = ?";
-        $stmt = $this->db->prepare($sql . " ORDER BY label ASC");
-        $stmt->bind_param("s", $apriscoId);
-        $stmt->execute();
-        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    } else {
-        $sql .= " ORDER BY label ASC";
-        $stmt = $this->db->query($sql);
-        return $stmt->fetch_all(MYSQLI_ASSOC);
+
+    public function getOptions($apriscoId = null)
+    {
+        $sql = "SELECT area_id,
+                       COALESCE(nombre_personalizado, numeracion, area_id) AS label
+                FROM {$this->table}
+                WHERE deleted_at IS NULL";
+        if ($apriscoId) {
+            $sql .= " AND aprisco_id = ?";
+            $stmt = $this->db->prepare($sql . " ORDER BY label ASC");
+            $stmt->bind_param("s", $apriscoId);
+            $stmt->execute();
+            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        } else {
+            $sql .= " ORDER BY label ASC";
+            $stmt = $this->db->query($sql);
+            return $stmt->fetch_all(MYSQLI_ASSOC);
+        }
     }
-}
 
     public function obtenerPorId(string $areaId): ?array
     {
-        $sql = "SELECT a.area_id, a.aprisco_id, ap.nombre AS nombre_aprisco,
-                       a.nombre_personalizado, a.tipo_area, a.numeracion, a.estado,
-                       a.created_at, a.created_by, a.updated_at, a.updated_by,
-                       a.deleted_at, a.deleted_by
+        $sql = "SELECT 
+                    a.area_id,
+                    a.aprisco_id,
+                    ap.nombre AS nombre_aprisco,
+                    ap.finca_id,
+                    f.nombre AS nombre_finca,
+                    a.nombre_personalizado,
+                    a.tipo_area,
+                    a.numeracion,
+                    a.estado,
+                    a.created_at,
+                    a.created_by,
+                    a.updated_at,
+                    a.updated_by,
+                    a.deleted_at,
+                    a.deleted_by
                 FROM {$this->table} a
                 LEFT JOIN apriscos ap ON ap.aprisco_id = a.aprisco_id
+                LEFT JOIN fincas f    ON f.finca_id    = ap.finca_id
                 WHERE a.area_id = ?";
         $stmt = $this->db->prepare($sql);
         if (!$stmt) throw new mysqli_sql_exception("Error al preparar consulta: " . $this->db->error);
@@ -160,7 +193,6 @@ public function getOptions($apriscoId = null)
      * Crea un área.
      * Requeridos: aprisco_id, tipo_area
      * Opcionales: nombre_personalizado, numeracion, estado('ACTIVA'|'INACTIVA')
-     * Reglas: valida existencia de aprisco y tipo_area permitido.
      */
     public function crear(array $data): string
     {

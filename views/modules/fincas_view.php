@@ -15,20 +15,16 @@
   <!-- Tabs -->
   <ul class="nav nav-tabs" id="agroTabs" role="tablist">
     <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="tab-fincas" data-bs-toggle="tab" data-bs-target="#pane-fincas" type="button"
-        role="tab">Fincas</button>
+      <button class="nav-link active" id="tab-fincas" data-bs-toggle="tab" data-bs-target="#pane-fincas" type="button" role="tab">Fincas</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-apriscos" data-bs-toggle="tab" data-bs-target="#pane-apriscos" type="button"
-        role="tab">Apriscos</button>
+      <button class="nav-link" id="tab-apriscos" data-bs-toggle="tab" data-bs-target="#pane-apriscos" type="button" role="tab">Apriscos</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-areas" data-bs-toggle="tab" data-bs-target="#pane-areas" type="button"
-        role="tab">Áreas</button>
+      <button class="nav-link" id="tab-areas" data-bs-toggle="tab" data-bs-target="#pane-areas" type="button" role="tab">Áreas</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-reportes" data-bs-toggle="tab" data-bs-target="#pane-reportes" type="button"
-        role="tab">Reportes de Daño</button>
+      <button class="nav-link" id="tab-reportes" data-bs-toggle="tab" data-bs-target="#pane-reportes" type="button" role="tab">Reportes de Daño</button>
     </li>
   </ul>
 
@@ -41,13 +37,13 @@
             <h5 class="mb-0">Fincas</h5>
             <button class="btn btn-primary" id="btnNuevaFinca"><i class="mdi mdi-plus"></i> Nueva Finca</button>
           </div>
-          <table id="tablaFincas" class="table table-striped table-hover" style="width:100%">
+          <table id="tablaFincas" class="table table-striped table-hover align-middle" style="width:100%">
             <thead>
               <tr>
                 <th>Nombre</th>
                 <th>Ubicación</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                <th class="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -72,13 +68,13 @@
             <button class="btn btn-primary" id="btnNuevoAprisco"><i class="mdi mdi-plus"></i> Nuevo Aprisco</button>
           </div>
 
-          <table id="tablaApriscos" class="table table-striped table-hover" style="width:100%">
+          <table id="tablaApriscos" class="table table-striped table-hover align-middle" style="width:100%">
             <thead>
               <tr>
                 <th>Finca</th>
                 <th>Nombre</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                <th class="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -109,7 +105,7 @@
             <button class="btn btn-primary" id="btnNuevaArea"><i class="mdi mdi-plus"></i> Nueva Área</button>
           </div>
 
-          <table id="tablaAreas" class="table table-striped table-hover" style="width:100%">
+          <table id="tablaAreas" class="table table-striped table-hover align-middle" style="width:100%">
             <thead>
               <tr>
                 <th>Finca</th>
@@ -117,7 +113,7 @@
                 <th>Tipo</th>
                 <th>Nombre/Número</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                <th class="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -172,7 +168,7 @@
             <button class="btn btn-primary" id="btnNuevoReporte"><i class="mdi mdi-plus"></i> Nuevo Reporte</button>
           </div>
 
-          <table id="tablaReportes" class="table table-striped table-hover" style="width:100%">
+          <table id="tablaReportes" class="table table-striped table-hover align-middle" style="width:100%">
             <thead>
               <tr>
                 <th>Fecha</th>
@@ -182,7 +178,7 @@
                 <th>Área</th>
                 <th>Criticidad</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                <th class="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -191,6 +187,18 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ====== Offcanvas Detalle Bonito (para ver registros sin JSON) ====== -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasDetalle" aria-labelledby="offcanvasDetalleLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="offcanvasDetalleLabel">Detalle</h5>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    <!-- aquí inyectas desde JS el HTML de detalle -->
+    <div id="detailContent"></div>
   </div>
 </div>
 
@@ -300,8 +308,7 @@
           <div class="mb-3">
             <label class="form-label">Nombre Personalizado / Numeración</label>
             <div class="d-flex gap-2">
-              <input type="text" class="form-control" id="area_nombre_personalizado" name="nombre_personalizado"
-                placeholder="Opcional">
+              <input type="text" class="form-control" id="area_nombre_personalizado" name="nombre_personalizado" placeholder="Opcional">
               <input type="text" class="form-control" id="area_numeracion" name="numeracion" placeholder="Opcional">
             </div>
           </div>
@@ -386,6 +393,14 @@
   </div>
 </div>
 
+<!-- Helpers UI para detalle (estilos) -->
+<style>
+  .detail-card .label { color:#6b7280; font-size:.875rem; display:block; margin-bottom:.125rem; }
+  .detail-card .value { font-weight:600; color:#111827; }
+  .detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem .75rem; }
+  @media (max-width:576px){ .detail-grid{ grid-template-columns:1fr; } }
+</style>
+
 <script>
   const baseUrl = "<?= BASE_URL ?>";
 </script>
@@ -393,7 +408,6 @@
 <script>
   // Lazy-load por tab
   (function () {
-    // 1) Registrar los listeners de cambio de tab apenas el DOM esté listo
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('#agroTabs .nav-link').forEach(btn => {
         btn.addEventListener('shown.bs.tab', (ev) => {
@@ -401,27 +415,21 @@
           const pane = document.getElementById(paneId);
           if (!pane) return;
 
-          // Primer load del pane
           if (!pane.dataset.loaded) {
             pane.dispatchEvent(new Event('lazyload'));
             pane.dataset.loaded = '1';
           } else {
-            // Refresco al re-entrar al tab
             document.dispatchEvent(new CustomEvent('tab:refresh', { detail: { paneId } }));
           }
         });
       });
     });
 
-    // 2) Disparar la carga inicial de FINCAS cuando todo ya cargó (incluido el módulo)
     window.addEventListener('load', () => {
-      // Determinar el tab activo o forzar Fincas como fallback
       const activeBtn = document.querySelector('#agroTabs .nav-link.active');
       const targetSelector = activeBtn?.getAttribute('data-bs-target') || '#pane-fincas';
       const pane = document.querySelector(targetSelector);
-
       if (pane && !pane.dataset.loaded) {
-        // Lanza el lazyload inicial de Fincas (u otro tab activo)
         pane.dispatchEvent(new Event('lazyload'));
         pane.dataset.loaded = '1';
       }
@@ -429,6 +437,5 @@
   })();
 </script>
 
-<script type="module" src="<?= BASE_URL ?>/public/assets/js/modules/agro_tabs_view.js"></script>
-
+<!-- Deja un solo include del módulo -->
 <script type="module" src="<?= BASE_URL ?>/public/assets/js/modules/agro_tabs_view.js"></script>

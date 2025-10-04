@@ -102,21 +102,35 @@ class ReporteDanoModel
         if ($apriscoId) { $where[] = 'r.aprisco_id = ?'; $params[] = $apriscoId; $types .= 's'; }
         if ($areaId)    { $where[] = 'r.area_id = ?';    $params[] = $areaId;    $types .= 's'; }
 
-        if ($criticidad) { $this->validarCriticidad($criticidad); $where[] = 'r.criticidad = ?'; $params[] = $criticidad; $types .= 's'; }
-        if ($estado)     { $this->validarEstadoReporte($estado);  $where[] = 'r.estado_reporte = ?'; $params[] = $estado; $types .= 's'; }
+        if ($criticidad) { $this->validarCriticidad($criticidad); $where[] = 'r.criticidad = ?';       $params[] = $criticidad; $types .= 's'; }
+        if ($estado)     { $this->validarEstadoReporte($estado);  $where[] = 'r.estado_reporte = ?';   $params[] = $estado;     $types .= 's'; }
 
         $whereSql = implode(' AND ', $where);
 
-        $sql = "SELECT r.reporte_id, r.finca_id, f.nombre AS nombre_finca,
-                       r.aprisco_id, a2.nombre AS nombre_aprisco,
-                       r.area_id, ar.nombre_personalizado AS nombre_area, ar.tipo_area,
-                       r.titulo, r.descripcion, r.criticidad, r.estado_reporte,
-                       r.fecha_reporte, r.fecha_cierre,
-                       r.created_at, r.created_by, r.updated_at, r.updated_by
+        $sql = "SELECT 
+                    r.reporte_id,
+                    r.finca_id,
+                    f.nombre  AS finca_nombre,
+                    r.aprisco_id,
+                    a2.nombre AS aprisco_nombre,
+                    r.area_id,
+                    -- etiqueta amigable para el área
+                    COALESCE(ar.nombre_personalizado, ar.numeracion, ar.area_id) AS area_label,
+                    ar.tipo_area,
+                    r.titulo,
+                    r.descripcion,
+                    r.criticidad,
+                    r.estado_reporte,
+                    r.fecha_reporte,
+                    r.fecha_cierre,
+                    r.created_at,
+                    r.created_by,
+                    r.updated_at,
+                    r.updated_by
                 FROM {$this->table} r
-                LEFT JOIN fincas   f  ON f.finca_id   = r.finca_id
-                LEFT JOIN apriscos a2 ON a2.aprisco_id = r.aprisco_id
-                LEFT JOIN areas    ar ON ar.area_id    = r.area_id
+                LEFT JOIN fincas   f  ON f.finca_id    = r.finca_id
+                LEFT JOIN apriscos a2 ON a2.aprisco_id  = r.aprisco_id
+                LEFT JOIN areas    ar ON ar.area_id     = r.area_id
                 WHERE {$whereSql}
                 ORDER BY r.fecha_reporte DESC, r.criticidad DESC
                 LIMIT ? OFFSET ?";
@@ -138,17 +152,33 @@ class ReporteDanoModel
 
     public function obtenerPorId(string $reporteId): ?array
     {
-        $sql = "SELECT r.reporte_id, r.finca_id, f.nombre AS nombre_finca,
-                       r.aprisco_id, a2.nombre AS nombre_aprisco,
-                       r.area_id, ar.nombre_personalizado AS nombre_area, ar.tipo_area,
-                       r.titulo, r.descripcion, r.criticidad, r.estado_reporte,
-                       r.fecha_reporte, r.reportado_por, r.solucionado_por, r.fecha_cierre,
-                       r.created_at, r.created_by, r.updated_at, r.updated_by,
-                       r.deleted_at, r.deleted_by
+        $sql = "SELECT 
+                    r.reporte_id,
+                    r.finca_id,
+                    f.nombre  AS finca_nombre,
+                    r.aprisco_id,
+                    a2.nombre AS aprisco_nombre,
+                    r.area_id,
+                    COALESCE(ar.nombre_personalizado, ar.numeracion, ar.area_id) AS area_label,
+                    ar.tipo_area,
+                    r.titulo,
+                    r.descripcion,
+                    r.criticidad,
+                    r.estado_reporte,
+                    r.fecha_reporte,
+                    r.reportado_por,
+                    r.solucionado_por,
+                    r.fecha_cierre,
+                    r.created_at,
+                    r.created_by,
+                    r.updated_at,
+                    r.updated_by,
+                    r.deleted_at,
+                    r.deleted_by
                 FROM {$this->table} r
-                LEFT JOIN fincas   f  ON f.finca_id   = r.finca_id
-                LEFT JOIN apriscos a2 ON a2.aprisco_id = r.aprisco_id
-                LEFT JOIN areas    ar ON ar.area_id    = r.area_id
+                LEFT JOIN fincas   f  ON f.finca_id    = r.finca_id
+                LEFT JOIN apriscos a2 ON a2.aprisco_id  = r.aprisco_id
+                LEFT JOIN areas    ar ON ar.area_id     = r.area_id
                 WHERE r.reporte_id = ?";
 
         $stmt = $this->db->prepare($sql);
@@ -168,8 +198,6 @@ class ReporteDanoModel
      * Crea un reporte de daño.
      * Requeridos: titulo, descripcion
      * Opcionales: finca_id, aprisco_id, area_id (cualquiera o combinación), criticidad, estado_reporte
-     * Notas:
-     *  - Si envías finca/aprisco/area, se valida que existan (si no, error).
      */
     public function crear(array $data): string
     {
@@ -181,9 +209,9 @@ class ReporteDanoModel
         $apriscoId = isset($data['aprisco_id']) && $data['aprisco_id'] !== '' ? (string)$data['aprisco_id'] : null;
         $areaId    = isset($data['area_id'])    && $data['area_id']    !== '' ? (string)$data['area_id']    : null;
 
-        if ($fincaId && !$this->fincaExiste($fincaId))     throw new RuntimeException('La finca no existe o está eliminada.');
+        if ($fincaId && !$this->fincaExiste($fincaId))       throw new RuntimeException('La finca no existe o está eliminada.');
         if ($apriscoId && !$this->apriscoExiste($apriscoId)) throw new RuntimeException('El aprisco no existe o está eliminado.');
-        if ($areaId && !$this->areaExiste($areaId))         throw new RuntimeException('El área no existe o está eliminada.');
+        if ($areaId && !$this->areaExiste($areaId))          throw new RuntimeException('El área no existe o está eliminada.');
 
         $titulo      = trim((string)$data['titulo']);
         $descripcion = trim((string)$data['descripcion']);
