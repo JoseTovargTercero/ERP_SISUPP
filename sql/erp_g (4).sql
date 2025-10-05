@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 03-10-2025 a las 16:54:03
+-- Tiempo de generación: 05-10-2025 a las 17:12:17
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -45,18 +45,20 @@ CREATE TABLE `alertas` (
 
 CREATE TABLE `animales` (
   `animal_id` char(36) NOT NULL,
-  `codigo_identificacion` varchar(80) NOT NULL,
-  `fotografia_url` varchar(255) DEFAULT NULL,
-  `raza` varchar(100) DEFAULT NULL,
+  `identificador` varchar(100) NOT NULL,
   `sexo` enum('MACHO','HEMBRA') NOT NULL,
+  `especie` enum('BOVINO','OVINO','CAPRINO','PORCINO','OTRO') NOT NULL,
+  `raza` varchar(100) DEFAULT NULL,
+  `color` varchar(80) DEFAULT NULL,
   `fecha_nacimiento` date DEFAULT NULL,
-  `peso_nacer_kg` decimal(5,2) DEFAULT NULL,
-  `origen` enum('CRIA_INTERNA','COMPRA') NOT NULL,
-  `estado_animal` enum('ACTIVO','VENDIDO','MUERTO','DESCARTADO') NOT NULL DEFAULT 'ACTIVO',
-  `padre_id` char(36) DEFAULT NULL,
+  `estado` enum('ACTIVO','INACTIVO','MUERTO','VENDIDO') NOT NULL DEFAULT 'ACTIVO',
+  `etapa_productiva` enum('TERNERO','LEVANTE','CEBA','REPRODUCTOR','LACTANTE','SECA','GESTANTE','OTRO') DEFAULT NULL,
+  `categoria` enum('CRIA','MADRE','PADRE','ENGORDE','REEMPLAZO','OTRO') DEFAULT NULL,
+  `origen` enum('NACIMIENTO','COMPRA','TRASLADO','OTRO') NOT NULL DEFAULT 'OTRO',
   `madre_id` char(36) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `created_by` char(36) DEFAULT NULL,
+  `padre_id` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `created_by` char(36) NOT NULL,
   `updated_at` datetime DEFAULT NULL,
   `updated_by` char(36) DEFAULT NULL,
   `deleted_at` datetime DEFAULT NULL,
@@ -70,14 +72,27 @@ CREATE TABLE `animales` (
 --
 
 CREATE TABLE `animal_movimientos` (
-  `movimiento_id` char(36) NOT NULL,
+  `animal_movimiento_id` char(36) NOT NULL,
   `animal_id` char(36) NOT NULL,
-  `tipo_movimiento` enum('ALTA','VENTA','MUERTE','BAJA','DESCARTE','CAMBIO_UBICACION','ASIGNACION_CODIGO','DESTETE') NOT NULL,
-  `fecha_evento` datetime NOT NULL,
-  `detalle` varchar(255) DEFAULT NULL,
-  `finca_id` char(36) DEFAULT NULL,
-  `aprisco_id` char(36) DEFAULT NULL,
-  `area_id` char(36) DEFAULT NULL
+  `fecha_mov` date NOT NULL,
+  `tipo_movimiento` enum('INGRESO','EGRESO','TRASLADO','VENTA','COMPRA','NACIMIENTO','MUERTE','OTRO') NOT NULL,
+  `motivo` enum('TRASLADO','INGRESO','EGRESO','AISLAMIENTO','VENTA','OTRO') NOT NULL DEFAULT 'OTRO',
+  `estado` enum('REGISTRADO','ANULADO') NOT NULL DEFAULT 'REGISTRADO',
+  `finca_origen_id` char(36) DEFAULT NULL,
+  `aprisco_origen_id` char(36) DEFAULT NULL,
+  `area_origen_id` char(36) DEFAULT NULL,
+  `finca_destino_id` char(36) DEFAULT NULL,
+  `aprisco_destino_id` char(36) DEFAULT NULL,
+  `area_destino_id` char(36) DEFAULT NULL,
+  `costo` decimal(10,2) DEFAULT NULL,
+  `documento_ref` varchar(100) DEFAULT NULL,
+  `observaciones` text DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `created_by` char(36) NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `updated_by` char(36) DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -87,11 +102,18 @@ CREATE TABLE `animal_movimientos` (
 --
 
 CREATE TABLE `animal_pesos` (
-  `peso_id` char(36) NOT NULL,
+  `animal_peso_id` char(36) NOT NULL,
   `animal_id` char(36) NOT NULL,
-  `fecha` date NOT NULL,
-  `peso_kg` decimal(6,2) NOT NULL,
-  `observaciones` varchar(255) DEFAULT NULL
+  `fecha_peso` date NOT NULL,
+  `peso_kg` decimal(10,3) NOT NULL,
+  `metodo` varchar(50) DEFAULT NULL,
+  `observaciones` text DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `created_by` char(36) NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `updated_by` char(36) DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -101,13 +123,27 @@ CREATE TABLE `animal_pesos` (
 --
 
 CREATE TABLE `animal_salud` (
-  `salud_id` char(36) NOT NULL,
+  `animal_salud_id` char(36) NOT NULL,
   `animal_id` char(36) NOT NULL,
-  `fecha_diagnostico` date NOT NULL,
-  `diagnostico` varchar(200) NOT NULL,
-  `tratamiento` varchar(255) DEFAULT NULL,
-  `estado_caso` enum('ABIERTO','SEGUIMIENTO','CERRADO') NOT NULL DEFAULT 'ABIERTO',
-  `observaciones` text DEFAULT NULL
+  `fecha_evento` date NOT NULL,
+  `tipo_evento` enum('ENFERMEDAD','VACUNACION','DESPARASITACION','REVISION','TRATAMIENTO','OTRO') NOT NULL DEFAULT 'OTRO',
+  `diagnostico` varchar(255) DEFAULT NULL,
+  `severidad` enum('LEVE','MODERADA','GRAVE') DEFAULT NULL,
+  `tratamiento` text DEFAULT NULL,
+  `medicamento` varchar(255) DEFAULT NULL,
+  `dosis` varchar(50) DEFAULT NULL,
+  `via_administracion` varchar(50) DEFAULT NULL,
+  `costo` decimal(10,2) DEFAULT NULL,
+  `estado` enum('ABIERTO','SEGUIMIENTO','CERRADO') NOT NULL DEFAULT 'ABIERTO',
+  `proxima_revision` date DEFAULT NULL,
+  `responsable` varchar(100) DEFAULT NULL,
+  `observaciones` text DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `created_by` char(36) NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `updated_by` char(36) DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -117,13 +153,22 @@ CREATE TABLE `animal_salud` (
 --
 
 CREATE TABLE `animal_ubicaciones` (
-  `ubicacion_id` char(36) NOT NULL,
+  `animal_ubicacion_id` char(36) NOT NULL,
   `animal_id` char(36) NOT NULL,
   `finca_id` char(36) DEFAULT NULL,
   `aprisco_id` char(36) DEFAULT NULL,
   `area_id` char(36) DEFAULT NULL,
-  `fecha_asignacion` datetime NOT NULL DEFAULT current_timestamp(),
-  `activo` tinyint(1) NOT NULL DEFAULT 1
+  `fecha_desde` date NOT NULL,
+  `fecha_hasta` date DEFAULT NULL,
+  `motivo` enum('TRASLADO','INGRESO','EGRESO','AISLAMIENTO','VENTA','OTRO') NOT NULL DEFAULT 'OTRO',
+  `estado` enum('ACTIVA','INACTIVA') NOT NULL DEFAULT 'ACTIVA',
+  `observaciones` text DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `created_by` char(36) NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `updated_by` char(36) DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -204,7 +249,7 @@ CREATE TABLE `fincas` (
 --
 
 INSERT INTO `fincas` (`finca_id`, `nombre`, `ubicacion`, `estado`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
-('06fcbfc8-ffc7-4956-b99d-77d879d772b7', 'Finca Demo Editada rd20er', 'Coordenadas XYZ, Municipio ABC', 'ACTIVA', '2025-10-02 10:52:16', '06fcbfc8-ffc7-4956-b99d-77d879d772b7', '2025-10-02 10:52:16', '06fcbfc8-ffc7-4956-b99d-77d879d772b7', NULL, NULL);
+('06fcbfc8-ffc7-4956-b99d-77d879d772b7', 'Finca Demo Editada rd20er', 'Coordenadas XYZ, Municipio AB', 'ACTIVA', '2025-10-02 10:52:16', '06fcbfc8-ffc7-4956-b99d-77d879d772b7', '2025-10-04 09:43:03', '06fcbfc8-ffc7-4956-b99d-77d879d772b7', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -226,6 +271,16 @@ CREATE TABLE `menu` (
   `deleted_at` datetime DEFAULT NULL,
   `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `menu`
+--
+
+INSERT INTO `menu` (`menu_id`, `categoria`, `nombre`, `url`, `icono`, `user_level`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('25d17a58-3186-48ed-81cc-8d396074b62d', 'usuarios', 'Modulos', 'modulos', '0', 0, '2025-10-04 11:28:50', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL, NULL, NULL),
+('35f8606a-a133-11f0-a92b-74d02b268d93', 'usuarios', 'Usuarios', 'users', 'uil-user-circle', 0, NULL, NULL, NULL, NULL, NULL, NULL),
+('920a038d-e341-4c61-9915-d35fb41d1a6b', 'area', 'Fincas', 'fincas', '0', 1, '2025-10-04 10:41:51', '920a038d-e341-4c61-9915-d35fb41d1a6b', '2025-10-04 11:29:23', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
+('95765136-0404-4810-8dc4-5b38751c8522', 'partos', 'asdasd', 'https://github.com/jesuszapataDev/digital-signature-form.git', '0', 1, '2025-10-04 10:05:19', '95765136-0404-4810-8dc4-5b38751c8522', '2025-10-04 10:12:35', '95765136-0404-4810-8dc4-5b38751c8522', '2025-10-04 10:12:40', '95765136-0404-4810-8dc4-5b38751c8522');
 
 -- --------------------------------------------------------
 
@@ -349,11 +404,12 @@ CREATE TABLE `system_users` (
 
 INSERT INTO `system_users` (`user_id`, `nombre`, `email`, `contrasena`, `nivel`, `estado`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
 ('1', 'Fatima Gomez', 'fatimagomezpd@gmail.com', '$2y$10$EyP1MOY39kuw4uREdk7ao.UUzQ10YNIZ95IZLM70MUPo5J6YzEBVG', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
-('35', 'Ricardo', 'jose.2710.ricardo@gmail.com', '$2y$10$azF/dOpnDs9sCTYiLEF7kO8612REFdjpk8Te.bih4BaNDSfhAw9MO', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+('35', 'Ricardo', 'jose.2710.ricardo@gmail.com', '$2y$10$xTVUq4JFTu6S7z7pCZtWTuC8ukfj0r3jsFk7Nw62TtU1WtnZ87MDm', 1, 1, NULL, NULL, '2025-10-04 10:49:45', '35', NULL, NULL),
 ('40', 'Hilson Martinez', 'martinezhilson8@gmail.com', '$2y$10$3mEuUd1/uIn0nNx3.qBoYeGeDc7WAXsEUvldqHX1WNaWusgVwnu9e', 2, 1, NULL, NULL, NULL, NULL, NULL, NULL),
-('42', 'ASDRUBAL MARTINEZ', 'asdrubalmartinez486@gmail.com', '$2y$10$yUnVJhDWX6xkB4BEch2HPeAbEGNA311qcjs1DXVIsTmaah6jzHwzW', 2, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+('42', 'ASDRUBAL MARTINEZs', 'asdrubalmartinez486@gmail.com', '$2y$10$yUnVJhDWX6xkB4BEch2HPeAbEGNA311qcjs1DXVIsTmaah6jzHwzW', 2, 1, NULL, NULL, '2025-10-04 09:49:28', '42', NULL, NULL),
 ('43', 'user ejecucion', 'magomagel1983@gmail.com', '$2y$10$EyP1MOY39kuw4uREdk7ao.UUzQ10YNIZ95IZLM70MUPo5J6YzEBVG', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
-('45', 'user proyectos', 'proyecto@correo.com', '$2y$10$EyP1MOY39kuw4uREdk7ao.UUzQ10YNIZ95IZLM70MUPo5J6YzEBVG', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL);
+('45', 'user proyectos', 'proyecto@correo.com', '$2y$10$EyP1MOY39kuw4uREdk7ao.UUzQ10YNIZ95IZLM70MUPo5J6YzEBVG', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+('d7518474-2d2f-4634-823f-71936565c110', 'Jesus Zapatin', 'zapatin@gmail.com', '$2y$10$H.Y1gpOJFRMCObm0rNPZ4uHfis56lTpKacsf1hrvWvwefwDJHNujq', 1, 1, '2025-10-04 10:50:51', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -374,6 +430,13 @@ CREATE TABLE `users_permisos` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- Volcado de datos para la tabla `users_permisos`
+--
+
+INSERT INTO `users_permisos` (`users_permisos_id`, `user_id`, `menu_id`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('5309a0b7-a133-11f0-a92b-74d02b268d93', 'd7518474-2d2f-4634-823f-71936565c110', '35f8606a-a133-11f0-a92b-74d02b268d93', NULL, NULL, NULL, NULL, NULL, NULL);
+
+--
 -- Índices para tablas volcadas
 --
 
@@ -391,46 +454,60 @@ ALTER TABLE `alertas`
 --
 ALTER TABLE `animales`
   ADD PRIMARY KEY (`animal_id`),
-  ADD UNIQUE KEY `codigo_identificacion` (`codigo_identificacion`),
-  ADD KEY `fk_animal_padre` (`padre_id`),
+  ADD UNIQUE KEY `uq_animales_identificador` (`identificador`),
   ADD KEY `fk_animal_madre` (`madre_id`),
-  ADD KEY `idx_animales_estado` (`estado_animal`,`sexo`);
+  ADD KEY `fk_animal_padre` (`padre_id`),
+  ADD KEY `idx_animales_especie` (`especie`),
+  ADD KEY `idx_animales_sexo` (`sexo`),
+  ADD KEY `idx_animales_estado` (`estado`),
+  ADD KEY `idx_animales_nac` (`fecha_nacimiento`);
 
 --
 -- Indices de la tabla `animal_movimientos`
 --
 ALTER TABLE `animal_movimientos`
-  ADD PRIMARY KEY (`movimiento_id`),
-  ADD KEY `fk_mov_animal` (`animal_id`),
-  ADD KEY `fk_mov_finca` (`finca_id`),
-  ADD KEY `fk_mov_aprisco` (`aprisco_id`),
-  ADD KEY `fk_mov_area` (`area_id`),
-  ADD KEY `idx_mov_tipo_fecha` (`tipo_movimiento`,`fecha_evento`);
+  ADD PRIMARY KEY (`animal_movimiento_id`),
+  ADD KEY `idx_am_animal` (`animal_id`),
+  ADD KEY `idx_am_fecha` (`fecha_mov`),
+  ADD KEY `idx_am_tipo` (`tipo_movimiento`),
+  ADD KEY `idx_am_estado` (`estado`),
+  ADD KEY `idx_am_origen_finca` (`finca_origen_id`),
+  ADD KEY `idx_am_origen_aprisco` (`aprisco_origen_id`),
+  ADD KEY `idx_am_origen_area` (`area_origen_id`),
+  ADD KEY `idx_am_dest_finca` (`finca_destino_id`),
+  ADD KEY `idx_am_dest_aprisco` (`aprisco_destino_id`),
+  ADD KEY `idx_am_dest_area` (`area_destino_id`);
 
 --
 -- Indices de la tabla `animal_pesos`
 --
 ALTER TABLE `animal_pesos`
-  ADD PRIMARY KEY (`peso_id`),
-  ADD UNIQUE KEY `uq_peso_animal_fecha` (`animal_id`,`fecha`),
-  ADD KEY `idx_pesos_animal_fecha` (`animal_id`,`fecha`);
+  ADD PRIMARY KEY (`animal_peso_id`),
+  ADD UNIQUE KEY `uq_animal_peso_fecha` (`animal_id`,`fecha_peso`),
+  ADD KEY `idx_animal_pesos_animal` (`animal_id`),
+  ADD KEY `idx_animal_pesos_fecha` (`fecha_peso`);
 
 --
 -- Indices de la tabla `animal_salud`
 --
 ALTER TABLE `animal_salud`
-  ADD PRIMARY KEY (`salud_id`),
-  ADD KEY `fk_salud_animal` (`animal_id`);
+  ADD PRIMARY KEY (`animal_salud_id`),
+  ADD KEY `idx_salud_animal` (`animal_id`),
+  ADD KEY `idx_salud_fecha` (`fecha_evento`),
+  ADD KEY `idx_salud_estado` (`estado`),
+  ADD KEY `idx_salud_tipo` (`tipo_evento`);
 
 --
 -- Indices de la tabla `animal_ubicaciones`
 --
 ALTER TABLE `animal_ubicaciones`
-  ADD PRIMARY KEY (`ubicacion_id`),
-  ADD KEY `fk_ub_animal` (`animal_id`),
-  ADD KEY `fk_ub_finca` (`finca_id`),
-  ADD KEY `fk_ub_aprisco` (`aprisco_id`),
-  ADD KEY `fk_ub_area` (`area_id`);
+  ADD PRIMARY KEY (`animal_ubicacion_id`),
+  ADD KEY `idx_au_animal` (`animal_id`),
+  ADD KEY `idx_au_finca` (`finca_id`),
+  ADD KEY `idx_au_aprisc` (`aprisco_id`),
+  ADD KEY `idx_au_area` (`area_id`),
+  ADD KEY `idx_au_desde` (`fecha_desde`),
+  ADD KEY `idx_au_hasta` (`fecha_hasta`);
 
 --
 -- Indices de la tabla `apriscos`
@@ -531,38 +608,41 @@ ALTER TABLE `alertas`
 -- Filtros para la tabla `animales`
 --
 ALTER TABLE `animales`
-  ADD CONSTRAINT `fk_animal_madre` FOREIGN KEY (`madre_id`) REFERENCES `animales` (`animal_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_animal_padre` FOREIGN KEY (`padre_id`) REFERENCES `animales` (`animal_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_animal_madre` FOREIGN KEY (`madre_id`) REFERENCES `animales` (`animal_id`),
+  ADD CONSTRAINT `fk_animal_padre` FOREIGN KEY (`padre_id`) REFERENCES `animales` (`animal_id`);
 
 --
 -- Filtros para la tabla `animal_movimientos`
 --
 ALTER TABLE `animal_movimientos`
-  ADD CONSTRAINT `fk_mov_animal` FOREIGN KEY (`animal_id`) REFERENCES `animales` (`animal_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_mov_aprisco` FOREIGN KEY (`aprisco_id`) REFERENCES `apriscos` (`aprisco_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_mov_area` FOREIGN KEY (`area_id`) REFERENCES `areas` (`area_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_mov_finca` FOREIGN KEY (`finca_id`) REFERENCES `fincas` (`finca_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_am_adest` FOREIGN KEY (`aprisco_destino_id`) REFERENCES `apriscos` (`aprisco_id`),
+  ADD CONSTRAINT `fk_am_animal` FOREIGN KEY (`animal_id`) REFERENCES `animales` (`animal_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_am_aorig` FOREIGN KEY (`aprisco_origen_id`) REFERENCES `apriscos` (`aprisco_id`),
+  ADD CONSTRAINT `fk_am_ardest` FOREIGN KEY (`area_destino_id`) REFERENCES `areas` (`area_id`),
+  ADD CONSTRAINT `fk_am_arorig` FOREIGN KEY (`area_origen_id`) REFERENCES `areas` (`area_id`),
+  ADD CONSTRAINT `fk_am_fdest` FOREIGN KEY (`finca_destino_id`) REFERENCES `fincas` (`finca_id`),
+  ADD CONSTRAINT `fk_am_forig` FOREIGN KEY (`finca_origen_id`) REFERENCES `fincas` (`finca_id`);
 
 --
 -- Filtros para la tabla `animal_pesos`
 --
 ALTER TABLE `animal_pesos`
-  ADD CONSTRAINT `fk_peso_animal` FOREIGN KEY (`animal_id`) REFERENCES `animales` (`animal_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_animal_pesos_animal` FOREIGN KEY (`animal_id`) REFERENCES `animales` (`animal_id`);
 
 --
 -- Filtros para la tabla `animal_salud`
 --
 ALTER TABLE `animal_salud`
-  ADD CONSTRAINT `fk_salud_animal` FOREIGN KEY (`animal_id`) REFERENCES `animales` (`animal_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_animal_salud_animal` FOREIGN KEY (`animal_id`) REFERENCES `animales` (`animal_id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `animal_ubicaciones`
 --
 ALTER TABLE `animal_ubicaciones`
-  ADD CONSTRAINT `fk_ub_animal` FOREIGN KEY (`animal_id`) REFERENCES `animales` (`animal_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_ub_aprisco` FOREIGN KEY (`aprisco_id`) REFERENCES `apriscos` (`aprisco_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_ub_area` FOREIGN KEY (`area_id`) REFERENCES `areas` (`area_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_ub_finca` FOREIGN KEY (`finca_id`) REFERENCES `fincas` (`finca_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_au_animal` FOREIGN KEY (`animal_id`) REFERENCES `animales` (`animal_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_au_aprisco` FOREIGN KEY (`aprisco_id`) REFERENCES `apriscos` (`aprisco_id`),
+  ADD CONSTRAINT `fk_au_area` FOREIGN KEY (`area_id`) REFERENCES `areas` (`area_id`),
+  ADD CONSTRAINT `fk_au_finca` FOREIGN KEY (`finca_id`) REFERENCES `fincas` (`finca_id`);
 
 --
 -- Filtros para la tabla `apriscos`
