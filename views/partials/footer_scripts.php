@@ -3,6 +3,10 @@
 <script src="<?= BASE_URL ?>public/assets/js/vendor.min.js"></script>
 <script src="<?= BASE_URL ?>public/assets/js/app.min.js"></script>
 
+<script src="<?= BASE_URL ?>public/assets/js/bootstrapTable.min.js"></script>
+
+<script src="<?= BASE_URL ?>public/assets/js/bootstrapTable-es.min.js"></script>
+
 <!-- third party js -->
 <script src="<?= BASE_URL ?>public/assets/js/vendor/jquery.dataTables.min.js"></script>
 <script src="<?= BASE_URL ?>public/assets/js/vendor/dataTables.bootstrap5.js"></script>

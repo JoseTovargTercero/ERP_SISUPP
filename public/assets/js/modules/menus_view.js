@@ -1,45 +1,36 @@
 import { showErrorToast } from '../helpers/helpers.js'
 
+/**
+ * Adapta la respuesta de tu API al formato que Bootstrap Table espera.
+ * Tu API -> { "data": [...] }, Bootstrap Table -> { "rows": [...] }.
+ */
+window.responseHandler = function (res) {
+  return {
+    rows: res.data,
+    total: res.data.length,
+  }
+}
+
+/**
+ * Genera el HTML para los botones de acción de cada fila.
+ * @param {string} value - El menu_id de la fila actual (definido en data-field).
+ * @param {object} row - El objeto de datos completo para la fila.
+ */
+window.accionesFormatter = function (value, row) {
+  return `
+    <div class="btn-group">
+        <button class="btn btn-info btn-sm btn-ver" data-id="${value}" title="Ver Detalles"><i class="mdi mdi-eye"></i></button>
+        <button class="btn btn-warning btn-sm btn-editar" data-id="${value}" title="Editar"><i class="mdi mdi-pencil"></i></button>
+        <button class="btn btn-danger btn-sm btn-eliminar" data-id="${value}" title="Eliminar"><i class="mdi mdi-delete"></i></button>
+    </div>
+    `
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+  // Inicialización de Select2 (sin cambios)
   $('#categoria').select2({ dropdownParent: $('#modalMenu') })
 
-  // 1. INICIALIZACIÓN DE DATATABLE
-  const tablaMenus = $('#tablaMenus').DataTable({
-    ajax: {
-      url: baseUrl + 'api/menus', // Endpoint para listar menús
-      dataSrc: 'data',
-    },
-    columns: [
-      {
-        data: 'nombre',
-      },
-      {
-        data: 'categoria',
-      },
-      {
-        data: 'url',
-      },
-      {
-        data: 'user_level',
-      },
-      {
-        data: null, // No se enlaza a un campo específico
-        render: function (data, type, row) {
-          // Usamos row.menu_id para obtener el ID
-          return `
-                        <button class="btn btn-info btn-sm btn-ver" data-id="${row.menu_id}" title="Ver Detalles"><i class="mdi mdi-eye"></i></button>
-                        <button class="btn btn-warning btn-sm btn-editar" data-id="${row.menu_id}" title="Editar"><i class="mdi mdi-pencil"></i></button>
-                        <button class="btn btn-danger btn-sm btn-eliminar" data-id="${row.menu_id}" title="Eliminar"><i class="mdi mdi-delete"></i></button>
-                    `
-        },
-        orderable: false,
-        searchable: false,
-      },
-    ],
-    language: {
-      url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json',
-    },
-  })
+  // --- INICIALIZACIÓN DE DATATABLE ELIMINADA ---
 
   const modalMenu = new bootstrap.Modal(document.getElementById('modalMenu'))
   const modalDetallesMenu = new bootstrap.Modal(
@@ -47,12 +38,11 @@ document.addEventListener('DOMContentLoaded', function () {
   )
   const formMenu = document.getElementById('formMenu')
 
-  // 2. ABRIR MODAL PARA CREAR NUEVO MENÚ
+  // 2. ABRIR MODAL PARA CREAR NUEVO MENÚ (Sin cambios)
   $('#btnNuevoMenu').on('click', function () {
     formMenu.reset()
     $('#menu_id').val('')
     $('#modalMenuLabel').text('Crear Nuevo Menú')
-    // Restablece Select2 si lo estás usando
     $('#categoria').val('').trigger('change')
     modalMenu.show()
   })
@@ -61,13 +51,10 @@ document.addEventListener('DOMContentLoaded', function () {
   $('#formMenu').on('submit', function (e) {
     e.preventDefault()
     const menuId = $('#menu_id').val()
-
     let url = baseUrl + 'api/menus'
-    // El método siempre es POST según la documentación (para crear y actualizar)
     let method = 'POST'
 
     if (menuId) {
-      // Para actualizar, la URL incluye el ID
       url = `${baseUrl}api/menus/${menuId}`
     }
 
@@ -90,7 +77,8 @@ document.addEventListener('DOMContentLoaded', function () {
           title: '¡Éxito!',
           text: response.message,
         })
-        tablaMenus.ajax.reload() // Recargar la tabla
+        // CAMBIO: Así se recarga la tabla
+        $('#tablaMenus').bootstrapTable('refresh')
       },
       error: function (xhr) {
         showErrorToast(xhr.responseJSON)
@@ -98,13 +86,12 @@ document.addEventListener('DOMContentLoaded', function () {
     })
   })
 
-  // 4. EVENTOS DE LOS BOTONES DE ACCIÓN
-  $('#tablaMenus tbody').on('click', 'button', function () {
+  // 4. EVENTOS DE LOS BOTONES DE ACCIÓN (Sin cambios en la lógica interna)
+  $('#tablaMenus').on('click', 'button', function () {
     const action = $(this).attr('class')
     const menuId = $(this).data('id')
 
     if (action.includes('btn-ver')) {
-      // VER DETALLES
       $.ajax({
         url: `${baseUrl}api/menus/${menuId}`,
         method: 'GET',
@@ -126,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function () {
         },
       })
     } else if (action.includes('btn-editar')) {
-      // EDITAR MENÚ
       $.ajax({
         url: `${baseUrl}api/menus/${menuId}`,
         method: 'GET',
@@ -135,7 +121,6 @@ document.addEventListener('DOMContentLoaded', function () {
           $('#menu_id').val(data.menu_id)
           $('#nombre').val(data.nombre)
           $('#categoria').val(data.categoria).trigger('change')
-          // Actualiza Select2 si lo usas:
           $('#url').val(data.url)
           $('#icono').val(data.icono)
           $('#user_level').val(data.user_level)
@@ -147,7 +132,6 @@ document.addEventListener('DOMContentLoaded', function () {
         },
       })
     } else if (action.includes('btn-eliminar')) {
-      // ELIMINAR MENÚ
       Swal.fire({
         title: '¿Estás seguro?',
         text: 'El menú será eliminado lógicamente.',
@@ -164,7 +148,8 @@ document.addEventListener('DOMContentLoaded', function () {
             method: 'DELETE',
             success: function (response) {
               Swal.fire('Eliminado', response.message, 'success')
-              tablaMenus.ajax.reload()
+              // CAMBIO: Así se recarga la tabla
+              $('#tablaMenus').bootstrapTable('refresh')
             },
             error: function (xhr) {
               showErrorToast(xhr.responseJSON)

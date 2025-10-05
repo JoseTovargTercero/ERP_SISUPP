@@ -12,24 +12,26 @@
     </div>
   </div>
 
-  <!-- Tabs -->
   <ul class="nav nav-tabs" id="agroTabs" role="tablist">
     <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="tab-fincas" data-bs-toggle="tab" data-bs-target="#pane-fincas" type="button" role="tab">Fincas</button>
+      <button class="nav-link active" id="tab-fincas" data-bs-toggle="tab" data-bs-target="#pane-fincas" type="button"
+        role="tab">Fincas</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-apriscos" data-bs-toggle="tab" data-bs-target="#pane-apriscos" type="button" role="tab">Apriscos</button>
+      <button class="nav-link" id="tab-apriscos" data-bs-toggle="tab" data-bs-target="#pane-apriscos" type="button"
+        role="tab">Apriscos</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-areas" data-bs-toggle="tab" data-bs-target="#pane-areas" type="button" role="tab">Áreas</button>
+      <button class="nav-link" id="tab-areas" data-bs-toggle="tab" data-bs-target="#pane-areas" type="button"
+        role="tab">Áreas</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-reportes" data-bs-toggle="tab" data-bs-target="#pane-reportes" type="button" role="tab">Reportes de Daño</button>
+      <button class="nav-link" id="tab-reportes" data-bs-toggle="tab" data-bs-target="#pane-reportes" type="button"
+        role="tab">Reportes de Daño</button>
     </li>
   </ul>
 
   <div class="tab-content p-0">
-    <!-- FINCAS -->
     <div class="tab-pane fade show active" id="pane-fincas" role="tabpanel" aria-labelledby="tab-fincas">
       <div class="card">
         <div class="card-body">
@@ -37,13 +39,14 @@
             <h5 class="mb-0">Fincas</h5>
             <button class="btn btn-primary" id="btnNuevaFinca"><i class="mdi mdi-plus"></i> Nueva Finca</button>
           </div>
-          <table id="tablaFincas" class="table table-striped table-hover align-middle" style="width:100%">
+          <table id="tablaFincas" class="table table-striped table-hover align-middle" style="width:100%"
+            data-pagination="true" data-search="true" data-locale="es-ES">
             <thead>
               <tr>
-                <th>Nombre</th>
-                <th>Ubicación</th>
-                <th>Estado</th>
-                <th class="text-center">Acciones</th>
+                <th data-field="nombre" data-sortable="true">Nombre</th>
+                <th data-field="ubicacion">Ubicación</th>
+                <th data-field="estado" data-formatter="fincaEstadoFormatter" data-align="center">Estado</th>
+                <th data-field="finca_id" data-formatter="fincaAccionesFormatter" data-align="center">Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -52,7 +55,6 @@
       </div>
     </div>
 
-    <!-- APRISCOS -->
     <div class="tab-pane fade" id="pane-apriscos" role="tabpanel" aria-labelledby="tab-apriscos">
       <div class="card">
         <div class="card-body">
@@ -68,13 +70,14 @@
             <button class="btn btn-primary" id="btnNuevoAprisco"><i class="mdi mdi-plus"></i> Nuevo Aprisco</button>
           </div>
 
-          <table id="tablaApriscos" class="table table-striped table-hover align-middle" style="width:100%">
+          <table id="tablaApriscos" class="table table-striped table-hover align-middle" style="width:100%"
+            data-pagination="true" data-locale="es-ES">
             <thead>
               <tr>
-                <th>Finca</th>
-                <th>Nombre</th>
-                <th>Estado</th>
-                <th class="text-center">Acciones</th>
+                <th data-field="nombre_finca" data-sortable="true">Finca</th>
+                <th data-field="nombre" data-sortable="true">Nombre</th>
+                <th data-field="estado" data-formatter="apriscoEstadoFormatter" data-align="center">Estado</th>
+                <th data-field="aprisco_id" data-formatter="apriscoAccionesFormatter" data-align="center">Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -83,7 +86,6 @@
       </div>
     </div>
 
-    <!-- AREAS -->
     <div class="tab-pane fade" id="pane-areas" role="tabpanel" aria-labelledby="tab-areas">
       <div class="card">
         <div class="card-body">
@@ -105,15 +107,16 @@
             <button class="btn btn-primary" id="btnNuevaArea"><i class="mdi mdi-plus"></i> Nueva Área</button>
           </div>
 
-          <table id="tablaAreas" class="table table-striped table-hover align-middle" style="width:100%">
+          <table id="tablaAreas" class="table table-striped table-hover align-middle" style="width:100%"
+            data-pagination="true" data-locale="es-ES">
             <thead>
               <tr>
-                <th>Finca</th>
-                <th>Aprisco</th>
-                <th>Tipo</th>
-                <th>Nombre/Número</th>
-                <th>Estado</th>
-                <th class="text-center">Acciones</th>
+                <th data-field="nombre_finca" data-sortable="true">Finca</th>
+                <th data-field="nombre_aprisco" data-sortable="true">Aprisco</th>
+                <th data-field="tipo_area" data-sortable="true">Tipo</th>
+                <th data-formatter="areaNombreFormatter">Nombre/Número</th>
+                <th data-field="estado" data-formatter="fincaEstadoFormatter" data-align="center">Estado</th>
+                <th data-field="area_id" data-formatter="areaAccionesFormatter" data-align="center">Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -122,7 +125,6 @@
       </div>
     </div>
 
-    <!-- REPORTES -->
     <div class="tab-pane fade" id="pane-reportes" role="tabpanel" aria-labelledby="tab-reportes">
       <div class="card">
         <div class="card-body">
@@ -168,17 +170,18 @@
             <button class="btn btn-primary" id="btnNuevoReporte"><i class="mdi mdi-plus"></i> Nuevo Reporte</button>
           </div>
 
-          <table id="tablaReportes" class="table table-striped table-hover align-middle" style="width:100%">
+          <table id="tablaReportes" class="table table-striped table-hover align-middle" style="width:100%"
+            data-pagination="true" data-sort-name="fecha_reporte" data-sort-order="desc" data-locale="es-ES">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Título</th>
-                <th>Finca</th>
-                <th>Aprisco</th>
-                <th>Área</th>
-                <th>Criticidad</th>
-                <th>Estado</th>
-                <th class="text-center">Acciones</th>
+                <th data-field="fecha_reporte" data-formatter="reporteFechaFormatter" data-sortable="true">Fecha</th>
+                <th data-field="titulo" data-sortable="true">Título</th>
+                <th data-field="finca_nombre">Finca</th>
+                <th data-field="aprisco_nombre">Aprisco</th>
+                <th data-field="area_label">Área</th>
+                <th data-field="criticidad" data-formatter="criticidadFormatter" data-align="center">Criticidad</th>
+                <th data-field="estado_reporte" data-formatter="reporteEstadoFormatter" data-align="center">Estado</th>
+                <th data-field="reporte_id" data-formatter="reporteAccionesFormatter" data-align="center">Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -190,21 +193,22 @@
   </div>
 </div>
 
-<!-- ====== Offcanvas Detalle Bonito (para ver registros sin JSON) ====== -->
-<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasDetalle" aria-labelledby="offcanvasDetalleLabel">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="offcanvasDetalleLabel">Detalle</h5>
-    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-  </div>
-  <div class="offcanvas-body">
-    <!-- aquí inyectas desde JS el HTML de detalle -->
-    <div id="detailContent"></div>
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-labelledby="modalDetalleLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalDetalleLabel">Detalles</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="modalDetalleBody">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- ===== Modales ===== -->
-
-<!-- Finca -->
 <div class="modal fade" id="modalFinca" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -241,7 +245,6 @@
   </div>
 </div>
 
-<!-- Aprisco -->
 <div class="modal fade" id="modalAprisco" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -278,7 +281,6 @@
   </div>
 </div>
 
-<!-- Área -->
 <div class="modal fade" id="modalArea" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -310,7 +312,8 @@
           <div class="mb-3">
             <label class="form-label">Nombre Personalizado / Numeración</label>
             <div class="d-flex gap-2">
-              <input type="text" class="form-control" id="area_nombre_personalizado" name="nombre_personalizado" placeholder="Opcional">
+              <input type="text" class="form-control" id="area_nombre_personalizado" name="nombre_personalizado"
+                placeholder="Opcional">
               <input type="text" class="form-control" id="area_numeracion" name="numeracion" placeholder="Opcional">
             </div>
           </div>
@@ -332,7 +335,6 @@
   </div>
 </div>
 
-<!-- Reporte -->
 <div class="modal fade" id="modalReporte" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -389,7 +391,6 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-cancelar" data-bs-dismiss="modal">Cancelar</button>
-
           <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
       </form>
@@ -397,12 +398,30 @@
   </div>
 </div>
 
-<!-- Helpers UI para detalle (estilos) -->
 <style>
-  .detail-card .label { color:#6b7280; font-size:.875rem; display:block; margin-bottom:.125rem; }
-  .detail-card .value { font-weight:600; color:#111827; }
-  .detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem .75rem; }
-  @media (max-width:576px){ .detail-grid{ grid-template-columns:1fr; } }
+  .detail-card .label {
+    color: #6b7280;
+    font-size: .875rem;
+    display: block;
+    margin-bottom: .125rem;
+  }
+
+  .detail-card .value {
+    font-weight: 600;
+    color: #111827;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem .75rem;
+  }
+
+  @media (max-width:576px) {
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 
 <script>
@@ -441,5 +460,4 @@
   })();
 </script>
 
-<!-- Deja un solo include del módulo -->
 <script type="module" src="<?= BASE_URL ?>/public/assets/js/modules/agro_tabs_view.js"></script>

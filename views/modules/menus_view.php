@@ -16,21 +16,22 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <div class="">
-                        <table id="tablaMenus" class="table table-striped table-hover" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Categoría</th>
-                                    <th>URL</th>
-                                    <th>Nivel Acceso</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
+                    <table id="tablaMenus" data-toggle="table" data-url="<?php echo BASE_URL; ?>api/menus"
+                        data-response-handler="responseHandler" data-pagination="true" data-search="true"
+                        data-show-refresh="true" data-show-columns="true" data-locale="es-ES"
+                        class="table table-striped table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th data-field="nombre" data-sortable="true">Nombre</th>
+                                <th data-field="categoria" data-sortable="true">Categoría</th>
+                                <th data-field="url" data-sortable="true">URL</th>
+                                <th data-field="user_level" data-sortable="true" data-halign="center"
+                                    data-align="center">Nivel Acceso</th>
+                                <th data-field="menu_id" data-formatter="accionesFormatter" data-halign="center"
+                                    data-align="center">Acciones</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
         </div>

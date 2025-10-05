@@ -16,26 +16,29 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <div class="">
-                        <table id="tablaUsuarios" class="table table-striped table-hover" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Email</th>
-                                    <th>Nivel</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
+                    <table id="tablaUsuarios" data-toggle="table" data-url="<?php echo BASE_URL; ?>api/system_users"
+                        data-response-handler="responseHandler" data-pagination="true" data-search="true"
+                        data-show-refresh="true" data-show-columns="true" data-locale="es-ES"
+                        class="table table-striped table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th data-field="nombre" data-sortable="true">Nombre</th>
+                                <th data-field="email" data-sortable="true">Email</th>
+                                <th data-field="nivel" data-formatter="nivelFormatter" data-halign="center"
+                                    data-align="center">Nivel</th>
+                                <th data-field="estado" data-formatter="estadoFormatter" data-halign="center"
+                                    data-align="center">Estado</th>
+                                <th data-field="user_id" data-formatter="accionesFormatter" data-halign="center"
+                                    data-align="center">Acciones</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 
 <div class="modal fade" id="modalUsuario" tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
     <div class="modal-dialog">
