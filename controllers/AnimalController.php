@@ -20,6 +20,58 @@ class AnimalController
         echo json_encode(['value'=>$value,'message'=>$message,'data'=>$data]); exit;
     }
 
+    /** Detecta si la petición viene como multipart/form-data */
+    private function isMultipart(): bool
+    {
+        $ct = $_SERVER['CONTENT_TYPE'] ?? '';
+        return stripos($ct, 'multipart/form-data') !== false;
+    }
+
+    /** Valida y guarda la imagen (si existe) con nombre {uuid}.{ext} en APP_ROOT/uploads */
+    private function saveFotoIfAny(string $uuid, ?array $file): ?string
+    {
+        if (!$file || !isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
+            return null; // no hay archivo
+        }
+
+        // Validaciones básicas
+        $maxBytes = 20 * 1024 * 1024; // 20MB
+        if ($file['size'] > $maxBytes) {
+            throw new InvalidArgumentException('La fotografía excede el tamaño máximo (20MB).');
+        }
+
+        // Determinar mimetype real
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime  = $finfo->file($file['tmp_name']) ?: 'application/octet-stream';
+        $ext   = null;
+        switch ($mime) {
+            case 'image/jpeg': $ext = 'jpg'; break;
+            case 'image/png':  $ext = 'png'; break;
+            case 'image/webp': $ext = 'webp'; break;
+            default:
+                throw new InvalidArgumentException('Formato de imagen no permitido. Use JPG, PNG o WEBP.');
+        }
+
+        $uploadsDir = rtrim(APP_ROOT, '/\\') . '/uploads';
+        if (!is_dir($uploadsDir)) {
+            if (!@mkdir($uploadsDir, 0775, true) && !is_dir($uploadsDir)) {
+                throw new RuntimeException('No se pudo crear el directorio de uploads.');
+            }
+        }
+        if (!is_writable($uploadsDir)) {
+            throw new RuntimeException('El directorio de uploads no es escribible.');
+        }
+
+        $destAbs  = $uploadsDir . '/' . $uuid . '.' . $ext;
+        if (!@move_uploaded_file($file['tmp_name'], $destAbs)) {
+            throw new RuntimeException('No se pudo guardar la fotografía en el servidor.');
+        }
+
+        // Ruta relativa que guardamos en BD
+        $rel = '/uploads/' . $uuid . '.' . $ext;
+        return $rel;
+    }
+
     // GET /animales?limit=&offset=&incluirEliminados=0|1&q=&sexo=&especie=&estado=&etapa=&categoria=&nacDesde=&nacHasta=&finca_id=&aprisco_id=&area_id=
     public function listar(): void
     {
@@ -78,13 +130,46 @@ class AnimalController
     }
 
     // POST /animales
-    // JSON: { identificador, sexo, especie, raza?, color?, fecha_nacimiento?, estado?, etapa_productiva?, categoria?, origen?, madre_id?, padre_id? }
+    // JSON o multipart/form-data
+    // Campos: identificador, sexo, especie, [raza, color, fecha_nacimiento, estado, etapa_productiva, categoria, origen, madre_id, padre_id]
+    // Archivo: fotografia
     public function crear(): void
     {
-        $in = $this->getJsonInput();
         try {
-            $uuid = $this->model->crear($in);
-            $this->jsonResponse(true, 'Animal creado correctamente.', ['animal_id'=>$uuid]);
+            if ($this->isMultipart()) {
+                // Campos por $_POST
+                $in = [
+                    'identificador'     => $_POST['identificador']    ?? null,
+                    'sexo'              => $_POST['sexo']             ?? null,
+                    'especie'           => $_POST['especie']          ?? null,
+                    'raza'              => $_POST['raza']             ?? null,
+                    'color'             => $_POST['color']            ?? null,
+                    'fecha_nacimiento'  => $_POST['fecha_nacimiento'] ?? null,
+                    'estado'            => $_POST['estado']           ?? null,
+                    'etapa_productiva'  => $_POST['etapa_productiva'] ?? null,
+                    'categoria'         => $_POST['categoria']        ?? null,
+                    'origen'            => $_POST['origen']           ?? null,
+                    'madre_id'          => $_POST['madre_id']         ?? null,
+                    'padre_id'          => $_POST['padre_id']         ?? null,
+                ];
+                // Primero creo el animal (sin foto)
+                $uuid = $this->model->crear($in);
+
+                // Guardar fotografía si viene
+                $fotoRel = $this->saveFotoIfAny($uuid, $_FILES['fotografia'] ?? null);
+                if ($fotoRel) {
+                    $this->model->actualizar($uuid, ['fotografia_url' => $fotoRel]);
+                }
+
+                $this->jsonResponse(true, 'Animal creado correctamente.', ['animal_id'=>$uuid, 'fotografia_url'=>$fotoRel]);
+            } else {
+                // JSON puro
+                $in = $this->getJsonInput();
+
+                // Si el JSON ya trae un fotografia_url, se guardará en el INSERT directamente
+                $uuid = $this->model->crear($in);
+                $this->jsonResponse(true, 'Animal creado correctamente.', ['animal_id'=>$uuid, 'fotografia_url'=>$in['fotografia_url'] ?? null]);
+            }
         } catch (InvalidArgumentException $e) {
             $this->jsonResponse(false, $e->getMessage(), null, 400);
         } catch (RuntimeException $e) {
@@ -95,15 +180,41 @@ class AnimalController
     }
 
     // POST /animales/{animal_id}
+    // Acepta JSON o multipart. Si envías archivo 'fotografia' en multipart, sustituye la foto.
     public function actualizar(array $params): void
     {
         $id = $params['animal_id'] ?? '';
         if ($id === '') $this->jsonResponse(false,'Parámetro animal_id es obligatorio.',null,400);
 
-        $in = $this->getJsonInput();
         try {
-            $ok = $this->model->actualizar($id, $in);
-            $this->jsonResponse(true, 'Animal actualizado correctamente.', ['updated'=>$ok]);
+            if ($this->isMultipart()) {
+                // Campos por $_POST (solo los que vengan)
+                $in = [];
+                foreach ([
+                    'identificador','sexo','especie','raza','color','fecha_nacimiento',
+                    'estado','etapa_productiva','categoria','origen','madre_id','padre_id'
+                ] as $k) {
+                    if (array_key_exists($k, $_POST)) $in[$k] = $_POST[$k];
+                }
+
+                // Si viene nueva foto, la guardamos y actualizamos fotografia_url
+                $fotoRel = $this->saveFotoIfAny($id, $_FILES['fotografia'] ?? null);
+                if ($fotoRel) {
+                    $in['fotografia_url'] = $fotoRel;
+                }
+
+                if (empty($in)) {
+                    $this->jsonResponse(false, 'No hay campos para actualizar.', null, 400);
+                }
+
+                $ok = $this->model->actualizar($id, $in);
+                $this->jsonResponse(true, 'Animal actualizado correctamente.', ['updated'=>$ok, 'fotografia_url'=>$in['fotografia_url'] ?? null]);
+            } else {
+                // JSON
+                $in = $this->getJsonInput();
+                $ok = $this->model->actualizar($id, $in);
+                $this->jsonResponse(true, 'Animal actualizado correctamente.', ['updated'=>$ok, 'fotografia_url'=>$in['fotografia_url'] ?? null]);
+            }
         } catch (InvalidArgumentException $e) {
             $this->jsonResponse(false, $e->getMessage(), null, 400);
         } catch (RuntimeException $e) {

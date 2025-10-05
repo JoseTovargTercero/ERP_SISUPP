@@ -87,14 +87,6 @@ class AnimalModel
 
     /* ============ Lecturas ============ */
 
-    /**
-     * Lista animales con filtros y datos enriquecidos:
-     * - último peso (fecha_peso, peso_kg)
-     * - ubicación actual (finca/aprisco/area activos)
-     *
-     * Filtros: identificador (like), sexo, especie, estado, etapa, categoria, fecha_nacimiento (rango),
-     *          finca_id/aprisco_id/area_id (por ubicación actual), incluirEliminados, paginación.
-     */
     public function listar(
         int $limit = 100,
         int $offset = 0,
@@ -125,7 +117,6 @@ class AnimalModel
         if ($nacDesde) { $this->validarFecha($nacDesde,'nac_desde'); $w[]='a.fecha_nacimiento >= ?'; $p[]=$nacDesde; $t.='s'; }
         if ($nacHasta) { $this->validarFecha($nacHasta,'nac_hasta'); $w[]='a.fecha_nacimiento <= ?'; $p[]=$nacHasta; $t.='s'; }
 
-        // Filtros por ubicación actual
         if ($fincaId || $apriscoId || $areaId) {
             if ($fincaId)   { $w[]='ua.finca_id = ?';   $p[]=$fincaId;   $t.='s'; }
             if ($apriscoId) { $w[]='ua.aprisco_id = ?'; $p[]=$apriscoId; $t.='s'; }
@@ -134,7 +125,6 @@ class AnimalModel
 
         $where = implode(' AND ', $w);
 
-        // Subconsulta: última toma de peso por animal
         $sql = "
             SELECT
                 a.animal_id,
@@ -150,20 +140,18 @@ class AnimalModel
                 a.origen,
                 a.madre_id,
                 a.padre_id,
+                a.fotografia_url,
                 a.created_at, a.created_by, a.updated_at, a.updated_by,
 
-                -- último peso
                 pw.fecha_peso AS ultima_fecha_peso,
                 pw.peso_kg    AS ultimo_peso_kg,
 
-                -- ubicación actual
                 ua.finca_id,  f.nombre AS nombre_finca,
                 ua.aprisco_id, ap.nombre AS nombre_aprisco,
                 ua.area_id,   ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion
 
             FROM {$this->table} a
 
-            -- ubicación activa (si existe)
             LEFT JOIN (
                 SELECT u1.*
                 FROM animal_ubicaciones u1
@@ -179,7 +167,6 @@ class AnimalModel
             LEFT JOIN apriscos ap ON ap.aprisco_id = ua.aprisco_id
             LEFT JOIN areas ar    ON ar.area_id    = ua.area_id
 
-            -- última toma de peso (por fecha_peso)
             LEFT JOIN (
                 SELECT p1.*
                 FROM animal_pesos p1
@@ -210,7 +197,6 @@ class AnimalModel
 
     public function obtenerPorId(string $animalId): ?array
     {
-        // mismo enriquecimiento que en listar, pero por ID
         $sql = "
             SELECT
                 a.animal_id,
@@ -226,6 +212,7 @@ class AnimalModel
                 a.origen,
                 a.madre_id,
                 a.padre_id,
+                a.fotografia_url,
                 a.created_at, a.created_by, a.updated_at, a.updated_by, a.deleted_at, a.deleted_by,
 
                 pw.fecha_peso AS ultima_fecha_peso,
@@ -297,9 +284,8 @@ class AnimalModel
     /* ============ Escrituras ============ */
 
     /**
-     * Crear animal.
-     * Requeridos: identificador, sexo, especie
-     * Opcionales: raza, color, fecha_nacimiento, estado, etapa_productiva, categoria, origen, madre_id, padre_id
+     * Crear animal (sin manejar archivos aquí).
+     * Luego el controlador, si recibe archivo, actualizará fotografia_url.
      */
     public function crear(array $in): string
     {
@@ -330,8 +316,10 @@ class AnimalModel
 
         $madreId = isset($in['madre_id']) ? (string)$in['madre_id'] : null;
         $padreId = isset($in['padre_id']) ? (string)$in['padre_id'] : null;
-        if ($madreId && !$this->animalExistePorId($madreId)) $madreId = null; // tolerante
+        if ($madreId && !$this->animalExistePorId($madreId)) $madreId = null;
         if ($padreId && !$this->animalExistePorId($padreId)) $padreId = null;
+
+        $fotoUrl = isset($in['fotografia_url']) ? (string)$in['fotografia_url'] : null;
 
         $this->db->begin_transaction();
         try {
@@ -342,15 +330,18 @@ class AnimalModel
             $sql = "INSERT INTO {$this->table}
                 (animal_id, identificador, sexo, especie, raza, color, fecha_nacimiento,
                  estado, etapa_productiva, categoria, origen, madre_id, padre_id,
+                 fotografia_url,
                  created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
             $stmt = $this->db->prepare($sql);
             if (!$stmt) throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
 
             $stmt->bind_param(
-                'sssssssssssssss',
+                'sssssssssssssssss',
                 $uuid, $identificador, $sexo, $especie, $raza, $color, $fechaNacimiento,
-                $estado, $etapa, $categ, $origen, $madreId, $padreId, $now, $actorId
+                $estado, $etapa, $categ, $origen, $madreId, $padreId,
+                $fotoUrl,
+                $now, $actorId, $now, $actorId
             );
 
             if (!$stmt->execute()) {
@@ -376,7 +367,7 @@ class AnimalModel
     }
 
     /**
-     * Actualiza campos explícitos.
+     * Actualiza campos explícitos (incluye fotografia_url).
      */
     public function actualizar(string $animalId, array $in): bool
     {
@@ -427,6 +418,13 @@ class AnimalModel
             $padreId = $in['padre_id'] !== null ? (string)$in['padre_id'] : null;
             if ($padreId && !$this->animalExistePorId($padreId)) $padreId = null;
             $campos[]='padre_id = ?'; $params[]=$padreId; $types.='s';
+        }
+
+        // NUEVO: fotografia_url (nullable)
+        if (array_key_exists('fotografia_url', $in)) {
+            $campos[] = 'fotografia_url = ?';
+            $params[] = $in['fotografia_url'] !== null ? (string)$in['fotografia_url'] : null;
+            $types .= 's';
         }
 
         if (empty($campos)) {

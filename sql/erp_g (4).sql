@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 05-10-2025 a las 18:28:25
+-- Tiempo de generación: 05-10-2025 a las 23:39:52
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -57,6 +57,7 @@ CREATE TABLE `animales` (
   `origen` enum('NACIMIENTO','COMPRA','TRASLADO','OTRO') NOT NULL DEFAULT 'OTRO',
   `madre_id` char(36) DEFAULT NULL,
   `padre_id` char(36) DEFAULT NULL,
+  `fotografia_url` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `created_by` char(36) NOT NULL,
   `updated_at` datetime DEFAULT NULL,
@@ -69,8 +70,8 @@ CREATE TABLE `animales` (
 -- Volcado de datos para la tabla `animales`
 --
 
-INSERT INTO `animales` (`animal_id`, `identificador`, `sexo`, `especie`, `raza`, `color`, `fecha_nacimiento`, `estado`, `etapa_productiva`, `categoria`, `origen`, `madre_id`, `padre_id`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
-('9e9394fe-00ac-47ef-a3b7-e97bd3ac0c63', 'TEST-7496RV', 'MACHO', 'BOVINO', 'Criollo', 'Negro y Blanco', '2025-10-05', 'ACTIVO', 'CEBA', 'ENGORDE', 'OTRO', NULL, NULL, '2025-10-05 12:12:02', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 12:12:02', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL);
+INSERT INTO `animales` (`animal_id`, `identificador`, `sexo`, `especie`, `raza`, `color`, `fecha_nacimiento`, `estado`, `etapa_productiva`, `categoria`, `origen`, `madre_id`, `padre_id`, `fotografia_url`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('9e9394fe-00ac-47ef-a3b7-e97bd3ac0c63', 'TEST-7496RV', 'MACHO', 'BOVINO', 'Criollo', 'Negro y Blanco', '2025-10-05', 'ACTIVO', 'CEBA', 'ENGORDE', 'OTRO', NULL, NULL, NULL, '2025-10-05 12:12:02', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 12:12:02', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL);
 
 -- --------------------------------------------------------
 

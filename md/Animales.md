@@ -25,6 +25,8 @@ Este módulo ofrece CRUD y consultas enriquecidas para **animales**. Expone endp
   - Formato de fecha `YYYY-MM-DD`.
   - Unicidad de `identificador`.
   - Referencias tolerantes a `madre_id` y `padre_id` (si no existen, se ignoran).
+- **Soporte de fotografía**: permite subir una imagen (`fotografia`) mediante `multipart/form-data`. Se guarda en `APP_ROOT/uploads` con nombre `{animal_id}.{ext}` (`jpg|png|webp`) y se almacena la ruta relativa en el campo `fotografia_url`.
+
 
 ---
 
@@ -77,6 +79,9 @@ require_once __DIR__ . '/../config/TimezoneManager.php';
 - `validarEnum(string $valor, array $permitidos, string $campo): string` → normaliza a **UPPERCASE** y valida.
 - `animalExistePorId(string $animalId): bool` → verifica existencia **no eliminada**.
 - `identificadorDisponible(string $identificador, ?string $exceptId=null): bool` → unicidad.
+
+
+> **Nuevo:** Los métodos `crear()` y `actualizar()` admiten el campo `fotografia_url`. El modelo no gestiona archivos directamente; solo almacena la ruta. La subida física se maneja en el controlador (ver §4).
 
 ### Lecturas
 
@@ -149,6 +154,20 @@ Marca `deleted_at`, `deleted_by` si el registro **no** estaba eliminado.
 ## 4) Controlador: `AnimalController`
 
 ### Métodos de soporte
+### Manejo de fotografías (nuevo)
+
+El controlador ahora acepta peticiones `multipart/form-data` con un campo de archivo llamado `fotografia`.
+
+**Métodos agregados:**
+
+- `isMultipart()` → Detecta si la petición usa `multipart/form-data`.
+- `saveFotoIfAny($uuid, $file)` → Guarda el archivo en `APP_ROOT/uploads/{uuid}.{ext}` (extensión validada `jpg|png|webp`, tamaño máximo 5 MB) y retorna la ruta relativa `/uploads/{uuid}.{ext}`.
+
+**Flujos soportados:**
+
+- **Crear (POST /animales)**: si viene archivo `fotografia`, se guarda y se actualiza `fotografia_url`.
+- **Actualizar (POST /animales/{id})**: si se adjunta nueva foto, reemplaza la anterior.
+
 
 - `getJsonInput(): array` → lee `php://input` y decodifica JSON.
 - `jsonResponse($value, string $message='', $data=null, int $status=200)` → respuesta estándar:
@@ -216,6 +235,22 @@ curl -s -X POST "https://tu.host/animales/UUID-ANIMAL"   -H "Content-Type: appli
 
 # Eliminar (soft)
 curl -s -X DELETE "https://tu.host/animales/UUID-ANIMAL"
+
+**Soporte de fotografía:**
+
+- `multipart/form-data`: campo de archivo `fotografia`.
+- Guarda en `/uploads/{uuid}.jpg` y actualiza `fotografia_url`.
+- Tamaño máximo 20 MB.
+
+**Ejemplo:**
+```bash
+curl -X POST http://localhost/api/animales \
+  -F "identificador=VAC-001" \
+  -F "sexo=HEMBRA" \
+  -F "especie=BOVINO" \
+  -F "fotografia=@/ruta/foto.jpg"
+```
+
 ```
 
 ---
@@ -228,7 +263,14 @@ curl -s -X DELETE "https://tu.host/animales/UUID-ANIMAL"
 - `animal_ubicaciones`: `animal_id`, `finca_id?`, `aprisco_id?`, `area_id?`, `fecha_desde`, `fecha_hasta NULL` para **activa**, `deleted_at`.
 - `fincas`, `apriscos`, `areas` con sus PK y nombres (`nombre`, `nombre_personalizado`, `numeracion`).
 
-> **Ajusta nombres** si tu esquema difiere. El SQL de ejemplo puede usar nombres alternos (`codigo_identificacion` vs `identificador`).
+> **Ajusta nombres** si tu esquema difiere.
+
+> **Actualización de tabla (fotografía)**
+>
+> ```sql
+> ALTER TABLE animales ADD COLUMN fotografia_url VARCHAR(255) NULL AFTER padre_id;
+> ```
+ El SQL de ejemplo puede usar nombres alternos (`codigo_identificacion` vs `identificador`).
 
 ---
 
