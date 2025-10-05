@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 05-10-2025 a las 23:39:52
+-- Tiempo de generación: 06-10-2025 a las 00:58:33
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -150,7 +150,7 @@ CREATE TABLE `animal_salud` (
   `fecha_evento` date NOT NULL,
   `tipo_evento` enum('ENFERMEDAD','VACUNACION','DESPARASITACION','REVISION','TRATAMIENTO','OTRO') NOT NULL DEFAULT 'OTRO',
   `diagnostico` varchar(255) DEFAULT NULL,
-  `severidad` enum('LEVE','MODERADA','GRAVE') DEFAULT NULL,
+  `severidad` enum('LEVE','MODERADA','GRAVE','NO_APLICA') DEFAULT NULL,
   `tratamiento` text DEFAULT NULL,
   `medicamento` varchar(255) DEFAULT NULL,
   `dosis` varchar(50) DEFAULT NULL,

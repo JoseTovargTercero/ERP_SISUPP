@@ -115,7 +115,8 @@ class AnimalSaludModel
             $types   .= 's';
         }
         if ($severidad) {
-            $severidad = $this->validarEnum($severidad, ['LEVE','MODERADA','GRAVE'], 'severidad');
+            // ✅ Ahora incluye NO_APLICA
+            $severidad = $this->validarEnum($severidad, ['LEVE','MODERADA','GRAVE','NO_APLICA'], 'severidad');
             $where[]  = 's.severidad = ?';
             $params[] = $severidad;
             $types   .= 's';
@@ -233,8 +234,8 @@ class AnimalSaludModel
     /**
      * Crear evento de salud.
      * Requeridos: animal_id, fecha_evento(YYYY-MM-DD), tipo_evento
-     * Opcionales: diagnostico, severidad, tratamiento, medicamento, dosis, via_administracion,
-     *             costo, estado, proxima_revision(YYYY-MM-DD), responsable, observaciones
+     * Opcionales: diagnostico, severidad(LEVE|MODERADA|GRAVE|NO_APLICA), tratamiento, medicamento, dosis,
+     *             via_administracion, costo, estado, proxima_revision, responsable, observaciones
      */
     public function crear(array $data): string
     {
@@ -255,7 +256,7 @@ class AnimalSaludModel
 
         $diagnostico      = isset($data['diagnostico']) ? trim((string)$data['diagnostico']) : null;
         $severidad        = isset($data['severidad']) && $data['severidad'] !== null
-                            ? $this->validarEnum((string)$data['severidad'], ['LEVE','MODERADA','GRAVE'], 'severidad')
+                            ? $this->validarEnum((string)$data['severidad'], ['LEVE','MODERADA','GRAVE','NO_APLICA'], 'severidad')
                             : null;
         $tratamiento      = isset($data['tratamiento']) ? trim((string)$data['tratamiento']) : null;
         $medicamento      = isset($data['medicamento']) ? trim((string)$data['medicamento']) : null;
@@ -287,9 +288,7 @@ class AnimalSaludModel
             if (!$stmt) throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
 
             // tipos: s s s s s s s s s s d s s s s s s
-            $types = 'ssssssssss dssssss';
-            // Reemplazar espacio en types (solo claridad visual)
-            $types = str_replace(' ', '', $types);
+            $types = 'ssssssssss' . 'd' . 'ssssss';
 
             $stmt->bind_param(
                 $types,
@@ -334,8 +333,8 @@ class AnimalSaludModel
 
     /**
      * Actualizar evento de salud.
-     * Campos: fecha_evento?, tipo_evento?, diagnostico?, severidad?, tratamiento?,
-     * medicamento?, dosis?, via_administracion?, costo?, estado?, proxima_revision?, responsable?, observaciones?
+     * Campos: fecha_evento?, tipo_evento?, diagnostico?, severidad(LEVE|MODERADA|GRAVE|NO_APLICA)?,
+     * tratamiento?, medicamento?, dosis?, via_administracion?, costo?, estado?, proxima_revision?, responsable?, observaciones?
      */
     public function actualizar(string $id, array $data): bool
     {
@@ -361,7 +360,7 @@ class AnimalSaludModel
         }
         if (isset($data['severidad'])) {
             $campos[] = 'severidad = ?';
-            $params[] = $this->validarEnum((string)$data['severidad'], ['LEVE','MODERADA','GRAVE'], 'severidad');
+            $params[] = $this->validarEnum((string)$data['severidad'], ['LEVE','MODERADA','GRAVE','NO_APLICA'], 'severidad');
             $types   .= 's';
         }
         if (array_key_exists('tratamiento', $data)) {
@@ -387,8 +386,8 @@ class AnimalSaludModel
         if (array_key_exists('costo', $data)) {
             $costo = $data['costo'] !== null ? $this->validarCosto((float)$data['costo']) : null;
             $campos[] = 'costo = ?';
-            if ($costo === null) { $params[] = null; $types .= 'd'; /* MySQLi ignora tipo exacto para NULL */ }
-            else { $params[] = $costo; $types .= 'd'; }
+            $params[] = $costo; // puede ser null
+            $types   .= 'd';
         }
         if (isset($data['estado'])) {
             $campos[] = 'estado = ?';
