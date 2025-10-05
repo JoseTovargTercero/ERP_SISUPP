@@ -59,6 +59,7 @@ $router->group(['middleware' => AuthMiddleware::class], function ($router) {
     $router->get('/users', ['vista' => 'modules/usuarios_view', 'vistaData' => ['titulo' => 'Usuarios del Sistema']]);
     $router->get('/modulos', ['vista' => 'modules/menus_view', 'vistaData' => ['titulo' => 'Modulos del Sistema']]);
     $router->get('/fincas', ['vista' => 'modules/fincas_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
+    $router->get('/animales', ['vista' => 'modules/animales_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
 
 });
 
@@ -130,48 +131,48 @@ $router->group(['prefix' => '/api'], function ($router) {
     // endpoint de login
     $router->post('/system_users/login', ['controlador' => SystemUserController::class, 'accion' => 'login']);
 
-        //gestion de animales
+    //gestion de animales
 
     // endpoints de animal_pesos
-$router->get('/animal_pesos',            ['controlador' => AnimalPesoController::class, 'accion' => 'listar']);
-$router->get('/animal_pesos/{animal_peso_id}', ['controlador' => AnimalPesoController::class, 'accion' => 'mostrar']);
-$router->post('/animal_pesos',           ['controlador' => AnimalPesoController::class, 'accion' => 'crear']);
-$router->post('/animal_pesos/{animal_peso_id}', ['controlador' => AnimalPesoController::class, 'accion' => 'actualizar']);
-$router->delete('/animal_pesos/{animal_peso_id}', ['controlador' => AnimalPesoController::class, 'accion' => 'eliminar']);
+    $router->get('/animal_pesos', ['controlador' => AnimalPesoController::class, 'accion' => 'listar']);
+    $router->get('/animal_pesos/{animal_peso_id}', ['controlador' => AnimalPesoController::class, 'accion' => 'mostrar']);
+    $router->post('/animal_pesos', ['controlador' => AnimalPesoController::class, 'accion' => 'crear']);
+    $router->post('/animal_pesos/{animal_peso_id}', ['controlador' => AnimalPesoController::class, 'accion' => 'actualizar']);
+    $router->delete('/animal_pesos/{animal_peso_id}', ['controlador' => AnimalPesoController::class, 'accion' => 'eliminar']);
 
-// endpoints de animal_salud
-$router->get('/animal_salud', ['controlador' => AnimalSaludController::class, 'accion' => 'listar']);
-$router->get('/animal_salud/{animal_salud_id}', ['controlador' => AnimalSaludController::class, 'accion' => 'mostrar']);
-$router->post('/animal_salud', ['controlador' => AnimalSaludController::class, 'accion' => 'crear']);
-$router->post('/animal_salud/{animal_salud_id}', ['controlador' => AnimalSaludController::class, 'accion' => 'actualizar']);
-$router->delete('/animal_salud/{animal_salud_id}', ['controlador' => AnimalSaludController::class, 'accion' => 'eliminar']);
-
-
-// endpoints de animal_ubicaciones
-$router->get('/animal_ubicaciones', ['controlador' => AnimalUbicacionController::class, 'accion' => 'listar']);
-$router->get('/animal_ubicaciones/{animal_ubicacion_id}', ['controlador' => AnimalUbicacionController::class, 'accion' => 'mostrar']);
-$router->get('/animal_ubicaciones/actual/{animal_id}', ['controlador' => AnimalUbicacionController::class, 'accion' => 'actual']);
-$router->post('/animal_ubicaciones', ['controlador' => AnimalUbicacionController::class, 'accion' => 'crear']);
-$router->post('/animal_ubicaciones/{animal_ubicacion_id}', ['controlador' => AnimalUbicacionController::class, 'accion' => 'actualizar']);
-$router->post('/animal_ubicaciones/{animal_ubicacion_id}/cerrar', ['controlador' => AnimalUbicacionController::class, 'accion' => 'cerrar']);
-$router->delete('/animal_ubicaciones/{animal_ubicacion_id}', ['controlador' => AnimalUbicacionController::class, 'accion' => 'eliminar']);
+    // endpoints de animal_salud
+    $router->get('/animal_salud', ['controlador' => AnimalSaludController::class, 'accion' => 'listar']);
+    $router->get('/animal_salud/{animal_salud_id}', ['controlador' => AnimalSaludController::class, 'accion' => 'mostrar']);
+    $router->post('/animal_salud', ['controlador' => AnimalSaludController::class, 'accion' => 'crear']);
+    $router->post('/animal_salud/{animal_salud_id}', ['controlador' => AnimalSaludController::class, 'accion' => 'actualizar']);
+    $router->delete('/animal_salud/{animal_salud_id}', ['controlador' => AnimalSaludController::class, 'accion' => 'eliminar']);
 
 
-// endpoints de animal_movimientos
-$router->get('/animal_movimientos', ['controlador' => AnimalMovimientoController::class, 'accion' => 'listar']);
-$router->get('/animal_movimientos/{animal_movimiento_id}', ['controlador' => AnimalMovimientoController::class, 'accion' => 'mostrar']);
-$router->post('/animal_movimientos', ['controlador' => AnimalMovimientoController::class, 'accion' => 'crear']);
-$router->post('/animal_movimientos/{animal_movimiento_id}', ['controlador' => AnimalMovimientoController::class, 'accion' => 'actualizar']);
-$router->delete('/animal_movimientos/{animal_movimiento_id}', ['controlador' => AnimalMovimientoController::class, 'accion' => 'eliminar']);
+    // endpoints de animal_ubicaciones
+    $router->get('/animal_ubicaciones', ['controlador' => AnimalUbicacionController::class, 'accion' => 'listar']);
+    $router->get('/animal_ubicaciones/{animal_ubicacion_id}', ['controlador' => AnimalUbicacionController::class, 'accion' => 'mostrar']);
+    $router->get('/animal_ubicaciones/actual/{animal_id}', ['controlador' => AnimalUbicacionController::class, 'accion' => 'actual']);
+    $router->post('/animal_ubicaciones', ['controlador' => AnimalUbicacionController::class, 'accion' => 'crear']);
+    $router->post('/animal_ubicaciones/{animal_ubicacion_id}', ['controlador' => AnimalUbicacionController::class, 'accion' => 'actualizar']);
+    $router->post('/animal_ubicaciones/{animal_ubicacion_id}/cerrar', ['controlador' => AnimalUbicacionController::class, 'accion' => 'cerrar']);
+    $router->delete('/animal_ubicaciones/{animal_ubicacion_id}', ['controlador' => AnimalUbicacionController::class, 'accion' => 'eliminar']);
 
 
-// endpoints de animales
-$router->get('/animales', ['controlador' => AnimalController::class, 'accion' => 'listar']);
-$router->get('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'mostrar']);
-$router->get('/animales/options', ['controlador' => AnimalController::class, 'accion' => 'options']);
-$router->post('/animales', ['controlador' => AnimalController::class, 'accion' => 'crear']);
-$router->post('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'actualizar']);
-$router->delete('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'eliminar']);
+    // endpoints de animal_movimientos
+    $router->get('/animal_movimientos', ['controlador' => AnimalMovimientoController::class, 'accion' => 'listar']);
+    $router->get('/animal_movimientos/{animal_movimiento_id}', ['controlador' => AnimalMovimientoController::class, 'accion' => 'mostrar']);
+    $router->post('/animal_movimientos', ['controlador' => AnimalMovimientoController::class, 'accion' => 'crear']);
+    $router->post('/animal_movimientos/{animal_movimiento_id}', ['controlador' => AnimalMovimientoController::class, 'accion' => 'actualizar']);
+    $router->delete('/animal_movimientos/{animal_movimiento_id}', ['controlador' => AnimalMovimientoController::class, 'accion' => 'eliminar']);
+
+
+    // endpoints de animales
+    $router->get('/animales', ['controlador' => AnimalController::class, 'accion' => 'listar']);
+    $router->get('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'mostrar']);
+    $router->get('/animales/options', ['controlador' => AnimalController::class, 'accion' => 'options']);
+    $router->post('/animales', ['controlador' => AnimalController::class, 'accion' => 'crear']);
+    $router->post('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'actualizar']);
+    $router->delete('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'eliminar']);
 });
 
 

@@ -8,7 +8,7 @@
     data-layout-config='{"leftSideBarTheme":"dark","layoutBoxed":false, "leftSidebarCondensed":false, "leftSidebarScrollable":false,"darkMode":false, "showRightSidebarOnStart": true}'>
 
     <!-- Begin page -->
-    <div id="wrapper">
+    <div class="wrapper">
         <!-- ========== Menu ========== -->
         <?php include __DIR__ . '/../partials/sidebar.php'; ?>
         <!-- ========== Left menu End ========== -->

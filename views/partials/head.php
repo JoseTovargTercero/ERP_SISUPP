@@ -14,8 +14,8 @@
 <link href="<?= BASE_URL ?>public/assets/css/app.min.css" rel="stylesheet" type="text/css" id="light-style">
 <link href="<?= BASE_URL ?>public/assets/css/app-dark.min.css" rel="stylesheet" type="text/css" id="dark-style">
 
-<link rel="stylesheet" href="<?= BASE_URL ?>public/assets/css/bootstrapTable.min.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>public/assets/css/bootstrapIcons.min.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>public/assets/css/bootstrapTable.min.css">
 
 
 

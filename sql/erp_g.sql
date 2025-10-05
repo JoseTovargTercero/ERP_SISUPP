@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 06-10-2025 a las 00:58:33
+-- Tiempo de generación: 06-10-2025 a las 01:30:30
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -313,9 +313,10 @@ CREATE TABLE `menu` (
 --
 
 INSERT INTO `menu` (`menu_id`, `categoria`, `nombre`, `url`, `icono`, `user_level`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
-('25d17a58-3186-48ed-81cc-8d396074b62d', 'usuarios', 'Modulos', 'modulos', '0', 0, '2025-10-04 11:28:50', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL, NULL, NULL),
-('35f8606a-a133-11f0-a92b-74d02b268d93', 'usuarios', 'Usuarios', 'users', 'uil-user-circle', 0, NULL, NULL, NULL, NULL, NULL, NULL),
-('920a038d-e341-4c61-9915-d35fb41d1a6b', 'area', 'Fincas', 'fincas', '0', 1, '2025-10-04 10:41:51', '920a038d-e341-4c61-9915-d35fb41d1a6b', '2025-10-04 11:29:23', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
+('1be82974-a797-4bea-aae1-0d7112727ec4', 'animales', 'Gestión de Rebaño', 'animales', 'mdi mdi-sheep', 1, '2025-10-05 16:54:24', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 17:17:58', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
+('25d17a58-3186-48ed-81cc-8d396074b62d', 'usuarios', 'Modulos', 'modulos', 'mdi mdi-view-module', 0, '2025-10-04 11:28:50', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 17:19:35', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
+('35f8606a-a133-11f0-a92b-74d02b268d93', 'usuarios', 'Usuarios', 'users', 'mdi mdi-account-group', 0, NULL, NULL, '2025-10-05 17:19:29', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
+('920a038d-e341-4c61-9915-d35fb41d1a6b', 'area', 'Fincas', 'fincas', 'mdi mdi-office-building-marker', 1, '2025-10-04 10:41:51', '920a038d-e341-4c61-9915-d35fb41d1a6b', '2025-10-05 17:20:20', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
 ('95765136-0404-4810-8dc4-5b38751c8522', 'partos', 'asdasd', 'https://github.com/jesuszapataDev/digital-signature-form.git', '0', 1, '2025-10-04 10:05:19', '95765136-0404-4810-8dc4-5b38751c8522', '2025-10-04 10:12:35', '95765136-0404-4810-8dc4-5b38751c8522', '2025-10-04 10:12:40', '95765136-0404-4810-8dc4-5b38751c8522');
 
 -- --------------------------------------------------------
@@ -439,13 +440,14 @@ CREATE TABLE `system_users` (
 --
 
 INSERT INTO `system_users` (`user_id`, `nombre`, `email`, `contrasena`, `nivel`, `estado`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
-('1', 'Fatima Gomez', 'fatimagomezpd@gmail.com', '$2y$10$EyP1MOY39kuw4uREdk7ao.UUzQ10YNIZ95IZLM70MUPo5J6YzEBVG', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
+('07d9bff2-7493-4695-92e0-1ca74a48db06', 'Luis Aguirrin', 'aguirrin@gmail.com', '$2y$10$GiHdtU89HFwKXHVYwWFmGeZzLIWjFjpwIYm0OyHGazFJyQmh145ky', 1, 1, '2025-10-05 16:08:11', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL, NULL, NULL),
+('1', 'Fatima Gomez', 'fatimagomezpd@gmail.com', '$2y$10$EyP1MOY39kuw4uREdk7ao.UUzQ10YNIZ95IZLM70MUPo5J6YzEBVG', 1, 1, NULL, NULL, NULL, NULL, '2025-10-05 16:14:00', 'd7518474-2d2f-4634-823f-71936565c110'),
 ('35', 'Ricardo', 'jose.2710.ricardo@gmail.com', '$2y$10$xTVUq4JFTu6S7z7pCZtWTuC8ukfj0r3jsFk7Nw62TtU1WtnZ87MDm', 1, 1, NULL, NULL, '2025-10-04 10:49:45', '35', NULL, NULL),
-('40', 'Hilson Martinez', 'martinezhilson8@gmail.com', '$2y$10$3mEuUd1/uIn0nNx3.qBoYeGeDc7WAXsEUvldqHX1WNaWusgVwnu9e', 2, 1, NULL, NULL, NULL, NULL, NULL, NULL),
-('42', 'ASDRUBAL MARTINEZs', 'asdrubalmartinez486@gmail.com', '$2y$10$yUnVJhDWX6xkB4BEch2HPeAbEGNA311qcjs1DXVIsTmaah6jzHwzW', 2, 1, NULL, NULL, '2025-10-04 09:49:28', '42', NULL, NULL),
+('40', 'Hilson Martinez', 'martinezhilson8@gmail.com', '$2y$10$3mEuUd1/uIn0nNx3.qBoYeGeDc7WAXsEUvldqHX1WNaWusgVwnu9e', 2, 1, NULL, NULL, NULL, NULL, '2025-10-05 16:14:03', 'd7518474-2d2f-4634-823f-71936565c110'),
+('42', 'ASDRUBAL MARTINEZs', 'asdrubalmartinez486@gmail.com', '$2y$10$yUnVJhDWX6xkB4BEch2HPeAbEGNA311qcjs1DXVIsTmaah6jzHwzW', 2, 1, NULL, NULL, '2025-10-04 09:49:28', '42', '2025-10-05 16:13:58', 'd7518474-2d2f-4634-823f-71936565c110'),
 ('43', 'user ejecucion', 'magomagel1983@gmail.com', '$2y$10$EyP1MOY39kuw4uREdk7ao.UUzQ10YNIZ95IZLM70MUPo5J6YzEBVG', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
 ('45', 'user proyectos', 'proyecto@correo.com', '$2y$10$EyP1MOY39kuw4uREdk7ao.UUzQ10YNIZ95IZLM70MUPo5J6YzEBVG', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL),
-('d7518474-2d2f-4634-823f-71936565c110', 'Jesus Zapatin', 'zapatin@gmail.com', '$2y$10$H.Y1gpOJFRMCObm0rNPZ4uHfis56lTpKacsf1hrvWvwefwDJHNujq', 1, 1, '2025-10-04 10:50:51', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL, NULL, NULL);
+('d7518474-2d2f-4634-823f-71936565c110', 'Jesus Zapatin', 'zapatin@gmail.com', '$2y$10$H.Y1gpOJFRMCObm0rNPZ4uHfis56lTpKacsf1hrvWvwefwDJHNujq', 0, 1, '2025-10-04 10:50:51', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 15:46:18', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -470,7 +472,8 @@ CREATE TABLE `users_permisos` (
 --
 
 INSERT INTO `users_permisos` (`users_permisos_id`, `user_id`, `menu_id`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
-('5309a0b7-a133-11f0-a92b-74d02b268d93', 'd7518474-2d2f-4634-823f-71936565c110', '35f8606a-a133-11f0-a92b-74d02b268d93', NULL, NULL, NULL, NULL, NULL, NULL);
+('5309a0b7-a133-11f0-a92b-74d02b268d93', 'd7518474-2d2f-4634-823f-71936565c110', '35f8606a-a133-11f0-a92b-74d02b268d93', NULL, NULL, NULL, NULL, NULL, NULL),
+('702e6d19-c932-409f-b20a-f25c14774164', '07d9bff2-7493-4695-92e0-1ca74a48db06', '920a038d-e341-4c61-9915-d35fb41d1a6b', '2025-10-05 16:08:48', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL, NULL, NULL);
 
 --
 -- Índices para tablas volcadas
