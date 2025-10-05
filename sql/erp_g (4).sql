@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 05-10-2025 a las 17:12:17
+-- Tiempo de generación: 05-10-2025 a las 18:28:25
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -65,6 +65,13 @@ CREATE TABLE `animales` (
   `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `animales`
+--
+
+INSERT INTO `animales` (`animal_id`, `identificador`, `sexo`, `especie`, `raza`, `color`, `fecha_nacimiento`, `estado`, `etapa_productiva`, `categoria`, `origen`, `madre_id`, `padre_id`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('9e9394fe-00ac-47ef-a3b7-e97bd3ac0c63', 'TEST-7496RV', 'MACHO', 'BOVINO', 'Criollo', 'Negro y Blanco', '2025-10-05', 'ACTIVO', 'CEBA', 'ENGORDE', 'OTRO', NULL, NULL, '2025-10-05 12:12:02', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 12:12:02', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -95,6 +102,13 @@ CREATE TABLE `animal_movimientos` (
   `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `animal_movimientos`
+--
+
+INSERT INTO `animal_movimientos` (`animal_movimiento_id`, `animal_id`, `fecha_mov`, `tipo_movimiento`, `motivo`, `estado`, `finca_origen_id`, `aprisco_origen_id`, `area_origen_id`, `finca_destino_id`, `aprisco_destino_id`, `area_destino_id`, `costo`, `documento_ref`, `observaciones`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('1f56c053-ebd7-4a75-b068-c97a531a93c3', '9e9394fe-00ac-47ef-a3b7-e97bd3ac0c63', '2025-10-05', 'OTRO', 'OTRO', 'ANULADO', NULL, NULL, NULL, NULL, NULL, NULL, 123.45, 'DOC-PRUEBA-001', 'Movimiento de prueba', '2025-10-05 12:12:03', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 12:12:03', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -115,6 +129,13 @@ CREATE TABLE `animal_pesos` (
   `deleted_at` datetime DEFAULT NULL,
   `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `animal_pesos`
+--
+
+INSERT INTO `animal_pesos` (`animal_peso_id`, `animal_id`, `fecha_peso`, `peso_kg`, `metodo`, `observaciones`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('e785f5ab-3f55-4b0e-aaaa-b7b7f3115bdc', '9e9394fe-00ac-47ef-a3b7-e97bd3ac0c63', '2025-10-05', 255.300, 'BALANZA', 'Ajuste de peso (recalibración)', '2025-10-05 12:12:03', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 12:12:03', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -146,6 +167,13 @@ CREATE TABLE `animal_salud` (
   `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `animal_salud`
+--
+
+INSERT INTO `animal_salud` (`animal_salud_id`, `animal_id`, `fecha_evento`, `tipo_evento`, `diagnostico`, `severidad`, `tratamiento`, `medicamento`, `dosis`, `via_administracion`, `costo`, `estado`, `proxima_revision`, `responsable`, `observaciones`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('c041f6e1-0509-4b29-b587-f387f3dddea2', '9e9394fe-00ac-47ef-a3b7-e97bd3ac0c63', '2025-10-05', 'REVISION', 'Revisión general', 'LEVE', 'N/A', NULL, NULL, NULL, NULL, 'CERRADO', NULL, 'Encargado 1', 'Caso cerrado por estabilidad', '2025-10-05 12:12:03', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 12:12:03', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -170,6 +198,13 @@ CREATE TABLE `animal_ubicaciones` (
   `deleted_at` datetime DEFAULT NULL,
   `deleted_by` char(36) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `animal_ubicaciones`
+--
+
+INSERT INTO `animal_ubicaciones` (`animal_ubicacion_id`, `animal_id`, `finca_id`, `aprisco_id`, `area_id`, `fecha_desde`, `fecha_hasta`, `motivo`, `estado`, `observaciones`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('cbd8136b-315f-4e40-9429-541d25e8f0d3', '9e9394fe-00ac-47ef-a3b7-e97bd3ac0c63', '06fcbfc8-ffc7-4956-b99d-77d879d772b7', '78059699-0f15-419e-89a8-fcc2697c4c97', '9927c9e7-d35a-4b1c-93b0-c078894cc9ef', '2025-10-05', '2025-10-05', 'INGRESO', 'INACTIVA', 'Observación editada', '2025-10-05 12:12:03', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 12:12:03', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL);
 
 -- --------------------------------------------------------
 
