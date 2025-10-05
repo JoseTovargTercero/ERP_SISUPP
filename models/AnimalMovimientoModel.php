@@ -236,100 +236,111 @@ class AnimalMovimientoModel
         }
     }
 
-    public function crear(array $data): string
-    {
-        foreach (['animal_id','fecha_mov','tipo_movimiento'] as $k) {
-            if (!isset($data[$k]) || $data[$k] === '') {
-                throw new InvalidArgumentException("Falta campo requerido: {$k}.");
-            }
-        }
-
-        $animalId = (string)trim($data['animal_id']);
-        if (!$this->animalExiste($animalId)) {
-            throw new RuntimeException('El animal especificado no existe o está eliminado.');
-        }
-
-        $fechaMov = (string)trim($data['fecha_mov']);
-        $this->validarFecha($fechaMov, 'fecha_mov');
-
-        $tipo = $this->validarEnum((string)$data['tipo_movimiento'], ['INGRESO','EGRESO','TRASLADO','VENTA','COMPRA','NACIMIENTO','MUERTE','OTRO'], 'tipo_movimiento');
-        $motivo = isset($data['motivo']) ? $this->validarEnum((string)$data['motivo'], ['TRASLADO','INGRESO','EGRESO','AISLAMIENTO','VENTA','OTRO'], 'motivo') : 'OTRO';
-        $estado = isset($data['estado']) ? $this->validarEnum((string)$data['estado'], ['REGISTRADO','ANULADO'], 'estado') : 'REGISTRADO';
-
-        // Origen/destino
-        $fOri = $data['finca_origen_id']   ?? null;
-        $aOri = $data['aprisco_origen_id'] ?? null;
-        $arOri= $data['area_origen_id']    ?? null;
-
-        $fDes = $data['finca_destino_id']   ?? null;
-        $aDes = $data['aprisco_destino_id'] ?? null;
-        $arDes= $data['area_destino_id']    ?? null;
-
-        if (!$this->fincaExiste($fOri) || !$this->apriscoExiste($aOri) || !$this->areaExiste($arOri) ||
-            !$this->fincaExiste($fDes) || !$this->apriscoExiste($aDes) || !$this->areaExiste($arDes)) {
-            throw new RuntimeException('Finca/aprisco/área (origen/destino) no existen o están eliminados.');
-        }
-        // Consistencia jerárquica
-        $this->validarJerarquia($fOri, $aOri, $arOri);
-        $this->validarJerarquia($fDes, $aDes, $arDes);
-
-        // Reglas por tipo
-        $this->validarReglasTipo($tipo, $fOri, $aOri, $arOri, $fDes, $aDes, $arDes);
-
-        $costo = array_key_exists('costo',$data) && $data['costo'] !== null ? (float)$data['costo'] : null;
-        if ($costo !== null && ($costo < 0 || $costo > 999999.99)) {
-            throw new InvalidArgumentException("costo fuera de rango.");
-        }
-        $documento = isset($data['documento_ref']) ? trim((string)$data['documento_ref']) : null;
-        $obs = isset($data['observaciones']) ? trim((string)$data['observaciones']) : null;
-
-        $this->db->begin_transaction();
-        try {
-            [$now, $env] = $this->nowWithAudit();
-            $uuid = $this->generateUUIDv4();
-            $actorId = $_SESSION['user_id'] ?? $uuid;
-
-            $sql = "INSERT INTO {$this->table}
-                (animal_movimiento_id, animal_id, fecha_mov, tipo_movimiento, motivo, estado,
-                 finca_origen_id, aprisco_origen_id, area_origen_id,
-                 finca_destino_id, aprisco_destino_id, area_destino_id,
-                 costo, documento_ref, observaciones,
-                 created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
-            $stmt = $this->db->prepare($sql);
-            if (!$stmt) throw new mysqli_sql_exception("Error preparar inserción: " . $this->db->error);
-
-            // s s s s s s s s s s s s d s s s s
-            $types = 'sssssssss ssss dsss s'; // compactaremos
-            $types = 'sssssssssssss dsss s';  // evitar espacios (claridad visual no importa)
-            $types = str_replace(' ', '', 'sssssssssssssdssss');
-
-            $stmt->bind_param(
-                $types,
-                $uuid, $animalId, $fechaMov, $tipo, $motivo, $estado,
-                $fOri, $aOri, $arOri,
-                $fDes, $aDes, $arDes,
-                $costo, $documento, $obs,
-                $now, $actorId
-            );
-
-            if (!$stmt->execute()) {
-                $err = strtolower($stmt->error);
-                $stmt->close(); $this->db->rollback();
-                if (str_contains($err, 'foreign key')) {
-                    throw new RuntimeException('Violación de clave foránea (animal/origen/destino).');
-                }
-                throw new mysqli_sql_exception("Error al ejecutar inserción: " . $err);
-            }
-
-            $stmt->close();
-            $this->db->commit();
-            return $uuid;
-        } catch (\Throwable $e) {
-            $this->db->rollback();
-            throw $e;
+public function crear(array $data): string
+{
+    foreach (['animal_id','fecha_mov','tipo_movimiento'] as $k) {
+        if (!isset($data[$k]) || $data[$k] === '') {
+            throw new InvalidArgumentException("Falta campo requerido: {$k}.");
         }
     }
+
+    $animalId = (string)trim($data['animal_id']);
+    if (!$this->animalExiste($animalId)) {
+        throw new RuntimeException('El animal especificado no existe o está eliminado.');
+    }
+
+    $fechaMov = (string)trim($data['fecha_mov']);
+    $this->validarFecha($fechaMov, 'fecha_mov');
+
+    $tipo   = $this->validarEnum((string)$data['tipo_movimiento'], ['INGRESO','EGRESO','TRASLADO','VENTA','COMPRA','NACIMIENTO','MUERTE','OTRO'], 'tipo_movimiento');
+    $motivo = isset($data['motivo']) ? $this->validarEnum((string)$data['motivo'], ['TRASLADO','INGRESO','EGRESO','AISLAMIENTO','VENTA','OTRO'], 'motivo') : 'OTRO';
+    $estado = isset($data['estado']) ? $this->validarEnum((string)$data['estado'], ['REGISTRADO','ANULADO'], 'estado') : 'REGISTRADO';
+
+    // Origen/destino (permitir null)
+    $fOri = $data['finca_origen_id']   ?? null;
+    $aOri = $data['aprisco_origen_id'] ?? null;
+    $arOri= $data['area_origen_id']    ?? null;
+
+    $fDes = $data['finca_destino_id']   ?? null;
+    $aDes = $data['aprisco_destino_id'] ?? null;
+    $arDes= $data['area_destino_id']    ?? null;
+
+    if (!$this->fincaExiste($fOri) || !$this->apriscoExiste($aOri) || !$this->areaExiste($arOri) ||
+        !$this->fincaExiste($fDes) || !$this->apriscoExiste($aDes) || !$this->areaExiste($arDes)) {
+        throw new RuntimeException('Finca/aprisco/área (origen/destino) no existen o están eliminados.');
+    }
+
+    // Consistencia jerárquica
+    $this->validarJerarquia($fOri, $aOri, $arOri);
+    $this->validarJerarquia($fDes, $aDes, $arDes);
+
+    // Reglas por tipo
+    $this->validarReglasTipo($tipo, $fOri, $aOri, $arOri, $fDes, $aDes, $arDes);
+
+    // costo nullable (mantener null si viene vacío)
+    $costo = (isset($data['costo']) && $data['costo'] !== '' && $data['costo'] !== null) ? (string)(float)$data['costo'] : null;
+
+    $documento = isset($data['documento_ref']) ? trim((string)$data['documento_ref']) : null;
+    $obs       = isset($data['observaciones']) ? trim((string)$data['observaciones']) : null;
+
+    $this->db->begin_transaction();
+    try {
+        [$now, $env] = $this->nowWithAudit();
+        $uuid    = $this->generateUUIDv4();
+        $actorId = $_SESSION['user_id'] ?? $uuid;
+
+        $sql = "INSERT INTO {$this->table}
+            (animal_movimiento_id, animal_id, fecha_mov, tipo_movimiento, motivo, estado,
+             finca_origen_id, aprisco_origen_id, area_origen_id,
+             finca_destino_id, aprisco_destino_id, area_destino_id,
+             costo, documento_ref, observaciones,
+             created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
+
+        // Contar placeholders (deben ser 17)
+        $placeholders = substr_count($sql, '?'); // 17 esperados
+        if ($placeholders !== 17) {
+            throw new RuntimeException("SQL mal formado: se esperaban 17 placeholders, hay {$placeholders}.");
+        }
+
+        $stmt = $this->db->prepare($sql);
+        if (!$stmt) {
+            throw new mysqli_sql_exception("Error preparar inserción: " . $this->db->error);
+        }
+
+        // Usar todos 's' para evitar problemas con NULL en 'd'
+        $types = str_repeat('s', 17);
+
+        $stmt->bind_param(
+            $types,
+            $uuid, $animalId, $fechaMov, $tipo, $motivo, $estado,
+            $fOri, $aOri, $arOri,
+            $fDes, $aDes, $arDes,
+            $costo, $documento, $obs,
+            $now, $actorId
+        );
+
+        if (!$stmt->execute()) {
+            $err = strtolower($stmt->error);
+            $stmt->close(); 
+            $this->db->rollback();
+
+            if (str_contains($err, 'foreign key')) {
+                throw new RuntimeException('Violación de clave foránea (animal/origen/destino).');
+            }
+            throw new mysqli_sql_exception("Error al ejecutar inserción: " . $err);
+        }
+
+        $stmt->close();
+        $this->db->commit();
+        return $uuid;
+    } catch (\Throwable $e) {
+        $this->db->rollback();
+        throw $e;
+    }
+}
+
+
 
     public function actualizar(string $id, array $data): bool
     {

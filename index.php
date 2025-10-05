@@ -9,6 +9,13 @@ require_once __DIR__ . '/controllers/ReporteDanoController.php';
 require_once __DIR__ . '/controllers/MenuController.php';
 require_once __DIR__ . '/controllers/UsersPermisosController.php';
 require_once __DIR__ . '/middlewares/AuthMiddleware.php';
+require_once __DIR__ . '/controllers/AnimalController.php';
+require_once __DIR__ . '/controllers/AnimalMovimientoController.php';
+require_once __DIR__ . '/controllers/AnimalPesoController.php';
+require_once __DIR__ . '/controllers/AnimalSaludController.php';
+require_once __DIR__ . '/controllers/AnimalUbicacionController.php';
+
+
 use App\Core\ViewRenderer;
 
 use App\Router;

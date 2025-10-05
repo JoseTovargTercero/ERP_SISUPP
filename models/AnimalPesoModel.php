@@ -188,85 +188,93 @@ class AnimalPesoModel
      * Nota: se guarda en peso_kg (conversión automática si unidad=LB)
      */
     public function crear(array $data): string
-    {
-        foreach (['animal_id','fecha_peso','peso','unidad'] as $k) {
-            if (!isset($data[$k]) || $data[$k] === '') {
-                throw new InvalidArgumentException("Falta campo requerido: {$k}.");
-            }
-        }
-
-        $animalId   = trim((string)$data['animal_id']);
-        $fechaPeso  = trim((string)$data['fecha_peso']);
-        $pesoInput  = (float)$data['peso'];
-        $unidad     = (string)$data['unidad'];
-
-        if (!$this->animalExiste($animalId)) {
-            throw new RuntimeException('El animal especificado no existe o está eliminado.');
-        }
-        $this->validarFecha($fechaPeso);
-        $pesoKg = $this->normalizarPeso($pesoInput, $unidad);
-
-        $metodo        = isset($data['metodo']) ? trim((string)$data['metodo']) : null;
-        $observaciones = isset($data['observaciones']) ? trim((string)$data['observaciones']) : null;
-
-        $this->db->begin_transaction();
-        try {
-            [$now, $env] = $this->nowWithAudit();
-            $uuid    = $this->generateUUIDv4();
-            $actorId = $_SESSION['user_id'] ?? $uuid;
-
-            $sql = "INSERT INTO {$this->table}
-                    (animal_peso_id, animal_id, fecha_peso, peso_kg, metodo, observaciones,
-                     created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
-            $stmt = $this->db->prepare($sql);
-            if (!$stmt) throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
-
-            $stmt->bind_param('sss dsss',
-                /* PHP quirk: we'll bind in two steps to avoid spaces in types */ $dummy=null,$dummy2=null,$dummy3=null,$dummy4=null,$dummy5=null,$dummy6=null,$dummy7=null,$dummy8=null
-            );
-            // Re-bind correctamente (workaround para formatos):
-            $stmt->close();
-
-            $stmt = $this->db->prepare($sql);
-            if (!$stmt) throw new mysqli_sql_exception("Error al preparar inserción (rebind): " . $this->db->error);
-
-            // tipos: s s s d s s s s
-            $stmt->bind_param(
-                'sss dssss',
-                $uuid,
-                $animalId,
-                $fechaPeso,
-                $pesoKg,
-                $metodo,
-                $observaciones,
-                $now,
-                $actorId
-            );
-
-            if (!$stmt->execute()) {
-                $err = strtolower($stmt->error);
-                $stmt->close();
-                $this->db->rollback();
-
-                if (str_contains($err, 'foreign key')) {
-                    throw new RuntimeException('El animal no existe (violación de clave foránea).');
-                }
-                if (str_contains($err, 'duplicate')) {
-                    // Por si hay índice único (animal_id, fecha_peso)
-                    throw new RuntimeException('Ya existe un registro de peso para este animal en esa fecha.');
-                }
-                throw new mysqli_sql_exception("Error al ejecutar inserción: " . $err);
-            }
-
-            $stmt->close();
-            $this->db->commit();
-            return $uuid;
-        } catch (\Throwable $e) {
-            $this->db->rollback();
-            throw $e;
+{
+    foreach (['animal_id','fecha_peso','peso_kg','unidad'] as $k) {
+        if (!isset($data[$k]) || $data[$k] === '') {
+            throw new InvalidArgumentException("Falta campo requerido: {$k}.");
         }
     }
+
+    $animalId   = (string) trim((string)$data['animal_id']);
+    $fechaPeso  = (string) trim((string)$data['fecha_peso']);
+    $pesoInput  = (float) $data['peso_kg'];
+    $unidad     = (string) $data['unidad'];
+
+    if (!$this->animalExiste($animalId)) {
+        throw new RuntimeException('El animal especificado no existe o está eliminado.');
+    }
+    $this->validarFecha($fechaPeso);
+
+    // IMPORTANTE: calcular en variable (no pasar expresiones a bind_param)
+    $pesoKg = $this->normalizarPeso($pesoInput, $unidad); // devuelve float (o numeric)
+
+    // Variables simples (ok si son NULL)
+    $metodo        = isset($data['metodo']) ? (string) trim((string)$data['metodo']) : null;
+    $observaciones = isset($data['observaciones']) ? (string) trim((string)$data['observaciones']) : null;
+
+    $this->db->begin_transaction();
+    try {
+        [$now, $env] = $this->nowWithAudit();
+        $uuid    = $this->generateUUIDv4();
+        $actorId = $_SESSION['user_id'] ?? $uuid;
+
+        $sql = "INSERT INTO {$this->table}
+                (animal_peso_id, animal_id, fecha_peso, peso_kg, metodo, observaciones,
+                 created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
+
+        $stmt = $this->db->prepare($sql);
+        if (!$stmt) {
+            throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
+        }
+
+        // Opción A: bind con 'd' para el float (8 placeholders => 8 tipos)
+        // 1: s uuid
+        // 2: s animal_id
+        // 3: s fecha_peso
+        // 4: d peso_kg
+        // 5: s metodo
+        // 6: s observaciones
+        // 7: s created_at
+        // 8: s created_by
+        $types = 'sssdssss';
+
+        // IMPORTANTE: pasar **variables**; nada de (float)$data['x'], trim(...), etc.
+        $stmt->bind_param(
+            $types,
+            $uuid,
+            $animalId,
+            $fechaPeso,
+            $pesoKg,        // variable float
+            $metodo,        // puede ser NULL (mysqli lo acepta con 's')
+            $observaciones, // puede ser NULL
+            $now,
+            $actorId
+        );
+
+        if (!$stmt->execute()) {
+            $err = strtolower($stmt->error);
+            $stmt->close();
+            $this->db->rollback();
+
+            if (str_contains($err, 'foreign key')) {
+                throw new RuntimeException('El animal no existe (violación de clave foránea).');
+            }
+            if (str_contains($err, 'duplicate')) {
+                throw new RuntimeException('Ya existe un registro de peso para este animal en esa fecha.');
+            }
+            throw new mysqli_sql_exception("Error al ejecutar inserción: " . $err);
+        }
+
+        $stmt->close();
+        $this->db->commit();
+        return $uuid;
+    } catch (\Throwable $e) {
+        $this->db->rollback();
+        throw $e;
+    }
+}
+
 
     /**
      * Actualiza campos: fecha_peso?, peso/unidad?, metodo?, observaciones?

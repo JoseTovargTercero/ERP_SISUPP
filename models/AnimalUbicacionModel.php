@@ -128,7 +128,6 @@ class AnimalUbicacionModel
             if ($fincaId !== null && $row['finca_id'] !== $fincaId) {
                 throw new InvalidArgumentException("El área no pertenece a la finca especificada.");
             }
-            // si no vinieron aprisco/finca, podemos inferirlos, pero aquí solo validamos si vinieron
         }
 
         if ($apriscoId !== null) {
@@ -165,13 +164,6 @@ class AnimalUbicacionModel
 
     /* ============ Lecturas ============ */
 
-    /**
-     * Lista ubicaciones del animal (histórico).
-     * Filtros: animal_id, finca_id, aprisco_id, area_id,
-     *          desde/hasta (intersección con [fecha_desde, COALESCE(fecha_hasta, +inf)]),
-     *          soloActivas (true => fecha_hasta IS NULL),
-     *          incluirEliminados (bool), paginación.
-     */
     public function listar(
         int $limit = 100,
         int $offset = 0,
@@ -188,20 +180,14 @@ class AnimalUbicacionModel
         $params = [];
         $types = '';
 
-        $where[] = $incluirEliminados ? 'u.deleted_at IS NOT NULL OR u.deleted_at IS NULL' : 'u.deleted_at IS NULL';
+        if (!$incluirEliminados) {
+            $where[] = 'u.deleted_at IS NULL';
+        }
 
-        if ($animalId) {
-            $where[] = 'u.animal_id = ?'; $params[] = $animalId; $types .= 's';
-        }
-        if ($fincaId) {
-            $where[] = 'u.finca_id = ?'; $params[] = $fincaId; $types .= 's';
-        }
-        if ($apriscoId) {
-            $where[] = 'u.aprisco_id = ?'; $params[] = $apriscoId; $types .= 's';
-        }
-        if ($areaId) {
-            $where[] = 'u.area_id = ?'; $params[] = $areaId; $types .= 's';
-        }
+        if ($animalId) { $where[] = 'u.animal_id = ?';  $params[] = $animalId;  $types .= 's'; }
+        if ($fincaId)  { $where[] = 'u.finca_id = ?';   $params[] = $fincaId;   $types .= 's'; }
+        if ($apriscoId){ $where[] = 'u.aprisco_id = ?'; $params[] = $apriscoId; $types .= 's'; }
+        if ($areaId)   { $where[] = 'u.area_id = ?';    $params[] = $areaId;    $types .= 's'; }
         if ($soloActivas) {
             $where[] = 'u.fecha_hasta IS NULL';
         }
@@ -214,7 +200,7 @@ class AnimalUbicacionModel
             $where[] = 'u.fecha_desde <= ?'; $params[] = $hasta; $types .= 's';
         }
 
-        $whereSql = implode(' AND ', $where);
+        $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
         $sql = "SELECT
                     u.animal_ubicacion_id,
@@ -225,13 +211,14 @@ class AnimalUbicacionModel
                     u.area_id,   ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
                     u.fecha_desde, u.fecha_hasta,
                     u.motivo, u.estado, u.observaciones,
-                    u.created_at, u.created_by, u.updated_at, u.updated_by
+                    u.created_at, u.created_by, u.updated_at, u.updated_by,
+                    u.deleted_at, u.deleted_by
                 FROM {$this->table} u
                 LEFT JOIN animales a ON a.animal_id = u.animal_id
                 LEFT JOIN fincas   f ON f.finca_id   = u.finca_id
                 LEFT JOIN apriscos ap ON ap.aprisco_id = u.aprisco_id
                 LEFT JOIN areas   ar ON ar.area_id   = u.area_id
-                WHERE {$whereSql}
+                $whereSql
                 ORDER BY COALESCE(u.fecha_hasta, '9999-12-31') DESC, u.fecha_desde DESC, u.created_at DESC
                 LIMIT ? OFFSET ?";
 
@@ -243,7 +230,7 @@ class AnimalUbicacionModel
 
         $stmt->bind_param($types, ...$params);
         $stmt->execute();
-        $res = $stmt->get_result();
+        $res  = $stmt->get_result();
         $rows = $res->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
         return $rows;
@@ -282,11 +269,22 @@ class AnimalUbicacionModel
     public function getActual(string $animalId): ?array
     {
         $sql = "SELECT
-                    u.animal_ubicacion_id, u.animal_id,
-                    u.finca_id, u.aprisco_id, u.area_id,
-                    u.fecha_desde, u.motivo, u.estado, u.observaciones
+                    u.animal_ubicacion_id,
+                    u.animal_id,
+                    a.identificador AS animal_identificador,
+                    u.finca_id,  f.nombre AS nombre_finca,
+                    u.aprisco_id, ap.nombre AS nombre_aprisco,
+                    u.area_id,   ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
+                    u.fecha_desde, u.fecha_hasta,
+                    u.motivo, u.estado, u.observaciones
                 FROM {$this->table} u
-                WHERE u.animal_id = ? AND u.fecha_hasta IS NULL AND u.deleted_at IS NULL
+                LEFT JOIN animales a ON a.animal_id = u.animal_id
+                LEFT JOIN fincas   f ON f.finca_id   = u.finca_id
+                LEFT JOIN apriscos ap ON ap.aprisco_id = u.aprisco_id
+                LEFT JOIN areas   ar ON ar.area_id   = u.area_id
+                WHERE u.animal_id = ?
+                  AND u.fecha_hasta IS NULL
+                  AND u.deleted_at IS NULL
                 ORDER BY u.fecha_desde DESC, u.created_at DESC
                 LIMIT 1";
         $stmt = $this->db->prepare($sql);
@@ -303,11 +301,10 @@ class AnimalUbicacionModel
 
     /**
      * Crear ubicación.
-     * Requeridos: animal_id, fecha_desde (YYYY-MM-DD)
-     * Opcionales: finca_id, aprisco_id, area_id, fecha_hasta (YYYY-MM-DD), motivo, estado, observaciones
-     * Reglas:
-     * - valida existencia y consistencia jerárquica
-     * - si fecha_hasta es NULL ⇒ no debe existir otra ubicación activa para el animal
+     * Reglas clave:
+     * - Si fecha_hasta es NULL ⇒ estado = 'ACTIVA' (forzado)
+     * - Si fecha_hasta no es NULL ⇒ estado = 'INACTIVA' (forzado)
+     * - No permite doble activa por animal.
      */
     public function crear(array $data): string
     {
@@ -332,14 +329,14 @@ class AnimalUbicacionModel
             }
         }
 
+        // Motivo (opcional con validación)
         $motivo = isset($data['motivo']) ? strtoupper(trim((string)$data['motivo'])) : 'OTRO';
-        $estado = isset($data['estado']) ? strtoupper(trim((string)$data['estado'])) : 'ACTIVA';
         if (!in_array($motivo, ['TRASLADO','INGRESO','EGRESO','AISLAMIENTO','VENTA','OTRO'], true)) {
             throw new InvalidArgumentException("motivo inválido. Use: TRASLADO, INGRESO, EGRESO, AISLAMIENTO, VENTA, OTRO.");
         }
-        if (!in_array($estado, ['ACTIVA','INACTIVA'], true)) {
-            throw new InvalidArgumentException("estado inválido. Use: ACTIVA, INACTIVA.");
-        }
+
+        // Estado: SIEMPRE forzado según actividad
+        $estado = ($fechaHasta === null) ? 'ACTIVA' : 'INACTIVA';
 
         if (!$this->animalExiste($animalId)) {
             throw new RuntimeException('El animal especificado no existe o está eliminado.');
@@ -349,7 +346,7 @@ class AnimalUbicacionModel
         }
         $this->validarJerarquia($fincaId, $apriscoId, $areaId);
 
-        // Si es activa (fecha_hasta null), evitar doble activa
+        // Evitar doble activa
         if ($fechaHasta === null && $this->existeActiva($animalId)) {
             throw new RuntimeException('Ya existe una ubicación activa para este animal. Debe cerrarse antes de crear otra.');
         }
@@ -370,7 +367,6 @@ class AnimalUbicacionModel
             $stmt = $this->db->prepare($sql);
             if (!$stmt) throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
 
-            // tipos: s s s s s s s s s s s s
             $stmt->bind_param(
                 'ssssssssssss',
                 $uuid, $animalId, $fincaId, $apriscoId, $areaId,
@@ -399,8 +395,10 @@ class AnimalUbicacionModel
     }
 
     /**
-     * Actualizar ubicación (no permite romper la regla de única activa).
-     * Campos: finca_id?, aprisco_id?, area_id?, fecha_desde?, fecha_hasta?, motivo?, estado?, observaciones?
+     * Actualizar ubicación.
+     * Normaliza estado en función de fecha_hasta:
+     *  - NULL  => ACTIVA (y valida única activa)
+     *  - !NULL => INACTIVA
      */
     public function actualizar(string $id, array $data): bool
     {
@@ -408,17 +406,16 @@ class AnimalUbicacionModel
         $params = [];
         $types  = '';
 
-        // Necesitaremos valores para validar jerarquía y solapamientos
         $current = $this->obtenerPorId($id);
         if (!$current || $current['deleted_at'] !== null) {
             throw new RuntimeException("La ubicación no existe o está eliminada.");
         }
 
-        $fincaId   = $current['finca_id'];
-        $apriscoId = $current['aprisco_id'];
-        $areaId    = $current['area_id'];
-        $fechaDesde= $current['fecha_desde'];
-        $fechaHasta= $current['fecha_hasta'];
+        $fincaId    = $current['finca_id'];
+        $apriscoId  = $current['aprisco_id'];
+        $areaId     = $current['area_id'];
+        $fechaDesde = $current['fecha_desde'];
+        $fechaHasta = $current['fecha_hasta']; // puede ser null
 
         if (array_key_exists('finca_id', $data))   { $fincaId   = $data['finca_id']   !== null ? (string)$data['finca_id']   : null; }
         if (array_key_exists('aprisco_id', $data)) { $apriscoId = $data['aprisco_id'] !== null ? (string)$data['aprisco_id'] : null; }
@@ -442,30 +439,7 @@ class AnimalUbicacionModel
             $campos[] = 'fecha_hasta = ?'; $params[] = $fechaHasta; $types .= 's';
         }
 
-        if (array_key_exists('motivo', $data)) {
-            if ($data['motivo'] !== null) {
-                $mot = strtoupper(trim((string)$data['motivo']));
-                if (!in_array($mot, ['TRASLADO','INGRESO','EGRESO','AISLAMIENTO','VENTA','OTRO'], true)) {
-                    throw new InvalidArgumentException("motivo inválido.");
-                }
-                $campos[] = 'motivo = ?'; $params[] = $mot; $types .= 's';
-            } else {
-                $campos[] = 'motivo = ?'; $params[] = null; $types .= 's';
-            }
-        }
-
-        if (array_key_exists('estado', $data)) {
-            if ($data['estado'] !== null) {
-                $est = strtoupper(trim((string)$data['estado']));
-                if (!in_array($est, ['ACTIVA','INACTIVA'], true)) {
-                    throw new InvalidArgumentException("estado inválido.");
-                }
-                $campos[] = 'estado = ?'; $params[] = $est; $types .= 's';
-            } else {
-                $campos[] = 'estado = ?'; $params[] = null; $types .= 's';
-            }
-        }
-
+        // observaciones
         if (array_key_exists('observaciones', $data)) {
             $campos[] = 'observaciones = ?';
             $params[] = $data['observaciones'] !== null ? trim((string)$data['observaciones']) : null;
@@ -478,8 +452,7 @@ class AnimalUbicacionModel
         }
         $this->validarJerarquia($fincaId, $apriscoId, $areaId);
 
-        // Evitar dejar dos activas: si esta queda activa (fecha_hasta NULL),
-        // verificar que no exista otra activa (distinta a la actual)
+        // Regla de única activa
         if ($fechaHasta === null) {
             $sql = "SELECT 1 FROM {$this->table}
                     WHERE animal_id = ? AND fecha_hasta IS NULL AND deleted_at IS NULL
@@ -497,7 +470,11 @@ class AnimalUbicacionModel
             }
         }
 
-        // Aplicar cambios en FKs (si fueron enviados)
+        // Normalizar SIEMPRE estado según fecha_hasta
+        $estado = ($fechaHasta === null) ? 'ACTIVA' : 'INACTIVA';
+        $campos[] = 'estado = ?'; $params[] = $estado; $types .= 's';
+
+        // Aplicar cambios en FKs si vinieron
         if (array_key_exists('finca_id', $data))   { $campos[] = 'finca_id = ?';   $params[] = $fincaId;   $types .= 's'; }
         if (array_key_exists('aprisco_id', $data)) { $campos[] = 'aprisco_id = ?'; $params[] = $apriscoId; $types .= 's'; }
         if (array_key_exists('area_id', $data))    { $campos[] = 'area_id = ?';    $params[] = $areaId;    $types .= 's'; }
@@ -521,7 +498,7 @@ class AnimalUbicacionModel
         $types .= 's'; $params[] = $id;
 
         $stmt->bind_param($types, ...$params);
-        $ok = $stmt->execute();
+        $ok  = $stmt->execute();
         $err = strtolower($stmt->error);
         $stmt->close();
 
@@ -535,16 +512,26 @@ class AnimalUbicacionModel
     }
 
     /**
-     * Cerrar ubicación (set fecha_hasta).
+     * Cerrar ubicación (retrocompatibilidad con controladores antiguos).
+     * Usa cerrarUbicacion().
      */
     public function cerrar(string $id, string $fechaHasta): bool
     {
+        return $this->cerrarUbicacion($id, $fechaHasta);
+    }
+
+    /**
+     * Cerrar ubicación activa: pone fecha_hasta y estado='INACTIVA'.
+     * Sólo afecta si está activa (fecha_hasta IS NULL).
+     */
+    public function cerrarUbicacion(string $id, string $fechaHasta): bool
+    {
         $this->validarFecha($fechaHasta, 'fecha_hasta');
 
-        // Validar que fecha_hasta >= fecha_desde
         $row = $this->obtenerPorId($id);
         if (!$row) throw new RuntimeException("Ubicación no encontrada.");
         if ($row['deleted_at'] !== null) throw new RuntimeException("Ubicación eliminada.");
+        if ($row['fecha_hasta'] !== null) throw new RuntimeException("La ubicación ya está cerrada.");
         if ($fechaHasta < $row['fecha_desde']) {
             throw new InvalidArgumentException("fecha_hasta no puede ser menor que fecha_desde.");
         }
@@ -553,15 +540,17 @@ class AnimalUbicacionModel
         $actorId = $_SESSION['user_id'] ?? $id;
 
         $sql = "UPDATE {$this->table}
-                SET fecha_hasta = ?, updated_at = ?, updated_by = ?
-                WHERE animal_ubicacion_id = ? AND deleted_at IS NULL";
+                SET fecha_hasta = ?, estado = 'INACTIVA', updated_at = ?, updated_by = ?
+                WHERE animal_ubicacion_id = ? AND deleted_at IS NULL AND fecha_hasta IS NULL";
         $stmt = $this->db->prepare($sql);
         if (!$stmt) throw new mysqli_sql_exception("Error al preparar cierre: " . $this->db->error);
 
         $stmt->bind_param('ssss', $fechaHasta, $now, $actorId, $id);
         $ok = $stmt->execute();
+        $affected = $stmt->affected_rows;
         $stmt->close();
-        return $ok;
+
+        return $ok && $affected > 0;
     }
 
     /**
@@ -580,7 +569,8 @@ class AnimalUbicacionModel
 
         $stmt->bind_param('sss', $now, $actorId, $id);
         $ok = $stmt->execute();
+        $affected = $stmt->affected_rows;
         $stmt->close();
-        return $ok;
+        return $ok && $affected > 0;
     }
 }
