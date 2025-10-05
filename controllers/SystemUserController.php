@@ -66,9 +66,17 @@ class SystemUserController
                 }
 
                 $user['permisos'] = $permisos;
+                $urlsPermitidas = [];
+
+
+                foreach ($user['permisos'] as $permiso) {
+                    $urlsPermitidas[] = $permiso['menu']['url'];
+                }
+                $_SESSION['permisos'] = $urlsPermitidas;
+
             } else {
                 // Acceso completo para nivel 0
-                $user['permisos'] = ['*']; // Indica acceso total
+                $_SESSION['permisos'] = ['*']; // Indica acceso total
             }
 
             // Crear sesión
@@ -78,12 +86,6 @@ class SystemUserController
             $_SESSION['nivel'] = $user['nivel'];
 
 
-            $urlsPermitidas = [];
-            $permisosData = $user['permisos'];
-            foreach ($permisosData as $permiso) {
-                $urlsPermitidas[] = $permiso['menu']['url'];
-            }
-            $_SESSION['user_modules'] = $urlsPermitidas;
 
 
             $this->jsonResponse(true, 'Inicio de sesión exitoso.', $user);
@@ -95,6 +97,7 @@ class SystemUserController
             }
             $this->jsonResponse(false, 'No se pudo iniciar sesión: ' . $e->getMessage(), null, 400);
         } catch (Throwable $e) {
+            error_log($e->getMessage());
             $this->jsonResponse(false, 'Error al iniciar sesión: ' . $e->getMessage(), null, 500);
         }
     }

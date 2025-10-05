@@ -1,8 +1,6 @@
 <div class="navbar-custom">
     <ul class="list-unstyled topbar-menu float-end mb-0">
 
-        <?= var_dump($_SESSION) ?>
-
 
         <li class="dropdown notification-list d-none d-sm-inline-block">
             <a class="nav-link dropdown-toggle arrow-none" data-bs-toggle="dropdown" href="#" role="button"

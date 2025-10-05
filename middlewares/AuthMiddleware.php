@@ -25,7 +25,9 @@ class AuthMiddleware implements Middleware
         }
 
         // 3. Para otros usuarios, verificar permisos específicos en la sesión.
-        $permisosUsuario = $_SESSION['user_modules'] ?? [];
+        $permisosUsuario = $_SESSION['permisos'] ?? [];
+
+
 
         $accesoPermitido = false;
         foreach ($permisosUsuario as $permiso) {
@@ -37,7 +39,6 @@ class AuthMiddleware implements Middleware
                 break;
             }
             // Comprobación de sub-rutas (ej. '/users/123' comienza con '/users/')
-            var_dump($permiso);
             if (str_starts_with($ruta, rtrim($permiso, '/') . '/')) {
                 $accesoPermitido = true;
                 break;
