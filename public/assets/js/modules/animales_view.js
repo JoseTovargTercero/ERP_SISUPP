@@ -185,7 +185,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const requests = Object.values(endpoints).map((url) =>
-      $.ajax({ url: url, method: 'GET' })
+      $.ajax({
+        url: url,
+        method: 'GET',
+      })
     )
 
     Promise.all(requests)
@@ -205,7 +208,9 @@ document.addEventListener('DOMContentLoaded', function () {
       .catch((error) => {
         modalDetallesAnimal.hide()
         showErrorToast(
-          error.responseJSON || { message: 'Error cargando los detalles.' }
+          error.responseJSON || {
+            message: 'Error cargando los detalles.',
+          }
         )
       })
   }
@@ -293,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
       : '<tr><td colspan="5" class="text-center">No hay ubicaciones registradas.</td></tr>'
     ubicaciones.forEach((u) => {
       const ubicacion =
-        [u.finca_nombre, u.aprisco_nombre, u.area_nombre]
+        [u.nombre_finca, u.nombre_aprisco, u.nombre_area]
           .filter(Boolean)
           .join(' / ') || 'N/A'
       const estadoClass = u.estado === 'ACTIVA' ? 'success' : 'secondary'
@@ -332,6 +337,28 @@ document.addEventListener('DOMContentLoaded', function () {
     formRegistroMovimiento.reset()
     $('#movimiento_animal_id').val(currentAnimalIdForDetails)
     $('#fecha_mov').val(new Date().toISOString().slice(0, 10))
+    // Cargar fincas al abrir
+    populateSelect(
+      '#formRegistroMovimiento select[name="finca_origen_id"]',
+      `${baseUrl}api/fincas`,
+      'Seleccione Finca de Origen',
+      'finca_id',
+      'nombre'
+    )
+    populateSelect(
+      '#formRegistroMovimiento select[name="finca_destino_id"]',
+      `${baseUrl}api/fincas`,
+      'Seleccione Finca de Destino',
+      'finca_id',
+      'nombre'
+    )
+    // Limpiar selects dependientes
+    $(
+      '#formRegistroMovimiento select[name="aprisco_origen_id"], #formRegistroMovimiento select[name="area_origen_id"]'
+    ).html('<option value="">--</option>')
+    $(
+      '#formRegistroMovimiento select[name="aprisco_destino_id"], #formRegistroMovimiento select[name="area_destino_id"]'
+    ).html('<option value="">--</option>')
     modalRegistroMovimiento.show()
   })
 
@@ -340,6 +367,18 @@ document.addEventListener('DOMContentLoaded', function () {
     formRegistroUbicacion.reset()
     $('#ubicacion_animal_id').val(currentAnimalIdForDetails)
     $('#fecha_desde_ubicacion').val(new Date().toISOString().slice(0, 10))
+    // Cargar fincas al abrir
+    populateSelect(
+      '#formRegistroUbicacion select[name="finca_id"]',
+      `${baseUrl}api/fincas`,
+      'Seleccione Finca',
+      'finca_id',
+      'nombre'
+    )
+    // Limpiar selects dependientes
+    $(
+      '#formRegistroUbicacion select[name="aprisco_id"], #formRegistroUbicacion select[name="area_id"]'
+    ).html('<option value="">--</option>')
     modalRegistroUbicacion.show()
   })
 
@@ -487,6 +526,201 @@ document.addEventListener('DOMContentLoaded', function () {
       },
     })
   })
+
+  // --- FUNCIONES Y LÓGICA PARA SELECTS DINÁMICOS ---
+
+  /**
+   * Populates a select input with data from an API endpoint.
+   * @param {string} selector - The jQuery selector for the <select> element.
+   * @param {string} url - The API endpoint URL.
+   * @param {string} placeholder - The text for the default/placeholder option.
+   * @param {string} valueField - The name of the field to use for the option value.
+   * @param {string|Function} textField - The name of the field for the option text, or a function to generate it.
+   */
+  function populateSelect(selector, url, placeholder, valueField, textField) {
+    const $select = $(selector)
+    $select.html(`<option value="">Cargando...</option>`).prop('disabled', true)
+
+    $.ajax({
+      url: url,
+      method: 'GET',
+      success: function (response) {
+        let options = `<option value="">${placeholder}</option>`
+        if (response.data && response.data.length > 0) {
+          response.data.forEach((item) => {
+            const text =
+              typeof textField === 'function'
+                ? textField(item)
+                : item[textField]
+            options += `<option value="${item[valueField]}">${text}</option>`
+          })
+        }
+        $select.html(options).prop('disabled', false)
+      },
+      error: function () {
+        $select
+          .html(`<option value="">Error al cargar</option>`)
+          .prop('disabled', true)
+      },
+    })
+  }
+
+  // Lógica para el modal de Movimientos
+  $('#formRegistroMovimiento').on(
+    'change',
+    'select[name="finca_origen_id"]',
+    function () {
+      const fincaId = $(this).val()
+      const $apriscoSelect = $(
+        '#formRegistroMovimiento select[name="aprisco_origen_id"]'
+      )
+      const $areaSelect = $(
+        '#formRegistroMovimiento select[name="area_origen_id"]'
+      )
+      $areaSelect.html('<option value="">--</option>')
+      if (fincaId) {
+        populateSelect(
+          $apriscoSelect,
+          `${baseUrl}api/apriscos?finca_id=${fincaId}`,
+          'Seleccione Aprisco',
+          'aprisco_id',
+          'nombre'
+        )
+      } else {
+        $apriscoSelect.html(
+          '<option value="">Seleccione Finca primero</option>'
+        )
+      }
+    }
+  )
+
+  $('#formRegistroMovimiento').on(
+    'change',
+    'select[name="aprisco_origen_id"]',
+    function () {
+      const apriscoId = $(this).val()
+      const $areaSelect = $(
+        '#formRegistroMovimiento select[name="area_origen_id"]'
+      )
+      if (apriscoId) {
+        populateSelect(
+          $areaSelect,
+          `${baseUrl}api/areas?aprisco_id=${apriscoId}`,
+          'Seleccione Área',
+          'area_id',
+          (item) =>
+            `${item.nombre_personalizado || 'Área'} (${
+              item.numeracion || 'S/N'
+            })`
+        )
+      } else {
+        $areaSelect.html('<option value="">Seleccione Aprisco primero</option>')
+      }
+    }
+  )
+
+  $('#formRegistroMovimiento').on(
+    'change',
+    'select[name="finca_destino_id"]',
+    function () {
+      const fincaId = $(this).val()
+      const $apriscoSelect = $(
+        '#formRegistroMovimiento select[name="aprisco_destino_id"]'
+      )
+      const $areaSelect = $(
+        '#formRegistroMovimiento select[name="area_destino_id"]'
+      )
+      $areaSelect.html('<option value="">--</option>')
+      if (fincaId) {
+        populateSelect(
+          $apriscoSelect,
+          `${baseUrl}api/apriscos?finca_id=${fincaId}`,
+          'Seleccione Aprisco',
+          'aprisco_id',
+          'nombre'
+        )
+      } else {
+        $apriscoSelect.html(
+          '<option value="">Seleccione Finca primero</option>'
+        )
+      }
+    }
+  )
+
+  $('#formRegistroMovimiento').on(
+    'change',
+    'select[name="aprisco_destino_id"]',
+    function () {
+      const apriscoId = $(this).val()
+      const $areaSelect = $(
+        '#formRegistroMovimiento select[name="area_destino_id"]'
+      )
+      if (apriscoId) {
+        populateSelect(
+          $areaSelect,
+          `${baseUrl}api/areas?aprisco_id=${apriscoId}`,
+          'Seleccione Área',
+          'area_id',
+          (item) =>
+            `${item.nombre_personalizado || 'Área'} (${
+              item.numeracion || 'S/N'
+            })`
+        )
+      } else {
+        $areaSelect.html('<option value="">Seleccione Aprisco primero</option>')
+      }
+    }
+  )
+
+  // Lógica para el modal de Ubicaciones
+  $('#formRegistroUbicacion').on(
+    'change',
+    'select[name="finca_id"]',
+    function () {
+      const fincaId = $(this).val()
+      const $apriscoSelect = $(
+        '#formRegistroUbicacion select[name="aprisco_id"]'
+      )
+      const $areaSelect = $('#formRegistroUbicacion select[name="area_id"]')
+      $areaSelect.html('<option value="">--</option>')
+      if (fincaId) {
+        populateSelect(
+          $apriscoSelect,
+          `${baseUrl}api/apriscos?finca_id=${fincaId}`,
+          'Seleccione Aprisco',
+          'aprisco_id',
+          'nombre'
+        )
+      } else {
+        $apriscoSelect.html(
+          '<option value="">Seleccione Finca primero</option>'
+        )
+      }
+    }
+  )
+
+  $('#formRegistroUbicacion').on(
+    'change',
+    'select[name="aprisco_id"]',
+    function () {
+      const apriscoId = $(this).val()
+      const $areaSelect = $('#formRegistroUbicacion select[name="area_id"]')
+      if (apriscoId) {
+        populateSelect(
+          $areaSelect,
+          `${baseUrl}api/areas?aprisco_id=${apriscoId}`,
+          'Seleccione Área',
+          'area_id',
+          (item) =>
+            `${item.nombre_personalizado || 'Área'} (${
+              item.numeracion || 'S/N'
+            })`
+        )
+      } else {
+        $areaSelect.html('<option value="">Seleccione Aprisco primero</option>')
+      }
+    }
+  )
 
   // --- FUNCIONES AUXILIARES DE EDICIÓN Y ELIMINACIÓN ---
   function editarAnimal(animalId) {
