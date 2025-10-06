@@ -37,8 +37,9 @@ window.pesoFormatter = function (value, row) {
  * Formatea la columna de ubicación para mostrarla de forma legible.
  */
 window.ubicacionFormatter = function (value, row) {
-  if (row.finca_nombre) {
-    let path = [row.finca_nombre, row.aprisco_nombre, row.area_nombre]
+  // Corregido para usar los nombres de campo correctos de la API: nombre_finca, nombre_aprisco, nombre_area
+  if (row.nombre_finca) {
+    let path = [row.nombre_finca, row.nombre_aprisco, row.nombre_area]
       .filter(Boolean)
       .join(' / ')
     return path
@@ -507,9 +508,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   $(formRegistroUbicacion).on('submit', function (e) {
     e.preventDefault()
-    const data = JSON.stringify(
-      Object.fromEntries(new FormData(e.target).entries())
-    )
+    const formDataObject = Object.fromEntries(new FormData(e.target).entries())
+
+    if (formDataObject.fecha_hasta === '') {
+      delete formDataObject.fecha_hasta
+    }
+
+    const data = JSON.stringify(formDataObject)
+
     $.ajax({
       url: `${baseUrl}api/animal_ubicaciones`,
       method: 'POST',

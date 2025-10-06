@@ -569,6 +569,10 @@ $enums = [
                         <input type="date" class="form-control" id="fecha_desde_ubicacion" name="fecha_desde" required>
                     </div>
                     <div class="mb-3">
+                        <label for="fecha_hasta_ubicacion" class="form-label">Fecha Hasta (Opcional)</label>
+                        <input type="date" class="form-control" id="fecha_hasta_ubicacion" name="fecha_hasta">
+                    </div>
+                    <div class="mb-3">
                         <label for="motivo_ubicacion" class="form-label">Motivo</label>
                         <select class="form-select" id="motivo_ubicacion" name="motivo" required>
                             <?php foreach ($enums['motivo_ubicacion'] as $value): ?>
