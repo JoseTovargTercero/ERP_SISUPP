@@ -2,6 +2,20 @@
 
 require_once 'Middleware.php';
 
+// Polyfill para PHP < 8.0
+if (!function_exists('str_starts_with')) {
+    /**
+     * Comprueba si una cadena ($haystack) comienza con otra ($needle)
+     * Compatibilidad para versiones anteriores a PHP 8.
+     */
+    function str_starts_with($haystack, $needle)
+    {
+        if ($needle === '') {
+            return true;
+        }
+        return substr($haystack, 0, strlen($needle)) === $needle;
+    }
+}
 
 
 class AuthMiddleware implements Middleware
@@ -39,6 +53,10 @@ class AuthMiddleware implements Middleware
                 break;
             }
             // Comprobación de sub-rutas (ej. '/users/123' comienza con '/users/')
+            /*  if (str_starts_with($ruta, rtrim($permiso, '/') . '/')) {
+                $accesoPermitido = true;
+                break;
+            }*/
             if (str_starts_with($ruta, rtrim($permiso, '/') . '/')) {
                 $accesoPermitido = true;
                 break;
@@ -49,7 +67,6 @@ class AuthMiddleware implements Middleware
         if (!$accesoPermitido) {
 
             $this->accesoDenegado();
-
         }
 
         // Si las comprobaciones pasan, la ejecución del script continúa.
