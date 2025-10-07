@@ -203,6 +203,14 @@ $router->post('/montas',                ['controlador' => MontaController::class
 $router->post('/montas/{monta_id}',     ['controlador' => MontaController::class, 'accion' => 'actualizar']);
 $router->delete('/montas/{monta_id}',   ['controlador' => MontaController::class, 'accion' => 'eliminar']);
 
+// endpoints de recintos
+$router->get('/recintos',                      ['controlador' => RecintoController::class, 'accion' => 'listar']);
+$router->get('/recintos/{recinto_id}',         ['controlador' => RecintoController::class, 'accion' => 'mostrar']);
+$router->post('/recintos',                     ['controlador' => RecintoController::class, 'accion' => 'crear']);
+$router->post('/recintos/{recinto_id}',        ['controlador' => RecintoController::class, 'accion' => 'actualizar']);
+$router->post('/recintos/{recinto_id}/estado', ['controlador' => RecintoController::class, 'accion' => 'actualizarEstado']);
+$router->delete('/recintos/{recinto_id}',      ['controlador' => RecintoController::class, 'accion' => 'eliminar']);
+
 });
 
 
