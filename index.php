@@ -14,6 +14,9 @@ require_once __DIR__ . '/controllers/AnimalMovimientoController.php';
 require_once __DIR__ . '/controllers/AnimalPesoController.php';
 require_once __DIR__ . '/controllers/AnimalSaludController.php';
 require_once __DIR__ . '/controllers/AnimalUbicacionController.php';
+require_once __DIR__ . '/controllers/MontaController.php';
+require_once __DIR__ . '/controllers/PartoController.php';
+require_once __DIR__ . '/controllers/PeriodoServicioController.php';
 
 
 use App\Core\ViewRenderer;
@@ -173,6 +176,33 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/animales', ['controlador' => AnimalController::class, 'accion' => 'crear']);
     $router->post('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'actualizar']);
     $router->delete('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'eliminar']);
+
+
+
+    //juntas de animales
+    // endpoints de periodos de servicio
+$router->get('/periodos_servicio',                   ['controlador' => PeriodoServicioController::class, 'accion' => 'listar']);
+$router->get('/periodos_servicio/{periodo_id}',      ['controlador' => PeriodoServicioController::class, 'accion' => 'mostrar']);
+$router->post('/periodos_servicio',                  ['controlador' => PeriodoServicioController::class, 'accion' => 'crear']);
+$router->post('/periodos_servicio/{periodo_id}',     ['controlador' => PeriodoServicioController::class, 'accion' => 'actualizar']);
+$router->post('/periodos_servicio/{periodo_id}/estado', ['controlador' => PeriodoServicioController::class, 'accion' => 'actualizarEstado']);
+$router->delete('/periodos_servicio/{periodo_id}',   ['controlador' => PeriodoServicioController::class, 'accion' => 'eliminar']);
+
+// endpoints de partos
+$router->get('/partos',                     ['controlador' => PartoController::class, 'accion' => 'listar']);
+$router->get('/partos/{parto_id}',          ['controlador' => PartoController::class, 'accion' => 'mostrar']);
+$router->post('/partos',                    ['controlador' => PartoController::class, 'accion' => 'crear']);
+$router->post('/partos/{parto_id}',         ['controlador' => PartoController::class, 'accion' => 'actualizar']);
+$router->post('/partos/{parto_id}/estado',  ['controlador' => PartoController::class, 'accion' => 'actualizarEstado']);
+$router->delete('/partos/{parto_id}',       ['controlador' => PartoController::class, 'accion' => 'eliminar']);
+
+// endpoints de montas
+$router->get('/montas',                 ['controlador' => MontaController::class, 'accion' => 'listar']);
+$router->get('/montas/{monta_id}',      ['controlador' => MontaController::class, 'accion' => 'mostrar']);
+$router->post('/montas',                ['controlador' => MontaController::class, 'accion' => 'crear']);
+$router->post('/montas/{monta_id}',     ['controlador' => MontaController::class, 'accion' => 'actualizar']);
+$router->delete('/montas/{monta_id}',   ['controlador' => MontaController::class, 'accion' => 'eliminar']);
+
 });
 
 

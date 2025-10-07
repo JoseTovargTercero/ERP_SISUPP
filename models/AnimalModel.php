@@ -328,21 +328,38 @@ class AnimalModel
             $actorId = $_SESSION['user_id'] ?? $uuid;
 
             $sql = "INSERT INTO {$this->table}
-                (animal_id, identificador, sexo, especie, raza, color, fecha_nacimiento,
-                 estado, etapa_productiva, categoria, origen, madre_id, padre_id,
-                 fotografia_url,
-                 created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
-            $stmt = $this->db->prepare($sql);
-            if (!$stmt) throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
+    (animal_id, identificador, sexo, especie, raza, color, fecha_nacimiento,
+     estado, etapa_productiva, categoria, origen, madre_id, padre_id,
+     fotografia_url,
+     created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)";
 
-            $stmt->bind_param(
-                'sssssssssssssssss',
-                $uuid, $identificador, $sexo, $especie, $raza, $color, $fechaNacimiento,
-                $estado, $etapa, $categ, $origen, $madreId, $padreId,
-                $fotoUrl,
-                $now, $actorId, $now, $actorId
-            );
+$stmt = $this->db->prepare($sql);
+if (!$stmt) throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
+
+// 18 parámetros => 18 tipos
+$stmt->bind_param(
+    'ssssssssssssssssss',
+    $uuid,             // 1
+    $identificador,    // 2
+    $sexo,             // 3
+    $especie,          // 4
+    $raza,             // 5 (nullable)
+    $color,            // 6 (nullable)
+    $fechaNacimiento,  // 7 (nullable)
+    $estado,           // 8
+    $etapa,            // 9 (nullable)
+    $categ,            //10 (nullable)
+    $origen,           //11
+    $madreId,          //12 (nullable)
+    $padreId,          //13 (nullable)
+    $fotoUrl,          //14 (nullable)
+    $now,              //15 created_at
+    $actorId,          //16 created_by
+    $now,              //17 updated_at
+    $actorId           //18 updated_by
+);
+
 
             if (!$stmt->execute()) {
                 $err = strtolower($stmt->error);
