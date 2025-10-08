@@ -15,6 +15,7 @@ require_once __DIR__ . '/controllers/AnimalPesoController.php';
 require_once __DIR__ . '/controllers/AnimalSaludController.php';
 require_once __DIR__ . '/controllers/AnimalUbicacionController.php';
 require_once __DIR__ . '/controllers/MontaController.php';
+require_once __DIR__ . '/controllers/PeriodoMontaController.php';
 require_once __DIR__ . '/controllers/PartoController.php';
 require_once __DIR__ . '/controllers/PeriodoServicioController.php';
 
@@ -63,7 +64,7 @@ $router->group(['middleware' => AuthMiddleware::class], function ($router) {
     $router->get('/modulos', ['vista' => 'modules/menus_view', 'vistaData' => ['titulo' => 'Modulos del Sistema']]);
     $router->get('/fincas', ['vista' => 'modules/fincas_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
     $router->get('/animales', ['vista' => 'modules/animales_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
-
+    $router->get('/montas', ['vista' => 'modules/montas_view', 'vistaData' => ['titulo' => 'Registro de montas']]);
 });
 
 $router->group(['prefix' => '/api'], function ($router) {
@@ -181,40 +182,48 @@ $router->group(['prefix' => '/api'], function ($router) {
 
     //juntas de animales
     // endpoints de periodos de servicio
-$router->get('/periodos_servicio',                   ['controlador' => PeriodoServicioController::class, 'accion' => 'listar']);
-$router->get('/periodos_servicio/{periodo_id}',      ['controlador' => PeriodoServicioController::class, 'accion' => 'mostrar']);
-$router->post('/periodos_servicio',                  ['controlador' => PeriodoServicioController::class, 'accion' => 'crear']);
-$router->post('/periodos_servicio/{periodo_id}',     ['controlador' => PeriodoServicioController::class, 'accion' => 'actualizar']);
-$router->post('/periodos_servicio/{periodo_id}/estado', ['controlador' => PeriodoServicioController::class, 'accion' => 'actualizarEstado']);
-$router->delete('/periodos_servicio/{periodo_id}',   ['controlador' => PeriodoServicioController::class, 'accion' => 'eliminar']);
+    $router->get('/periodos_servicio',                   ['controlador' => PeriodoServicioController::class, 'accion' => 'listar']);
+    $router->get('/periodos_servicio/{periodo_id}',      ['controlador' => PeriodoServicioController::class, 'accion' => 'mostrar']);
+    $router->post('/periodos_servicio',                  ['controlador' => PeriodoServicioController::class, 'accion' => 'crear']);
+    $router->post('/periodos_servicio/{periodo_id}',     ['controlador' => PeriodoServicioController::class, 'accion' => 'actualizar']);
+    $router->post('/periodos_servicio/{periodo_id}/estado', ['controlador' => PeriodoServicioController::class, 'accion' => 'actualizarEstado']);
+    $router->delete('/periodos_servicio/{periodo_id}',   ['controlador' => PeriodoServicioController::class, 'accion' => 'eliminar']);
 
-// endpoints de partos
-$router->get('/partos',                     ['controlador' => PartoController::class, 'accion' => 'listar']);
-$router->get('/partos/{parto_id}',          ['controlador' => PartoController::class, 'accion' => 'mostrar']);
-$router->post('/partos',                    ['controlador' => PartoController::class, 'accion' => 'crear']);
-$router->post('/partos/{parto_id}',         ['controlador' => PartoController::class, 'accion' => 'actualizar']);
-$router->post('/partos/{parto_id}/estado',  ['controlador' => PartoController::class, 'accion' => 'actualizarEstado']);
-$router->delete('/partos/{parto_id}',       ['controlador' => PartoController::class, 'accion' => 'eliminar']);
+    // endpoints de partos
+    $router->get('/partos',                     ['controlador' => PartoController::class, 'accion' => 'listar']);
+    $router->get('/partos/{parto_id}',          ['controlador' => PartoController::class, 'accion' => 'mostrar']);
+    $router->post('/partos',                    ['controlador' => PartoController::class, 'accion' => 'crear']);
+    $router->post('/partos/{parto_id}',         ['controlador' => PartoController::class, 'accion' => 'actualizar']);
+    $router->post('/partos/{parto_id}/estado',  ['controlador' => PartoController::class, 'accion' => 'actualizarEstado']);
+    $router->delete('/partos/{parto_id}',       ['controlador' => PartoController::class, 'accion' => 'eliminar']);
 
-// endpoints de montas
-$router->get('/montas',                 ['controlador' => MontaController::class, 'accion' => 'listar']);
-$router->get('/montas/{monta_id}',      ['controlador' => MontaController::class, 'accion' => 'mostrar']);
-$router->post('/montas',                ['controlador' => MontaController::class, 'accion' => 'crear']);
-$router->post('/montas/{monta_id}',     ['controlador' => MontaController::class, 'accion' => 'actualizar']);
-$router->delete('/montas/{monta_id}',   ['controlador' => MontaController::class, 'accion' => 'eliminar']);
+    // endpoints de Periodods Montas
+    $router->get('/periodos_monta',                 ['controlador' => PeriodoMontaController::class, 'accion' => 'listar']);
+    $router->get('/periodos_monta/{monta_id}',      ['controlador' => PeriodoMontaController::class, 'accion' => 'mostrar']);
+    $router->post('/periodos_monta',                ['controlador' => PeriodoMontaController::class, 'accion' => 'crear']);
+    $router->post('/periodos_monta/{monta_id}',     ['controlador' => PeriodoMontaController::class, 'accion' => 'actualizar']);
+    $router->delete('/periodos_monta/{monta_id}',   ['controlador' => PeriodoMontaController::class, 'accion' => 'eliminar']);
 
-// endpoints de recintos
-$router->get('/recintos',                      ['controlador' => RecintoController::class, 'accion' => 'listar']);
-$router->get('/recintos/{recinto_id}',         ['controlador' => RecintoController::class, 'accion' => 'mostrar']);
-$router->post('/recintos',                     ['controlador' => RecintoController::class, 'accion' => 'crear']);
-$router->post('/recintos/{recinto_id}',        ['controlador' => RecintoController::class, 'accion' => 'actualizar']);
-$router->post('/recintos/{recinto_id}/estado', ['controlador' => RecintoController::class, 'accion' => 'actualizarEstado']);
-$router->delete('/recintos/{recinto_id}',      ['controlador' => RecintoController::class, 'accion' => 'eliminar']);
 
+    // endpoints de montas
+    $router->get('/montas',                 ['controlador' => MontaController::class, 'accion' => 'listar']);
+    $router->get('/montas/{monta_id}',      ['controlador' => MontaController::class, 'accion' => 'mostrar']);
+    $router->post('/montas',                ['controlador' => MontaController::class, 'accion' => 'crear']);
+    $router->post('/montas/{monta_id}',     ['controlador' => MontaController::class, 'accion' => 'actualizar']);
+    $router->delete('/montas/{monta_id}',   ['controlador' => MontaController::class, 'accion' => 'eliminar']);
+
+
+
+
+    // endpoints de recintos
+    $router->get('/recintos',                      ['controlador' => RecintoController::class, 'accion' => 'listar']);
+    $router->get('/recintos/{recinto_id}',         ['controlador' => RecintoController::class, 'accion' => 'mostrar']);
+    $router->post('/recintos',                     ['controlador' => RecintoController::class, 'accion' => 'crear']);
+    $router->post('/recintos/{recinto_id}',        ['controlador' => RecintoController::class, 'accion' => 'actualizar']);
+    $router->post('/recintos/{recinto_id}/estado', ['controlador' => RecintoController::class, 'accion' => 'actualizarEstado']);
+    $router->delete('/recintos/{recinto_id}',      ['controlador' => RecintoController::class, 'accion' => 'eliminar']);
 });
 
 
 // --- Ejecutar el Router ---
 $router->route();
-
-
