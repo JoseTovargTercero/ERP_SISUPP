@@ -84,76 +84,109 @@ class RecintoModel
      * Lista recintos.
      * Filtros: area_id, estado, codigo (coincidencia exacta u opcional LIKE conservador).
      */
-    public function listar(
-        int $limit = 100,
-        int $offset = 0,
-        bool $incluirEliminados = false,
-        ?string $areaId = null,
-        ?string $estado = null,
-        ?string $codigo = null
-    ): array {
-        $w=[]; $p=[]; $t='';
+public function listar(
+    int $limit = 100,
+    int $offset = 0,
+    bool $incluirEliminados = false,
+    ?string $areaId = null,
+    ?string $estado = null,
+    ?string $codigo = null
+): array {
+    $w=[]; $p=[]; $t='';
 
-        $w[] = $incluirEliminados ? 'r.deleted_at IS NOT NULL OR r.deleted_at IS NULL' : 'r.deleted_at IS NULL';
-        if ($areaId) { $w[]='r.area_id = ?';           $p[]=$areaId;  $t.='s'; }
-        if ($estado) { $this->validarEstado($estado);  $w[]='r.estado = ?';    $p[]=$estado; $t.='s'; }
-        if ($codigo) {
-            // búsqueda exacta o patrón 'rec_%'; aquí exacta; si quieres LIKE, descomenta la línea de abajo
-            $w[]='r.codigo_recinto = ?'; $p[]=$codigo; $t.='s';
-            // $w[]='r.codigo_recinto LIKE ?'; $p[]='%'.$codigo.'%'; $t.='s';
-        }
+    // Soft-delete solo del propio recinto
+    $w[] = $incluirEliminados
+        ? 'r.deleted_at IS NOT NULL OR r.deleted_at IS NULL'
+        : 'r.deleted_at IS NULL';
 
-        $where = implode(' AND ', $w);
-
-        $sql = "SELECT
-                    r.recinto_id,
-                    r.area_id,
-                    r.codigo_recinto,
-                    r.capacidad,
-                    r.estado,
-                    r.observaciones,
-                    r.created_at, r.created_by, r.updated_at, r.updated_by
-                FROM {$this->table} r
-                WHERE {$where}
-                ORDER BY r.area_id, r.codigo_recinto
-                LIMIT ? OFFSET ?";
-
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt) throw new mysqli_sql_exception("Error al preparar listado: " . $this->db->error);
-
-        $t .= 'ii'; $p[] = $limit; $p[] = $offset;
-        $stmt->bind_param($t, ...$p);
-        $stmt->execute();
-        $res  = $stmt->get_result();
-        $data = $res->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-        return $data;
+    if ($areaId) { $w[]='r.area_id = ?';          $p[]=$areaId;  $t.='s'; }
+    if ($estado) { $this->validarEstado($estado); $w[]='r.estado = ?'; $p[]=$estado; $t.='s'; }
+    if ($codigo) {
+        $w[]='r.codigo_recinto = ?'; $p[]=$codigo; $t.='s';
+        // Alternativa con LIKE:
+        // $w[]='r.codigo_recinto LIKE ?'; $p[]='%'.$codigo.'%'; $t.='s';
     }
 
-    public function obtenerPorId(string $recintoId): ?array
-    {
-        $sql = "SELECT
-                    r.recinto_id,
-                    r.area_id,
-                    r.codigo_recinto,
-                    r.capacidad,
-                    r.estado,
-                    r.observaciones,
-                    r.created_at, r.created_by, r.updated_at, r.updated_by,
-                    r.deleted_at, r.deleted_by
-                FROM {$this->table} r
-                WHERE r.recinto_id = ?";
+    $where = implode(' AND ', $w);
 
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt) throw new mysqli_sql_exception("Error al preparar consulta: " . $this->db->error);
+    $sql = "SELECT
+                r.recinto_id,
+                r.area_id,
+                r.codigo_recinto,
+                r.capacidad,
+                r.estado,
+                r.observaciones,
+                r.created_at, r.created_by, r.updated_at, r.updated_by,
 
-        $stmt->bind_param('s', $recintoId);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $row = $res->fetch_assoc();
-        $stmt->close();
-        return $row ?: null;
-    }
+                -- Desde AREAS
+                a.aprisco_id                                         AS area_aprisco_id,
+                a.nombre_personalizado                               AS area_nombre_personalizado,
+
+                -- Desde APRISCOS
+                ap.finca_id                                          AS aprisco_finca_id,
+                ap.nombre                                            AS aprisco_nombre,
+
+                -- Desde FINCAS
+                f.nombre                                             AS finca_nombre
+            FROM {$this->table} r
+            LEFT JOIN areas    a  ON a.area_id     = r.area_id
+            LEFT JOIN apriscos ap ON ap.aprisco_id = a.aprisco_id
+            LEFT JOIN fincas   f  ON f.finca_id    = ap.finca_id
+            WHERE {$where}
+            ORDER BY r.area_id, r.codigo_recinto
+            LIMIT ? OFFSET ?";
+
+    $stmt = $this->db->prepare($sql);
+    if (!$stmt) throw new \mysqli_sql_exception("Error al preparar listado: " . $this->db->error);
+
+    $t .= 'ii'; $p[] = $limit; $p[] = $offset;
+    $stmt->bind_param($t, ...$p);
+    $stmt->execute();
+    $res  = $stmt->get_result();
+    $data = $res->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    return $data;
+}
+
+public function obtenerPorId(string $recintoId): ?array
+{
+    $sql = "SELECT
+                r.recinto_id,
+                r.area_id,
+                r.codigo_recinto,
+                r.capacidad,
+                r.estado,
+                r.observaciones,
+                r.created_at, r.created_by, r.updated_at, r.updated_by,
+                r.deleted_at, r.deleted_by,
+
+                -- Desde AREAS
+                a.aprisco_id                                         AS area_aprisco_id,
+                a.nombre_personalizado                               AS area_nombre_personalizado,
+
+                -- Desde APRISCOS
+                ap.finca_id                                          AS aprisco_finca_id,
+                ap.nombre                                            AS aprisco_nombre,
+
+                -- Desde FINCAS
+                f.nombre                                             AS finca_nombre
+            FROM {$this->table} r
+            LEFT JOIN areas    a  ON a.area_id     = r.area_id
+            LEFT JOIN apriscos ap ON ap.aprisco_id = a.aprisco_id
+            LEFT JOIN fincas   f  ON f.finca_id    = ap.finca_id
+            WHERE r.recinto_id = ?";
+
+    $stmt = $this->db->prepare($sql);
+    if (!$stmt) throw new \mysqli_sql_exception("Error al preparar consulta: " . $this->db->error);
+
+    $stmt->bind_param('s', $recintoId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res->fetch_assoc();
+    $stmt->close();
+    return $row ?: null;
+}
+
 
     /* ============ Escrituras ============ */
 

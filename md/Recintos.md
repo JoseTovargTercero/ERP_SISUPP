@@ -26,6 +26,16 @@ $router->delete('/recintos/{recinto_id}',      ['controlador' => RecintoControll
 
 ## 🧩 Entidad `recintos` (campos principales)
 
+### 🔗 Campos relacionados (JOIN)
+| Campo | Origen | Descripción |
+|--------|---------|-------------|
+| `area_aprisco_id` | areas | ID del aprisco al que pertenece el área. |
+| `area_nombre_personalizado` | areas | Nombre personalizado asignado al área. |
+| `aprisco_finca_id` | apriscos | ID de la finca asociada al aprisco. |
+| `aprisco_nombre` | apriscos | Nombre del aprisco. |
+| `finca_nombre` | fincas | Nombre de la finca relacionada. |
+
+
 | Campo              | Tipo          | Reglas / Comentarios |
 |--------------------|---------------|-----------------------|
 | `recinto_id`       | UUID          | PK (servidor) |
@@ -68,7 +78,12 @@ $router->delete('/recintos/{recinto_id}',      ['controlador' => RecintoControll
       "created_at": "2025-09-21 10:33:00",
       "created_by": "…",
       "updated_at": null,
-      "updated_by": null
+      "updated_by": null,
+      "area_aprisco_id": "uuid-aprisco",
+      "area_nombre_personalizado": "Área 1 - Lote A",
+      "aprisco_finca_id": "uuid-finca",
+      "aprisco_nombre": "Aprisco Central",
+      "finca_nombre": "Finca El Refugio"
     }
   ]
 }
@@ -99,8 +114,18 @@ $router->delete('/recintos/{recinto_id}',      ['controlador' => RecintoControll
     "created_by": "…",
     "updated_at": null,
     "updated_by": null,
+      "area_aprisco_id": "uuid-aprisco",
+      "area_nombre_personalizado": "Área 1 - Lote A",
+      "aprisco_finca_id": "uuid-finca",
+      "aprisco_nombre": "Aprisco Central",
+      "finca_nombre": "Finca El Refugio",
     "deleted_at": null,
-    "deleted_by": null
+    "deleted_by": null,
+    "area_aprisco_id": "uuid-aprisco",
+    "area_nombre_personalizado": "Área Norte",
+    "aprisco_finca_id": "uuid-finca",
+    "aprisco_nombre": "Aprisco Principal",
+    "finca_nombre": "Finca La Esperanza"
   }
 }
 ```
