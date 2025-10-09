@@ -182,14 +182,11 @@ async function loadRecintosTab() {
       responseHandler: window.responseHandler,
       queryParams: (params) => {
         const areaId = $('#filtroRecintosArea').val() || ''
-        // Si no hay area, los otros filtros no importan según la lógica de dependencia
         if (areaId) params.area_id = areaId
         return params
       },
     })
     IS_RECINTO_LOADED = true
-  } else {
-    $('#tablaRecintos').bootstrapTable('refresh')
   }
 }
 
@@ -580,19 +577,19 @@ function renderDetailCard(tipo, d = {}) {
               <div><span class="label">Estado</span><span class="value">${window.recintoEstadoFormatter(
                 d.estado
               )}</span></div>
-              <div><span class="label">Capacidad</span><span class="value">${
+              <div><span class="label">Capacidade</span><span class="value">${
                 d.capacidad ?? '-'
               }</span></div>
               <div><span class="label">Área</span><span class="value">${
-                d.nombre_area ?? '-'
+                d.area_nombre_personalizado ?? '-'
               }</span></div>
               <div><span class="label">Aprisco</span><span class="value">${
-                d.nombre_aprisco ?? '-'
+                d.aprisco_nombre ?? '-'
               }</span></div>
               <div><span class="label">Finca</span><span class="value">${
-                d.nombre_finca ?? '-'
+                d.finca_nombre ?? '-'
               }</span></div>
-              <div style="grid-column:1/-1"><span class="label">Observaciones</span><div class="value">${
+              <div style="grid-column:1/-1"><span class="label">Observacións</span><div class="value">${
                 d.observaciones ?? '-'
               }</div></div>
             </div></div>`
@@ -631,9 +628,7 @@ async function openEditModal(tipo, d) {
     $('#area_estado').val(d.estado)
     $('#modalAreaLabel').text('Editar Área')
     new bootstrap.Modal('#modalArea').show()
-  }
-
-  if (tipo === 'recinto') {
+  } else if (tipo === 'recinto') {
     resetRecintoForm()
     await cargarFincasSelect('#recinto_finca_id')
     $('#recinto_finca_id').val(d.finca_id)
