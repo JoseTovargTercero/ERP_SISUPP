@@ -172,14 +172,23 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->delete('/animal_movimientos/{animal_movimiento_id}', ['controlador' => AnimalMovimientoController::class, 'accion' => 'eliminar']);
 
 
-    // endpoints de animales
-    $router->get('/animales', ['controlador' => AnimalController::class, 'accion' => 'listar']);
-    $router->get('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'mostrar']);
-    $router->get('/animales/options', ['controlador' => AnimalController::class, 'accion' => 'options']);
-    $router->post('/animales', ['controlador' => AnimalController::class, 'accion' => 'crear']);
-    $router->post('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'actualizar']);
-    $router->delete('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'eliminar']);
-    $router->post('/animales/verificar_cruce/{id}', ['controlador' => AnimalController::class, 'accion' => 'verificarCruce']);
+  // endpoints de animales
+$router->get('/animales', ['controlador' => AnimalController::class, 'accion' => 'listar']);
+$router->get('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'mostrar']);
+$router->get('/animales/options', ['controlador' => AnimalController::class, 'accion' => 'options']);
+$router->post('/animales', ['controlador' => AnimalController::class, 'accion' => 'crear']);
+$router->post('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'actualizar']);
+$router->delete('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'eliminar']);
+
+// Verificación de cruce (POST, sin path param; body: animal_a/animalIdA y animal_b/animalIdB)
+$router->post('/animales/verificar_cruce', ['controlador' => AnimalController::class, 'accion' => 'verificarCruce']);
+
+// Árbol genealógico (POST)
+$router->post('/animales/arbol/{id}', ['controlador' => AnimalController::class, 'accion' => 'arbolGenealogico']);
+
+// Bosque de árboles genealógicos (POST)
+$router->post('/animales/arboles/{id}', ['controlador' => AnimalController::class, 'accion' => 'arbolesGenealogicos']);
+
 
 
     //juntas de animales

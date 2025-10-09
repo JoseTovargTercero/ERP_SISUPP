@@ -71,6 +71,70 @@ class AnimalController
         $rel = '/uploads/' . $uuid . '.' . $ext;
         return $rel;
     }
+    // POST /animales/arbol
+// Body (JSON o multipart):
+//   - animal_id (req.)
+//   - direccion: ARRIBA|ASC|ABAJO|DESC|null (opcional)
+//   - max_generaciones (int, opcional; por defecto 6)
+public function arbolGenealogico(): void
+{
+    if (strcasecmp($_SERVER['REQUEST_METHOD'] ?? 'GET', 'POST') !== 0) {
+        $this->jsonResponse(false, 'Método no permitido. Use POST.', null, 405);
+    }
+
+    try {
+        if ($this->isMultipart()) {
+            $animalId  = $_POST['animal_id']         ?? '';
+            $direccion = $_POST['direccion']         ?? null;
+            $maxGen    = isset($_POST['max_generaciones']) ? (int)$_POST['max_generaciones'] : 6;
+        } else {
+            $in        = $this->getJsonInput();
+            $animalId  = (string)($in['animal_id'] ?? '');
+            $direccion = $in['direccion'] ?? null;
+            $maxGen    = isset($in['max_generaciones']) ? (int)$in['max_generaciones'] : 6;
+        }
+
+        if ($animalId === '') {
+            $this->jsonResponse(false, 'Parámetro animal_id es obligatorio.', null, 400);
+        }
+
+        $data = $this->model->getArbolGenealogico($animalId, $direccion, $maxGen);
+        $this->jsonResponse(true, 'Árbol genealógico obtenido correctamente.', $data, 200);
+
+    } catch (InvalidArgumentException $e) {
+        $this->jsonResponse(false, $e->getMessage(), null, 400);
+    } catch (Throwable $e) {
+        $this->jsonResponse(false, 'Error al obtener árbol genealógico: '.$e->getMessage(), null, 500);
+    }
+}
+// POST /animales/arboles
+// Body (JSON o multipart):
+//   - max_generaciones (int, opcional; por defecto 6)
+// Retorna el bosque: lista de árboles desde los más viejos a los más recientes.
+public function arbolesGenealogicos(): void
+{
+    if (strcasecmp($_SERVER['REQUEST_METHOD'] ?? 'GET', 'POST') !== 0) {
+        $this->jsonResponse(false, 'Método no permitido. Use POST.', null, 405);
+    }
+
+    try {
+        if ($this->isMultipart()) {
+            $maxGen = isset($_POST['max_generaciones']) ? (int)$_POST['max_generaciones'] : 6;
+        } else {
+            $in     = $this->getJsonInput();
+            $maxGen = isset($in['max_generaciones']) ? (int)$in['max_generaciones'] : 6;
+        }
+
+        $data = $this->model->getTodosLosArbolesGenealogicos($maxGen);
+        $this->jsonResponse(true, 'Árboles genealógicos obtenidos correctamente.', $data, 200);
+
+    } catch (InvalidArgumentException $e) {
+        $this->jsonResponse(false, $e->getMessage(), null, 400);
+    } catch (Throwable $e) {
+        $this->jsonResponse(false, 'Error al obtener árboles genealógicos: '.$e->getMessage(), null, 500);
+    }
+}
+
 
     // GET /animales?limit=&offset=&incluirEliminados=0|1&q=&sexo=&especie=&estado=&etapa=&categoria=&nacDesde=&nacHasta=&finca_id=&aprisco_id=&area_id=
     public function listar(): void
