@@ -101,6 +101,53 @@ class AnimalController
             $this->jsonResponse(false, 'Error al listar animales: '.$e->getMessage(), null, 500);
         }
     }
+// Dentro de AnimalController (agrega antes de la llave de cierre de la clase)
+
+// Dentro de AnimalController
+
+    // POST /animales/verificar_cruce
+    // Cuerpo (JSON o form-data):
+    //   - animal_a (o animalIdA)
+    //   - animal_b (o animalIdB)
+    public function verificarCruce(): void
+    {
+        if (strcasecmp($_SERVER['REQUEST_METHOD'] ?? 'GET', 'POST') !== 0) {
+            $this->jsonResponse(false, 'Método no permitido. Use POST.', null, 405);
+        }
+
+        try {
+            if ($this->isMultipart()) {
+                // form-data
+                $a = $_POST['animal_a'] ?? ($_POST['animalIdA'] ?? null);
+                $b = $_POST['animal_b'] ?? ($_POST['animalIdB'] ?? null);
+            } else {
+                // JSON
+                $in = $this->getJsonInput();
+                $a  = $in['animal_a'] ?? ($in['animalIdA'] ?? null);
+                $b  = $in['animal_b'] ?? ($in['animalIdB'] ?? null);
+            }
+
+            if (!$a || !$b) {
+                $this->jsonResponse(false, 'Debe proporcionar animal_a y animal_b.', null, 400);
+            }
+
+            $res = $this->model->puedenCruzar((string)$a, (string)$b);
+
+            if ($res['compatible'] === true) {
+                $this->jsonResponse(true, 'Pueden cruzarse.', ['compatible' => true]);
+            } else {
+                $this->jsonResponse(false, 'No pueden cruzarse: '.$res['motivo'], [
+                    'compatible' => false,
+                    'motivo'     => $res['motivo']
+                ], 200);
+            }
+        } catch (InvalidArgumentException $e) {
+            $this->jsonResponse(false, $e->getMessage(), null, 400);
+        } catch (Throwable $e) {
+            $this->jsonResponse(false, 'Error al verificar compatibilidad: '.$e->getMessage(), null, 500);
+        }
+    }
+
 
     // GET /animales/{animal_id}
     public function mostrar(array $params): void

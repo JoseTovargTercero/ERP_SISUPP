@@ -177,7 +177,7 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/animales', ['controlador' => AnimalController::class, 'accion' => 'crear']);
     $router->post('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'actualizar']);
     $router->delete('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'eliminar']);
-
+    $router->post('/animales/verificar_cruce/{id}', ['controlador' => AnimalController::class, 'accion' => 'verificarCruce']);
 
 
     //juntas de animales

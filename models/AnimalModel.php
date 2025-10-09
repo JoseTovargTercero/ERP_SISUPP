@@ -87,6 +87,61 @@ class AnimalModel
 
     /* ============ Lecturas ============ */
 
+    // Dentro de AnimalModel (agrega al final de la clase, antes de la llave de cierre)
+
+    /**
+     * Verifica compatibilidad de cruce entre dos animales.
+     * Regla: si comparten madre o comparten padre => son familiares => NO compatibles.
+     * Retorna:
+     *   ['compatible' => bool, 'motivo' => string|null, 'a' => array, 'b' => array]
+     */
+    public function puedenCruzar(string $animalIdA, string $animalIdB): array
+    {
+        $animalIdA = trim($animalIdA);
+        $animalIdB = trim($animalIdB);
+        if ($animalIdA === '' || $animalIdB === '') {
+            throw new InvalidArgumentException('Se requieren ambos animal_id.');
+        }
+        if ($animalIdA === $animalIdB) {
+            return ['compatible' => false, 'motivo' => 'Es el mismo animal.', 'a' => null, 'b' => null];
+        }
+
+        $sql = "SELECT animal_id, madre_id, padre_id
+                FROM {$this->table}
+                WHERE animal_id IN (?, ?) AND deleted_at IS NULL";
+        $stmt = $this->db->prepare($sql);
+        if (!$stmt) throw new \mysqli_sql_exception("Error preparando verificación: ".$this->db->error);
+        $stmt->bind_param('ss', $animalIdA, $animalIdB);
+        $stmt->execute();
+        $res  = $stmt->get_result();
+        $rows = $res->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        if (count($rows) < 2) {
+            throw new RuntimeException('Uno o ambos animales no existen o están eliminados.');
+        }
+
+        // Normalizar resultados para acceso directo
+        $a = $rows[0]['animal_id'] === $animalIdA ? $rows[0] : ($rows[1]['animal_id'] === $animalIdA ? $rows[1] : null);
+        $b = $rows[0]['animal_id'] === $animalIdB ? $rows[0] : ($rows[1]['animal_id'] === $animalIdB ? $rows[1] : null);
+
+        $mismaMadre = ($a['madre_id'] !== null && $a['madre_id'] !== '' && $a['madre_id'] === $b['madre_id']);
+        $mismoPadre = ($a['padre_id'] !== null && $a['padre_id'] !== '' && $a['padre_id'] === $b['padre_id']);
+
+        if ($mismaMadre && $mismoPadre) {
+            return ['compatible' => false, 'motivo' => 'Comparten madre y padre (hermanos completos).', 'a' => $a, 'b' => $b];
+        }
+        if ($mismaMadre) {
+            return ['compatible' => false, 'motivo' => 'Comparten la misma madre.', 'a' => $a, 'b' => $b];
+        }
+        if ($mismoPadre) {
+            return ['compatible' => false, 'motivo' => 'Comparten el mismo padre.', 'a' => $a, 'b' => $b];
+        }
+
+        return ['compatible' => true, 'motivo' => null, 'a' => $a, 'b' => $b];
+    }
+
+
     public function listar(
         int $limit = 100,
         int $offset = 0,
