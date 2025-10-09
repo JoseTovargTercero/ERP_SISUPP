@@ -95,51 +95,182 @@ class AnimalModel
      * Retorna:
      *   ['compatible' => bool, 'motivo' => string|null, 'a' => array, 'b' => array]
      */
-    public function puedenCruzar(string $animalIdA, string $animalIdB): array
-    {
-        $animalIdA = trim($animalIdA);
-        $animalIdB = trim($animalIdB);
-        if ($animalIdA === '' || $animalIdB === '') {
-            throw new InvalidArgumentException('Se requieren ambos animal_id.');
-        }
-        if ($animalIdA === $animalIdB) {
-            return ['compatible' => false, 'motivo' => 'Es el mismo animal.', 'a' => null, 'b' => null];
-        }
+public function puedenCruzar(string $animalIdA, string $animalIdB, int $maxGenerations = 4): array
+{
+    $animalIdA = trim($animalIdA);
+    $animalIdB = trim($animalIdB);
 
+    if ($animalIdA === '' || $animalIdB === '') {
+        throw new InvalidArgumentException('Se requieren ambos animal_id.');
+    }
+    if ($animalIdA === $animalIdB) {
+        return ['compatible' => false, 'motivo' => 'Es el mismo animal.', 'a' => null, 'b' => null];
+    }
+
+    // 1) Cargar ambos animales (verifica existencia)
+    $sql = "SELECT animal_id, madre_id, padre_id
+            FROM {$this->table}
+            WHERE animal_id IN (?, ?) AND deleted_at IS NULL";
+    $stmt = $this->db->prepare($sql);
+    if (!$stmt) throw new \mysqli_sql_exception("Error preparando verificación: ".$this->db->error);
+    $stmt->bind_param('ss', $animalIdA, $animalIdB);
+    $stmt->execute();
+    $res  = $stmt->get_result();
+    $rows = $res->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    if (count($rows) < 2) {
+        throw new RuntimeException('Uno o ambos animales no existen o están eliminados.');
+    }
+
+    // Normalizar
+    $a = $rows[0]['animal_id'] === $animalIdA ? $rows[0] : $rows[1];
+    $b = $rows[0]['animal_id'] === $animalIdB ? $rows[0] : $rows[1];
+
+    // 2) Reglas de primer grado (hermanos/medio-hermanos) – rápido
+    $mismaMadre = ($a['madre_id'] && $a['madre_id'] === $b['madre_id']);
+    $mismoPadre = ($a['padre_id'] && $a['padre_id'] === $b['padre_id']);
+    if ($mismaMadre && $mismoPadre) {
+        return ['compatible' => false, 'motivo' => 'Parentesco prohibido: hermanos completos (misma madre y padre).', 'a' => $a, 'b' => $b];
+    }
+    if ($mismaMadre) {
+        return ['compatible' => false, 'motivo' => 'Parentesco prohibido: comparten la misma madre (medio-hermanos).', 'a' => $a, 'b' => $b];
+    }
+    if ($mismoPadre) {
+        return ['compatible' => false, 'motivo' => 'Parentesco prohibido: comparten el mismo padre (medio-hermanos).', 'a' => $a, 'b' => $b];
+    }
+
+    // 3) Construir ancestros hasta N generaciones para A y B
+    $ancA = $this->getAncestorsMap($animalIdA, $maxGenerations); // id_ancestro => distancia (1=padre/madre, 2=abuelo/a, etc.)
+    $ancB = $this->getAncestorsMap($animalIdB, $maxGenerations);
+
+    // 3.1) ¿Alguno es ancestro del otro?
+    if (isset($ancA[$animalIdB])) {
+        $d = $ancA[$animalIdB];
+        return ['compatible' => false, 'motivo' => 'Parentesco prohibido: B es ancestro de A ('. $this->labelAncestor($d) .').', 'a' => $a, 'b' => $b];
+    }
+    if (isset($ancB[$animalIdA])) {
+        $d = $ancB[$animalIdA];
+        return ['compatible' => false, 'motivo' => 'Parentesco prohibido: A es ancestro de B ('. $this->labelAncestor($d) .').', 'a' => $a, 'b' => $b];
+    }
+
+    // 3.2) ¿Comparten ancestros?
+    $comunes = array_intersect_key($ancA, $ancB);
+    if (!empty($comunes)) {
+        // Elegir el ancestro común con menor (dA + dB)
+        $mejor = null; $minSum = PHP_INT_MAX;
+        foreach ($comunes as $ancId => $_) {
+            $sum = $ancA[$ancId] + $ancB[$ancId];
+            if ($sum < $minSum) { $minSum = $sum; $mejor = $ancId; }
+        }
+        $dA = $ancA[$mejor]; $dB = $ancB[$mejor];
+        $motivo = 'Parentesco prohibido: ' . $this->labelCommonAncestor($dA, $dB);
+        return ['compatible' => false, 'motivo' => $motivo, 'a' => $a, 'b' => $b];
+    }
+
+    // 4) Sin ancestros comunes hasta N generaciones
+    return ['compatible' => true, 'motivo' => null, 'a' => $a, 'b' => $b];
+}
+
+/**
+ * Retorna mapa id_ancestro => distancia (1=progenitor, 2=abuelo/a, 3=bisabuelo/a, ...)
+ * Busca en capas (BFS) hasta $maxGenerations. Ignora registros con deleted_at.
+ */
+private function getAncestorsMap(string $animalId, int $maxGenerations): array
+{
+    $ancestors = [];                   // ancId => dist
+    $frontera = [$animalId];           // ids a expandir
+    $dist = 0;
+
+    while ($dist < $maxGenerations && !empty($frontera)) {
+        // Obtener padres de toda la frontera en una sola consulta
+        $placeholders = implode(',', array_fill(0, count($frontera), '?'));
+        $types = str_repeat('s', count($frontera));
         $sql = "SELECT animal_id, madre_id, padre_id
                 FROM {$this->table}
-                WHERE animal_id IN (?, ?) AND deleted_at IS NULL";
+                WHERE animal_id IN ($placeholders) AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
-        if (!$stmt) throw new \mysqli_sql_exception("Error preparando verificación: ".$this->db->error);
-        $stmt->bind_param('ss', $animalIdA, $animalIdB);
+        if (!$stmt) throw new \mysqli_sql_exception("Error preparando ancestros: " . $this->db->error);
+        $stmt->bind_param($types, ...$frontera);
         $stmt->execute();
-        $res  = $stmt->get_result();
+        $res = $stmt->get_result();
         $rows = $res->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
 
-        if (count($rows) < 2) {
-            throw new RuntimeException('Uno o ambos animales no existen o están eliminados.');
+        $siguientes = [];
+        $nivel = $dist + 1;
+
+        foreach ($rows as $row) {
+            foreach (['madre_id', 'padre_id'] as $col) {
+                $p = $row[$col] ?? null;
+                if ($p && !isset($ancestors[$p])) {
+                    $ancestors[$p] = $nivel;
+                    $siguientes[] = $p;
+                }
+            }
         }
 
-        // Normalizar resultados para acceso directo
-        $a = $rows[0]['animal_id'] === $animalIdA ? $rows[0] : ($rows[1]['animal_id'] === $animalIdA ? $rows[1] : null);
-        $b = $rows[0]['animal_id'] === $animalIdB ? $rows[0] : ($rows[1]['animal_id'] === $animalIdB ? $rows[1] : null);
-
-        $mismaMadre = ($a['madre_id'] !== null && $a['madre_id'] !== '' && $a['madre_id'] === $b['madre_id']);
-        $mismoPadre = ($a['padre_id'] !== null && $a['padre_id'] !== '' && $a['padre_id'] === $b['padre_id']);
-
-        if ($mismaMadre && $mismoPadre) {
-            return ['compatible' => false, 'motivo' => 'Comparten madre y padre (hermanos completos).', 'a' => $a, 'b' => $b];
-        }
-        if ($mismaMadre) {
-            return ['compatible' => false, 'motivo' => 'Comparten la misma madre.', 'a' => $a, 'b' => $b];
-        }
-        if ($mismoPadre) {
-            return ['compatible' => false, 'motivo' => 'Comparten el mismo padre.', 'a' => $a, 'b' => $b];
-        }
-
-        return ['compatible' => true, 'motivo' => null, 'a' => $a, 'b' => $b];
+        $frontera = array_values(array_unique($siguientes));
+        $dist++;
     }
+
+    return $ancestors;
+}
+
+/**
+ * Etiqueta legible para ancestro directo a distancia d (1..N)
+ */
+private function labelAncestor(int $d): string
+{
+    return match ($d) {
+        1 => 'padre/madre',
+        2 => 'abuelo/abuela',
+        3 => 'bisabuelo/bisabuela',
+        4 => 'tatarabuelo/tatarabuela',
+        default => $d.' generaciones arriba'
+    };
+}
+
+/**
+ * Etiqueta legible para compartir ancestro con distancias (dA, dB)
+ * Casos clásicos:
+ *  - (2,2) primos hermanos (1er grado)
+ *  - (3,3) primos segundos (2º grado)
+ *  - (2,3) primos hermanos “una vez removidos” (tío abuelo / sobrino-nieto)
+ *  - (1,2) tío/tía con sobrino/a
+ */
+private function labelCommonAncestor(int $dA, int $dB): string
+{
+    // Ancestro directo ya se manejó antes; aquí dA>=1, dB>=1 y no hay (1,1)
+    if (($dA === 1 && $dB >= 2) || ($dB === 1 && $dA >= 2)) {
+        // uno es progenitor del progenitor del otro → tío/tía ↔ sobrino/a si (1,2)
+        if ($dA + $dB === 3) return 'tío/tía con sobrino/a';
+        // (1,3) ~ tío abuelo/bisabuelo político → sobrino-nieto/a
+        return 'parientes en línea colateral (grado cercano)';
+    }
+
+    if ($dA === $dB) {
+        if ($dA === 2) return 'primos hermanos (comparten abuelo/a)';
+        if ($dA === 3) return 'primos segundos (comparten bisabuelo/a)';
+        if ($dA === 4) return 'primos terceros (comparten tatarabuelo/a)';
+        $k = $dA - 1;
+        return "primos de grado {$k}";
+    }
+
+    // Distintos niveles: “removidos”
+    $k = min($dA, $dB) - 1;                  // grado de primos
+    $r = abs($dA - $dB);                      // veces removidos
+    if ($k <= 0) {
+        // casos como (2,3) también se pueden describir como “tío abuelo / sobrino nieto”
+        if (($dA === 2 && $dB === 3) || ($dA === 3 && $dB === 2)) {
+            return 'tío abuelo/tía abuela con sobrino-nieto/a';
+        }
+        return 'parientes en línea colateral (distinto grado)';
+    }
+    $grado = ($k === 1) ? 'primos hermanos' : "primos de grado {$k}";
+    $remov = ($r === 1) ? 'una vez removidos' : "{$r} veces removidos";
+    return "{$grado} ({$remov})";
+}
 
 
     public function listar(
