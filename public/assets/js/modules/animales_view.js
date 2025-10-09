@@ -1,7 +1,7 @@
 import { showErrorToast } from '../helpers/helpers.js'
 
 // --- HELPERS Y FORMATTERS PARA LA TABLA ---
-
+// ... (Todo el contenido sin cambios hasta la sección de "Botones para abrir modales")
 /**
  * Adapta la respuesta de la API al formato que Bootstrap Table espera.
  */
@@ -335,51 +335,85 @@ document.addEventListener('DOMContentLoaded', function () {
 
   $('#btnRegistrarMovimiento').on('click', function () {
     modalDetallesAnimal.hide()
-    formRegistroMovimiento.reset()
+    $(formRegistroMovimiento).trigger('reset') // Usar .trigger('reset') para jQuery
     $('#movimiento_animal_id').val(currentAnimalIdForDetails)
     $('#fecha_mov').val(new Date().toISOString().slice(0, 10))
-    // Cargar fincas al abrir
-    populateSelect(
-      '#formRegistroMovimiento select[name="finca_origen_id"]',
-      `${baseUrl}api/fincas`,
-      'Seleccione Finca de Origen',
-      'finca_id',
-      'nombre'
-    )
-    populateSelect(
-      '#formRegistroMovimiento select[name="finca_destino_id"]',
-      `${baseUrl}api/fincas`,
-      'Seleccione Finca de Destino',
-      'finca_id',
-      'nombre'
-    )
+
+    populateSelect({
+      selector: '#formRegistroMovimiento select[name="finca_origen_id"]',
+      url: `${baseUrl}api/fincas`,
+      placeholder: 'Seleccione Finca de Origen',
+      valueField: 'finca_id',
+      textField: 'nombre',
+      useSelect2: true,
+      select2Options: {
+        dropdownParent: $(formRegistroMovimiento),
+      },
+    })
+
+    populateSelect({
+      selector: '#formRegistroMovimiento select[name="finca_destino_id"]',
+      url: `${baseUrl}api/fincas`,
+      placeholder: 'Seleccione Finca de Destino',
+      valueField: 'finca_id',
+      textField: 'nombre',
+      useSelect2: true,
+      select2Options: {
+        dropdownParent: $(formRegistroMovimiento),
+      },
+    })
+
     // Limpiar selects dependientes
-    $(
-      '#formRegistroMovimiento select[name="aprisco_origen_id"], #formRegistroMovimiento select[name="area_origen_id"]'
-    ).html('<option value="">--</option>')
-    $(
-      '#formRegistroMovimiento select[name="aprisco_destino_id"], #formRegistroMovimiento select[name="area_destino_id"]'
-    ).html('<option value="">--</option>')
+    const selectsToReset = [
+      '#formRegistroMovimiento select[name="aprisco_origen_id"]',
+      '#formRegistroMovimiento select[name="area_origen_id"]',
+      '#formRegistroMovimiento select[name="aprisco_destino_id"]',
+      '#formRegistroMovimiento select[name="area_destino_id"]',
+    ]
+
+    selectsToReset.forEach((selector) => {
+      const $select = $(selector)
+      if ($select.data('select2')) {
+        $select.val(null).trigger('change')
+      }
+      $select.html('<option value="">--</option>')
+    })
+
     modalRegistroMovimiento.show()
   })
 
   $('#btnRegistrarUbicacion').on('click', function () {
     modalDetallesAnimal.hide()
-    formRegistroUbicacion.reset()
+    $(formRegistroUbicacion).trigger('reset') // Usar .trigger('reset') para jQuery
     $('#ubicacion_animal_id').val(currentAnimalIdForDetails)
     $('#fecha_desde_ubicacion').val(new Date().toISOString().slice(0, 10))
-    // Cargar fincas al abrir
-    populateSelect(
-      '#formRegistroUbicacion select[name="finca_id"]',
-      `${baseUrl}api/fincas`,
-      'Seleccione Finca',
-      'finca_id',
-      'nombre'
-    )
+
+    populateSelect({
+      selector: '#formRegistroUbicacion select[name="finca_id"]',
+      url: `${baseUrl}api/fincas`,
+      placeholder: 'Seleccione Finca',
+      valueField: 'finca_id',
+      textField: 'nombre',
+      useSelect2: true,
+      select2Options: {
+        dropdownParent: $(formRegistroUbicacion),
+      },
+    })
+
     // Limpiar selects dependientes
-    $(
-      '#formRegistroUbicacion select[name="aprisco_id"], #formRegistroUbicacion select[name="area_id"]'
-    ).html('<option value="">--</option>')
+    const selectsToReset = [
+      '#formRegistroUbicacion select[name="aprisco_id"]',
+      '#formRegistroUbicacion select[name="area_id"]',
+    ]
+
+    selectsToReset.forEach((selector) => {
+      const $select = $(selector)
+      if ($select.data('select2')) {
+        $select.val(null).trigger('change')
+      }
+      $select.html('<option value="">--</option>')
+    })
+
     modalRegistroUbicacion.show()
   })
 
@@ -536,23 +570,32 @@ document.addEventListener('DOMContentLoaded', function () {
   // --- FUNCIONES Y LÓGICA PARA SELECTS DINÁMICOS ---
 
   /**
-   * Populates a select input with data from an API endpoint.
-   * @param {string} selector - The jQuery selector for the <select> element.
-   * @param {string} url - The API endpoint URL.
-   * @param {string} placeholder - The text for the default/placeholder option.
-   * @param {string} valueField - The name of the field to use for the option value.
-   * @param {string|Function} textField - The name of the field for the option text, or a function to generate it.
+   * Popula un elemento <select> con datos de una URL y opcionalmente lo inicializa con Select2.
    */
-  function populateSelect(selector, url, placeholder, valueField, textField) {
+  function populateSelect({
+    selector,
+    url,
+    valueField,
+    textField,
+    placeholder = 'Seleccione una opción',
+    useSelect2 = false,
+    select2Options = {},
+  }) {
     const $select = $(selector)
+
+    if ($select.data('select2')) {
+      $select.select2('destroy')
+    }
+
     $select.html(`<option value="">Cargando...</option>`).prop('disabled', true)
 
     $.ajax({
       url: url,
       method: 'GET',
+      dataType: 'json',
       success: function (response) {
         let options = `<option value="">${placeholder}</option>`
-        if (response.data && response.data.length > 0) {
+        if (response && response.data && response.data.length > 0) {
           response.data.forEach((item) => {
             const text =
               typeof textField === 'function'
@@ -562,8 +605,17 @@ document.addEventListener('DOMContentLoaded', function () {
           })
         }
         $select.html(options).prop('disabled', false)
+
+        if (useSelect2) {
+          $select.select2(select2Options)
+        }
       },
-      error: function () {
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.error(
+          'Error al cargar datos para el select:',
+          textStatus,
+          errorThrown
+        )
         $select
           .html(`<option value="">Error al cargar</option>`)
           .prop('disabled', true)
@@ -583,19 +635,27 @@ document.addEventListener('DOMContentLoaded', function () {
       const $areaSelect = $(
         '#formRegistroMovimiento select[name="area_origen_id"]'
       )
-      $areaSelect.html('<option value="">--</option>')
+
+      $areaSelect
+        .html('<option value="">--</option>')
+        .val(null)
+        .trigger('change')
+
       if (fincaId) {
-        populateSelect(
-          $apriscoSelect,
-          `${baseUrl}api/apriscos?finca_id=${fincaId}`,
-          'Seleccione Aprisco',
-          'aprisco_id',
-          'nombre'
-        )
+        populateSelect({
+          selector: $apriscoSelect,
+          url: `${baseUrl}api/apriscos?finca_id=${fincaId}`,
+          placeholder: 'Seleccione Aprisco',
+          valueField: 'aprisco_id',
+          textField: 'nombre',
+          useSelect2: true,
+          select2Options: { dropdownParent: $(formRegistroMovimiento) },
+        })
       } else {
-        $apriscoSelect.html(
-          '<option value="">Seleccione Finca primero</option>'
-        )
+        $apriscoSelect
+          .html('<option value="">Seleccione Finca primero</option>')
+          .val(null)
+          .trigger('change')
       }
     }
   )
@@ -609,18 +669,23 @@ document.addEventListener('DOMContentLoaded', function () {
         '#formRegistroMovimiento select[name="area_origen_id"]'
       )
       if (apriscoId) {
-        populateSelect(
-          $areaSelect,
-          `${baseUrl}api/areas?aprisco_id=${apriscoId}`,
-          'Seleccione Área',
-          'area_id',
-          (item) =>
+        populateSelect({
+          selector: $areaSelect,
+          url: `${baseUrl}api/areas?aprisco_id=${apriscoId}`,
+          placeholder: 'Seleccione Área',
+          valueField: 'area_id',
+          textField: (item) =>
             `${item.nombre_personalizado || 'Área'} (${
               item.numeracion || 'S/N'
-            })`
-        )
+            })`,
+          useSelect2: true,
+          select2Options: { dropdownParent: $(formRegistroMovimiento) },
+        })
       } else {
-        $areaSelect.html('<option value="">Seleccione Aprisco primero</option>')
+        $areaSelect
+          .html('<option value="">Seleccione Aprisco primero</option>')
+          .val(null)
+          .trigger('change')
       }
     }
   )
@@ -636,19 +701,27 @@ document.addEventListener('DOMContentLoaded', function () {
       const $areaSelect = $(
         '#formRegistroMovimiento select[name="area_destino_id"]'
       )
-      $areaSelect.html('<option value="">--</option>')
+
+      $areaSelect
+        .html('<option value="">--</option>')
+        .val(null)
+        .trigger('change')
+
       if (fincaId) {
-        populateSelect(
-          $apriscoSelect,
-          `${baseUrl}api/apriscos?finca_id=${fincaId}`,
-          'Seleccione Aprisco',
-          'aprisco_id',
-          'nombre'
-        )
+        populateSelect({
+          selector: $apriscoSelect,
+          url: `${baseUrl}api/apriscos?finca_id=${fincaId}`,
+          placeholder: 'Seleccione Aprisco',
+          valueField: 'aprisco_id',
+          textField: 'nombre',
+          useSelect2: true,
+          select2Options: { dropdownParent: $(formRegistroMovimiento) },
+        })
       } else {
-        $apriscoSelect.html(
-          '<option value="">Seleccione Finca primero</option>'
-        )
+        $apriscoSelect
+          .html('<option value="">Seleccione Finca primero</option>')
+          .val(null)
+          .trigger('change')
       }
     }
   )
@@ -662,18 +735,23 @@ document.addEventListener('DOMContentLoaded', function () {
         '#formRegistroMovimiento select[name="area_destino_id"]'
       )
       if (apriscoId) {
-        populateSelect(
-          $areaSelect,
-          `${baseUrl}api/areas?aprisco_id=${apriscoId}`,
-          'Seleccione Área',
-          'area_id',
-          (item) =>
+        populateSelect({
+          selector: $areaSelect,
+          url: `${baseUrl}api/areas?aprisco_id=${apriscoId}`,
+          placeholder: 'Seleccione Área',
+          valueField: 'area_id',
+          textField: (item) =>
             `${item.nombre_personalizado || 'Área'} (${
               item.numeracion || 'S/N'
-            })`
-        )
+            })`,
+          useSelect2: true,
+          select2Options: { dropdownParent: $(formRegistroMovimiento) },
+        })
       } else {
-        $areaSelect.html('<option value="">Seleccione Aprisco primero</option>')
+        $areaSelect
+          .html('<option value="">Seleccione Aprisco primero</option>')
+          .val(null)
+          .trigger('change')
       }
     }
   )
@@ -688,19 +766,27 @@ document.addEventListener('DOMContentLoaded', function () {
         '#formRegistroUbicacion select[name="aprisco_id"]'
       )
       const $areaSelect = $('#formRegistroUbicacion select[name="area_id"]')
-      $areaSelect.html('<option value="">--</option>')
+
+      $areaSelect
+        .html('<option value="">--</option>')
+        .val(null)
+        .trigger('change')
+
       if (fincaId) {
-        populateSelect(
-          $apriscoSelect,
-          `${baseUrl}api/apriscos?finca_id=${fincaId}`,
-          'Seleccione Aprisco',
-          'aprisco_id',
-          'nombre'
-        )
+        populateSelect({
+          selector: $apriscoSelect,
+          url: `${baseUrl}api/apriscos?finca_id=${fincaId}`,
+          placeholder: 'Seleccione Aprisco',
+          valueField: 'aprisco_id',
+          textField: 'nombre',
+          useSelect2: true,
+          select2Options: { dropdownParent: $(formRegistroUbicacion) },
+        })
       } else {
-        $apriscoSelect.html(
-          '<option value="">Seleccione Finca primero</option>'
-        )
+        $apriscoSelect
+          .html('<option value="">Seleccione Finca primero</option>')
+          .val(null)
+          .trigger('change')
       }
     }
   )
@@ -712,18 +798,23 @@ document.addEventListener('DOMContentLoaded', function () {
       const apriscoId = $(this).val()
       const $areaSelect = $('#formRegistroUbicacion select[name="area_id"]')
       if (apriscoId) {
-        populateSelect(
-          $areaSelect,
-          `${baseUrl}api/areas?aprisco_id=${apriscoId}`,
-          'Seleccione Área',
-          'area_id',
-          (item) =>
+        populateSelect({
+          selector: $areaSelect,
+          url: `${baseUrl}api/areas?aprisco_id=${apriscoId}`,
+          placeholder: 'Seleccione Área',
+          valueField: 'area_id',
+          textField: (item) =>
             `${item.nombre_personalizado || 'Área'} (${
               item.numeracion || 'S/N'
-            })`
-        )
+            })`,
+          useSelect2: true,
+          select2Options: { dropdownParent: $(formRegistroUbicacion) },
+        })
       } else {
-        $areaSelect.html('<option value="">Seleccione Aprisco primero</option>')
+        $areaSelect
+          .html('<option value="">Seleccione Aprisco primero</option>')
+          .val(null)
+          .trigger('change')
       }
     }
   )

@@ -1,4 +1,3 @@
-// agro_tabs_view.js
 import { showErrorToast, formatDate } from '../helpers/helpers.js'
 
 // Helper central para rutas API
@@ -10,14 +9,13 @@ const api = (path) => `${baseUrl}api/${path}`
 
 /**
  * Adapta la respuesta de la API al formato que Bootstrap Table espera.
- * La API devuelve { "data": [...] }, y la tabla necesita { "rows": [...] }.
  */
 window.responseHandler = (res) => ({
   rows: res.data ?? [],
   total: res.data?.length ?? 0,
 })
 
-// Formatters para estados y datos personalizados
+// Formatters
 window.fincaEstadoFormatter = (v) =>
   v === 'ACTIVA'
     ? '<span class="badge bg-success">Activa</span>'
@@ -26,27 +24,13 @@ window.apriscoEstadoFormatter = (v) =>
   v === 'ACTIVO'
     ? '<span class="badge bg-success">Activo</span>'
     : '<span class="badge bg-secondary">Inactivo</span>'
+window.recintoEstadoFormatter = (v) =>
+  v === 'ACTIVO'
+    ? '<span class="badge bg-success">Activo</span>'
+    : '<span class="badge bg-secondary">Inactivo</span>'
 window.areaNombreFormatter = (v, row) =>
   `${row.nombre_personalizado || '-'} / ${row.numeracion || '-'}`
-window.reporteFechaFormatter = (v) => (v ? formatDate(v) : '-')
-window.criticidadFormatter = (v) => {
-  if (v === 'ALTA') return '<span class="badge bg-danger">Alta</span>'
-  if (v === 'MEDIA')
-    return '<span class="badge bg-warning text-dark">Media</span>'
-  return '<span class="badge bg-success">Baja</span>'
-}
-window.reporteEstadoFormatter = (v) => {
-  if (v === 'EN_PROCESO')
-    return '<span class="badge bg-info text-dark">En Proceso</span>'
-  if (v === 'CERRADO') return '<span class="badge bg-secondary">Cerrado</span>'
-  return '<span class="badge bg-primary">Abierto</span>'
-}
 
-/**
- * Genera el HTML para los botones de acción.
- * @param {string} tipo - El tipo de entidad (finca, aprisco, etc.).
- * @param {string|number} id - El ID del registro.
- */
 const actionBtns = (tipo, id) => `
     <div class="btn-group">
       <button class="btn btn-info btn-sm btn-ver" data-type="${tipo}" data-id="${id}" title="Ver"><i class="mdi mdi-eye"></i></button>
@@ -54,24 +38,22 @@ const actionBtns = (tipo, id) => `
       <button class="btn btn-danger btn-sm btn-eliminar" data-type="${tipo}" data-id="${id}" title="Eliminar"><i class="mdi mdi-delete"></i></button>
     </div>`
 
-// Asignación de formatters de acciones para cada tabla
-window.fincaAccionesFormatter = (v, row) => actionBtns('finca', v)
-window.apriscoAccionesFormatter = (v, row) => actionBtns('aprisco', v)
-window.areaAccionesFormatter = (v, row) => actionBtns('area', v)
-window.reporteAccionesFormatter = (v, row) => actionBtns('reporte', v)
+window.fincaAccionesFormatter = (v) => actionBtns('finca', v)
+window.apriscoAccionesFormatter = (v) => actionBtns('aprisco', v)
+window.areaAccionesFormatter = (v) => actionBtns('area', v)
+window.recintoAccionesFormatter = (v) => actionBtns('recinto', v)
 
 // ==========================================================
 // == LÓGICA PRINCIPAL                                     ==
 // ==========================================================
 
 // Banderas para controlar la carga inicial de cada tabla
-let IS_FINCA_LOADED, IS_APRISCO_LOADED, IS_AREA_LOADED, IS_REPORTE_LOADED
+let IS_FINCA_LOADED, IS_APRISCO_LOADED, IS_AREA_LOADED, IS_RECINTO_LOADED
 
 document.addEventListener('DOMContentLoaded', () => {
   initButtons()
   wireCancelButtons()
 
-  // Hooks de lazy-load para cada pestaña
   document
     .getElementById('pane-fincas')
     ?.addEventListener('lazyload', loadFincasTab)
@@ -82,10 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
     .getElementById('pane-areas')
     ?.addEventListener('lazyload', loadAreasTab)
   document
-    .getElementById('pane-reportes')
-    ?.addEventListener('lazyload', loadReportesTab)
+    .getElementById('pane-recintos')
+    ?.addEventListener('lazyload', loadRecintosTab)
 
-  // Refresca la tabla correspondiente cuando se vuelve a una pestaña ya cargada
   document.addEventListener('tab:refresh', ({ detail }) => {
     const { paneId } = detail || {}
     if (paneId === 'pane-fincas' && IS_FINCA_LOADED)
@@ -94,8 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('#tablaApriscos').bootstrapTable('refresh')
     if (paneId === 'pane-areas' && IS_AREA_LOADED)
       $('#tablaAreas').bootstrapTable('refresh')
-    if (paneId === 'pane-reportes' && IS_REPORTE_LOADED)
-      $('#tablaReportes').bootstrapTable('refresh')
+    if (paneId === 'pane-recintos' && IS_RECINTO_LOADED)
+      $('#tablaRecintos').bootstrapTable('refresh')
   })
 })
 
@@ -190,31 +171,25 @@ async function loadAreasTab() {
   }
 }
 
-async function loadReportesTab() {
-  await cargarFincasSelect('#filtroRepFinca', true)
-  await cargarApriscosSelect('#filtroRepAprisco', '', true)
-  await cargarAreasSelect('#filtroRepArea', '', true)
-  if (!IS_REPORTE_LOADED) {
-    $('#tablaReportes').bootstrapTable({
-      url: api('reportes_dano'),
+async function loadRecintosTab() {
+  await cargarFincasSelect('#filtroRecintosFinca', true)
+  await cargarApriscosSelect('#filtroRecintosAprisco', '', true)
+  await cargarAreasSelect('#filtroRecintosArea', '', true)
+
+  if (!IS_RECINTO_LOADED) {
+    $('#tablaRecintos').bootstrapTable({
+      url: api('recintos'),
       responseHandler: window.responseHandler,
       queryParams: (params) => {
-        const f = $('#filtroRepFinca').val() || ''
-        const a = $('#filtroRepAprisco').val() || ''
-        const r = $('#filtroRepArea').val() || ''
-        const e = $('#filtroRepEstado').val() || ''
-        const c = $('#filtroRepCrit').val() || ''
-        if (f) params.finca_id = f
-        if (a) params.aprisco_id = a
-        if (r) params.area_id = r
-        if (e) params.estado_reporte = e
-        if (c) params.criticidad = c
+        const areaId = $('#filtroRecintosArea').val() || ''
+        // Si no hay area, los otros filtros no importan según la lógica de dependencia
+        if (areaId) params.area_id = areaId
         return params
       },
     })
-    IS_REPORTE_LOADED = true
+    IS_RECINTO_LOADED = true
   } else {
-    $('#tablaReportes').bootstrapTable('refresh')
+    $('#tablaRecintos').bootstrapTable('refresh')
   }
 }
 
@@ -226,7 +201,6 @@ function initButtons() {
     if (IS_FINCA_LOADED) $('#tablaFincas').bootstrapTable('refresh')
     if (IS_APRISCO_LOADED) $('#tablaApriscos').bootstrapTable('refresh')
     if (IS_AREA_LOADED) $('#tablaAreas').bootstrapTable('refresh')
-    if (IS_REPORTE_LOADED) $('#tablaReportes').bootstrapTable('refresh')
   })
 
   // ---- Botones para crear nuevos registros ----
@@ -248,33 +222,38 @@ function initButtons() {
     $('#modalAreaLabel').text('Crear Nueva Área')
     new bootstrap.Modal('#modalArea').show()
   })
-  $('#btnNuevoReporte').on('click', async () => {
-    resetReporteForm()
-    await cargarFincasSelect('#rep_finca_id', true)
-    await cargarApriscosSelect(
-      '#rep_aprisco_id',
-      $('#rep_finca_id').val(),
-      true
-    )
-    await cargarAreasSelect('#rep_area_id', $('#rep_aprisco_id').val(), true)
-    $('#modalReporteLabel').text('Nuevo Reporte de Daño')
-    new bootstrap.Modal('#modalReporte').show()
-  })
 
   // ---- Envío de formularios (submit) ----
   $('#formFinca').on('submit', submitFinca)
   $('#formAprisco').on('submit', submitAprisco)
   $('#formArea').on('submit', submitArea)
-  $('#formReporte').on('submit', submitReporte)
 
-  // ---- Delegación de eventos para botones de acción en las filas ----
+  $('#btnNuevoRecinto').on('click', async () => {
+    resetRecintoForm()
+    await cargarFincasSelect('#recinto_finca_id')
+    await cargarApriscosSelect(
+      '#recinto_aprisco_id',
+      $('#recinto_finca_id').val()
+    )
+    await cargarAreasSelect('#recinto_area_id', $('#recinto_aprisco_id').val())
+    $('#modalRecintoLabel').text('Crear Nuevo Recinto')
+    new bootstrap.Modal('#modalRecinto').show()
+  })
+
+  // ---- Envío de formularios ----
+  $('#formFinca').on('submit', submitFinca)
+  $('#formAprisco').on('submit', submitAprisco)
+  $('#formArea').on('submit', submitArea)
+  $('#formRecinto').on('submit', submitRecinto)
+
+  // ---- Delegación de eventos ----
   $(document).on(
     'click',
     'button.btn-ver,button.btn-editar,button.btn-eliminar',
     handleRowAction
   )
 
-  // ---- Filtros en cascada que recargan las tablas ----
+  // ---- Filtros en cascada ----
   $('#filtroApriscosFinca').on('change', () =>
     $('#tablaApriscos').bootstrapTable('refresh')
   )
@@ -287,29 +266,30 @@ function initButtons() {
     $('#tablaAreas').bootstrapTable('refresh')
   )
 
-  $('#filtroRepFinca').on('change', async function () {
-    await cargarApriscosSelect('#filtroRepAprisco', this.value || '', true)
-    $('#filtroRepArea').empty().append(new Option('Todas', ''))
-    $('#tablaReportes').bootstrapTable('refresh')
+  $('#filtroRecintosFinca').on('change', async function () {
+    await cargarApriscosSelect('#filtroRecintosAprisco', this.value || '', true)
+    // Disparamos el change de aprisco para que recargue las áreas
+    $('#filtroRecintosAprisco').trigger('change')
   })
-  $('#filtroRepAprisco').on('change', async function () {
-    await cargarAreasSelect('#filtroRepArea', this.value || '', true)
-    $('#tablaReportes').bootstrapTable('refresh')
+  $('#filtroRecintosAprisco').on('change', async function () {
+    await cargarAreasSelect('#filtroRecintosArea', this.value || '', true)
+    $('#tablaRecintos').bootstrapTable('refresh')
   })
-  $('#filtroRepArea,#filtroRepEstado,#filtroRepCrit').on('change', () =>
-    $('#tablaReportes').bootstrapTable('refresh')
+  $('#filtroRecintosArea').on('change', () =>
+    $('#tablaRecintos').bootstrapTable('refresh')
   )
 
-  // ---- Selects en cascada dentro de los modales ----
-  $('#rep_finca_id').on('change', async function () {
-    await cargarApriscosSelect('#rep_aprisco_id', this.value, true)
-    await cargarAreasSelect('#rep_area_id', $('#rep_aprisco_id').val(), true)
-  })
-  $('#rep_aprisco_id').on('change', async function () {
-    await cargarAreasSelect('#rep_area_id', this.value, true)
-  })
+  // ---- Selects en cascada en modales ----
   $('#area_finca_id').on('change', async function () {
     await cargarApriscosSelect('#area_aprisco_id', this.value)
+  })
+
+  $('#recinto_finca_id').on('change', async function () {
+    await cargarApriscosSelect('#recinto_aprisco_id', this.value)
+    $('#recinto_aprisco_id').trigger('change')
+  })
+  $('#recinto_aprisco_id').on('change', async function () {
+    await cargarAreasSelect('#recinto_area_id', this.value)
   })
 }
 
@@ -319,8 +299,6 @@ function initButtons() {
 function wireCancelButtons() {
   $(document).on('click', '.btn-cancelar', function (e) {
     e.preventDefault()
-    e.stopPropagation()
-    if (!this.getAttribute('type')) this.setAttribute('type', 'button')
     const modalEl = this.closest('.modal')
     if (modalEl) {
       const inst =
@@ -335,13 +313,11 @@ function wireCancelButtons() {
 ========================= */
 async function cargarFincasSelect(selector, includeEmpty = false) {
   try {
-    const resp = await jget(api('fincas'))
-    const list = resp?.data ?? []
-    const $sel = $(selector)
-    $sel.empty()
+    const { data = [] } = await jget(api('fincas'))
+    const $sel = $(selector).empty()
     if (includeEmpty)
       $sel.append(new Option(selector.includes('filtro') ? 'Todas' : '', ''))
-    list.forEach((x) => $sel.append(new Option(x.nombre, x.finca_id)))
+    data.forEach((x) => $sel.append(new Option(x.nombre, x.finca_id)))
   } catch (err) {
     showErrorToast({ message: err.message })
   }
@@ -349,16 +325,12 @@ async function cargarFincasSelect(selector, includeEmpty = false) {
 
 async function cargarApriscosSelect(selector, fincaId, includeEmpty = false) {
   try {
-    const url = fincaId
-      ? api(`apriscos?finca_id=${encodeURIComponent(fincaId)}`)
-      : api('apriscos')
-    const resp = await jget(url)
-    const list = resp?.data ?? []
-    const $sel = $(selector)
-    $sel.empty()
+    const url = fincaId ? api(`apriscos?finca_id=${fincaId}`) : api('apriscos')
+    const { data = [] } = await jget(url)
+    const $sel = $(selector).empty()
     if (includeEmpty)
       $sel.append(new Option(selector.includes('filtro') ? 'Todos' : '', ''))
-    list.forEach((x) => $sel.append(new Option(x.nombre, x.aprisco_id)))
+    data.forEach((x) => $sel.append(new Option(x.nombre, x.aprisco_id)))
   } catch (err) {
     showErrorToast({ message: err.message })
   }
@@ -366,20 +338,16 @@ async function cargarApriscosSelect(selector, fincaId, includeEmpty = false) {
 
 async function cargarAreasSelect(selector, apriscoId, includeEmpty = false) {
   try {
-    const url = apriscoId
-      ? api(`areas?aprisco_id=${encodeURIComponent(apriscoId)}`)
-      : api('areas')
-    const resp = await jget(url)
-    const list = resp?.data ?? []
-    const $sel = $(selector)
-    $sel.empty()
+    const url = apriscoId ? api(`areas?aprisco_id=${apriscoId}`) : api('areas')
+    const { data = [] } = await jget(url)
+    const $sel = $(selector).empty()
     if (includeEmpty)
       $sel.append(new Option(selector.includes('filtro') ? 'Todas' : '', ''))
-    list.forEach((x) => {
-      const nice =
+    data.forEach((x) => {
+      const label =
         x.nombre_personalizado ||
-        (x.numeracion ? `Área ${x.numeracion}` : x.area_id)
-      $sel.append(new Option(nice, x.area_id))
+        (x.numeracion ? `Área ${x.numeracion}` : x.area_id.substring(0, 8))
+      $sel.append(new Option(label, x.area_id))
     })
   } catch (err) {
     showErrorToast({ message: err.message })
@@ -451,26 +419,21 @@ async function submitArea(e) {
   }
 }
 
-async function submitReporte(e) {
+async function submitRecinto(e) {
   e.preventDefault()
   const body = {
-    reporte_id: $('#reporte_id').val() || undefined,
-    finca_id: $('#rep_finca_id').val() || null,
-    aprisco_id: $('#rep_aprisco_id').val() || null,
-    area_id: $('#rep_area_id').val() || null,
-    titulo: $('#rep_titulo').val(),
-    descripcion: $('#rep_descripcion').val(),
-    criticidad: $('#rep_criticidad').val(),
-    estado_reporte: $('#rep_estado').val(),
+    recinto_id: $('#recinto_id').val() || undefined,
+    area_id: $('#recinto_area_id').val(),
+    capacidad: $('#recinto_capacidad').val() || null,
+    estado: $('#recinto_estado').val(),
+    observaciones: $('#recinto_observaciones').val() || null,
   }
-  const isEdit = !!body.reporte_id
-  const url = isEdit
-    ? api(`reportes_dano/${body.reporte_id}`)
-    : api('reportes_dano')
+  const isEdit = !!body.recinto_id
+  const url = isEdit ? api(`recintos/${body.recinto_id}`) : api('recintos')
   try {
     const res = await jsend(url, 'POST', body)
-    bootstrap.Modal.getInstance(document.getElementById('modalReporte')).hide()
-    $('#tablaReportes').bootstrapTable('refresh')
+    bootstrap.Modal.getInstance(document.getElementById('modalRecinto')).hide()
+    $('#tablaRecintos').bootstrapTable('refresh')
     Swal.fire('Éxito', res.message || 'Guardado', 'success')
   } catch (err) {
     showErrorToast({ message: err.message })
@@ -484,14 +447,15 @@ function tipoRoute(tipo) {
   if (tipo === 'finca') return 'fincas'
   if (tipo === 'aprisco') return 'apriscos'
   if (tipo === 'area') return 'areas'
-  return 'reportes_dano'
+  if (tipo === 'recinto') return 'recintos'
+  return ''
 }
 
 function reloadBT(tipo) {
   if (tipo === 'finca') $('#tablaFincas').bootstrapTable('refresh')
   else if (tipo === 'aprisco') $('#tablaApriscos').bootstrapTable('refresh')
   else if (tipo === 'area') $('#tablaAreas').bootstrapTable('refresh')
-  else $('#tablaReportes').bootstrapTable('refresh')
+  else if (tipo === 'recinto') $('#tablaRecintos').bootstrapTable('refresh')
 }
 
 async function handleRowAction(e) {
@@ -505,8 +469,6 @@ async function handleRowAction(e) {
       text: 'No podrás revertir esta acción.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
     })
@@ -514,9 +476,8 @@ async function handleRowAction(e) {
     if (!ok.isConfirmed) return
 
     try {
-      const url = api(`${tipoRoute(tipo)}/${id}`)
-      const res = await jdel(url)
-      reloadBT(tipo) // Recarga la tabla correcta
+      const res = await jdel(api(`${tipoRoute(tipo)}/${id}`))
+      reloadBT(tipo)
       Swal.fire(
         '¡Eliminado!',
         res.message || 'El registro ha sido eliminado.',
@@ -528,21 +489,13 @@ async function handleRowAction(e) {
     return
   }
 
-  // Lógica para Ver y Editar
   try {
-    const url = api(`${tipoRoute(tipo)}/${id}`)
-    const res = await jget(url)
-    const row = res.data
+    const { data: row } = await jget(api(`${tipoRoute(tipo)}/${id}`))
 
     if ($btn.hasClass('btn-ver')) {
-      // ==========================================================
-      // ==      AQUÍ LA LÓGICA ACTUALIZADA PARA EL MODAL        ==
-      // ==========================================================
       const modalEl = document.getElementById('modalDetalle')
       const modal =
         bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)
-
-      // Inyectar el título y el contenido en el modal
       document.getElementById('modalDetalleLabel').innerText = `Detalle de ${
         tipo.charAt(0).toUpperCase() + tipo.slice(1)
       }`
@@ -550,8 +503,6 @@ async function handleRowAction(e) {
         tipo,
         row
       )
-
-      // Mostrar el modal
       modal.show()
     } else if ($btn.hasClass('btn-editar')) {
       await openEditModal(tipo, row)
@@ -561,122 +512,94 @@ async function handleRowAction(e) {
   }
 }
 
-function badgeEstadoFinca(v) {
-  return v === 'ACTIVA'
-    ? '<span class="badge bg-success">Activa</span>'
-    : '<span class="badge bg-secondary">Inactiva</span>'
-}
-
-function badgeEstadoAprisco(v) {
-  return v === 'ACTIVO'
-    ? '<span class="badge bg-success">Activo</span>'
-    : '<span class="badge bg-secondary">Inactivo</span>'
-}
-
 /* =========================
    Renderizado de Detalles y Modales
 ========================= */
 function renderDetailCard(tipo, d = {}) {
-  const V = (x) => x ?? '-' // Helper para mostrar '-' si el valor es nulo
+  const V = (x) => x ?? '-'
 
   if (tipo === 'finca') {
-    return `
-      <div class="detail-card text-start">
-        <div class="detail-grid">
-          <div><span class="label">Nombre</span><span class="value">${V(
-            d.nombre
-          )}</span></div>
-          <div><span class="label">Estado</span><span class="value">${badgeEstadoFinca(
-            d.estado
-          )}</span></div>
-          <div><span class="label">Ubicación</span><span class="value">${V(
-            d.ubicacion
-          )}</span></div>
-          <div><span class="label">Creado</span><span class="value">${
-            d.created_at ? formatDate(d.created_at) : '-'
-          }</span></div>
-        </div>
-      </div>
-    `
+    return `<div class="detail-card text-start"><div class="detail-grid">
+              <div><span class="label">Nombre</span><span class="value">${V(
+                d.nombre
+              )}</span></div>
+              <div><span class="label">Estado</span><span class="value">${window.fincaEstadoFormatter(
+                d.estado
+              )}</span></div>
+              <div><span class="label">Ubicación</span><span class="value">${V(
+                d.ubicacion
+              )}</span></div>
+              <div><span class="label">Creado</span><span class="value">${formatDate(
+                d.created_at
+              )}</span></div>
+            </div></div>`
   }
   if (tipo === 'aprisco') {
-    return `
-      <div class="detail-card text-start">
-        <div class="detail-grid">
-          <div><span class="label">Finca</span><span class="value">${V(
-            d.nombre_finca
-          )}</span></div>
-          <div><span class="label">Estado</span><span class="value">${badgeEstadoAprisco(
-            d.estado
-          )}</span></div>
-          <div><span class="label">Nombre</span><span class="value">${V(
-            d.nombre
-          )}</span></div>
-          <div><span class="label">Creado</span><span class="value">${
-            d.created_at ? formatDate(d.created_at) : '-'
-          }</span></div>
-        </div>
-      </div>
-    `
+    return `<div class="detail-card text-start"><div class="detail-grid">
+              <div><span class="label">Finca</span><span class="value">${V(
+                d.nombre_finca
+              )}</span></div>
+              <div><span class="label">Estado</span><span class="value">${window.apriscoEstadoFormatter(
+                d.estado
+              )}</span></div>
+              <div><span class="label">Nombre</span><span class="value">${V(
+                d.nombre
+              )}</span></div>
+              <div><span class="label">Creado</span><span class="value">${formatDate(
+                d.created_at
+              )}</span></div>
+            </div></div>`
   }
   if (tipo === 'area') {
-    return `
-      <div class="detail-card text-start">
-        <div class="detail-grid">
-          <div><span class="label">Finca</span><span class="value">${V(
-            d.nombre_finca
-          )}</span></div>
-          <div><span class="label">Aprisco</span><span class="value">${V(
-            d.nombre_aprisco
-          )}</span></div>
-          <div><span class="label">Tipo</span><span class="value">${V(
-            d.tipo_area
-          )}</span></div>
-          <div><span class="label">Nombre/Numeración</span><span class="value">${V(
-            d.nombre_personalizado || '-'
-          )} / ${V(d.numeracion || '-')}</span></div>
-          <div><span class="label">Estado</span><span class="value">${badgeEstadoFinca(
-            d.estado
-          )}</span></div>
-          <div><span class="label">Creado</span><span class="value">${
-            d.created_at ? formatDate(d.created_at) : '-'
-          }</span></div>
-        </div>
-      </div>
-    `
+    return `<div class="detail-card text-start"><div class="detail-grid">
+              <div><span class="label">Finca</span><span class="value">${V(
+                d.nombre_finca
+              )}</span></div>
+              <div><span class="label">Aprisco</span><span class="value">${V(
+                d.nombre_aprisco
+              )}</span></div>
+              <div><span class="label">Tipo</span><span class="value">${V(
+                d.tipo_area
+              )}</span></div>
+              <div><span class="label">Nombre/Numeración</span><span class="value">${V(
+                d.nombre_personalizado || '-'
+              )} / ${V(d.numeracion || '-')}</span></div>
+              <div><span class="label">Estado</span><span class="value">${window.fincaEstadoFormatter(
+                d.estado
+              )}</span></div>
+              <div><span class="label">Creado</span><span class="value">${formatDate(
+                d.created_at
+              )}</span></div>
+            </div></div>`
   }
-  // Por defecto, es un reporte
-  return `
-    <div class="detail-card text-start">
-      <div class="detail-grid">
-        <div><span class="label">Título</span><span class="value">${V(
-          d.titulo
-        )}</span></div>
-        <div><span class="label">Fecha</span><span class="value">${
-          d.fecha_reporte ? formatDate(d.fecha_reporte) : '-'
-        }</span></div>
-        <div><span class="label">Finca</span><span class="value">${V(
-          d.finca_nombre
-        )}</span></div>
-        <div><span class="label">Aprisco</span><span class="value">${V(
-          d.aprisco_nombre
-        )}</span></div>
-        <div><span class="label">Área</span><span class="value">${V(
-          d.area_label
-        )}</span></div>
-        <div><span class="label">Criticidad</span><span class="value">${window.criticidadFormatter(
-          V(d.criticidad)
-        )}</span></div>
-        <div><span class="label">Estado</span><span class="value">${window.reporteEstadoFormatter(
-          V(d.estado_reporte)
-        )}</span></div>
-        <div style="grid-column:1/-1"><span class="label">Descripción</span><div class="value" style="white-space:pre-wrap; max-height: 150px; overflow-y: auto;">${V(
-          d.descripcion
-        )}</div></div>
-      </div>
-    </div>
-  `
+  if (tipo === 'recinto') {
+    return `<div class="detail-card text-start"><div class="detail-grid">
+              <div><span class="label">Código</span><span class="value">${
+                d.codigo_recinto
+              }</span></div>
+              <div><span class="label">Estado</span><span class="value">${window.recintoEstadoFormatter(
+                d.estado
+              )}</span></div>
+              <div><span class="label">Capacidad</span><span class="value">${
+                d.capacidad ?? '-'
+              }</span></div>
+              <div><span class="label">Área</span><span class="value">${
+                d.nombre_area ?? '-'
+              }</span></div>
+              <div><span class="label">Aprisco</span><span class="value">${
+                d.nombre_aprisco ?? '-'
+              }</span></div>
+              <div><span class="label">Finca</span><span class="value">${
+                d.nombre_finca ?? '-'
+              }</span></div>
+              <div style="grid-column:1/-1"><span class="label">Observaciones</span><div class="value">${
+                d.observaciones ?? '-'
+              }</div></div>
+            </div></div>`
+  }
+  return ''
 }
+
 async function openEditModal(tipo, d) {
   if (tipo === 'finca') {
     resetFincaForm()
@@ -700,7 +623,7 @@ async function openEditModal(tipo, d) {
     await cargarFincasSelect('#area_finca_id')
     $('#area_id').val(d.area_id)
     $('#area_finca_id').val(d.finca_id)
-    await cargarApriscosSelect('#area_aprisco_id', $('#area_finca_id').val())
+    await cargarApriscosSelect('#area_aprisco_id', d.finca_id)
     $('#area_aprisco_id').val(d.aprisco_id)
     $('#area_tipo_area').val(d.tipo_area)
     $('#area_nombre_personalizado').val(d.nombre_personalizado || '')
@@ -708,22 +631,24 @@ async function openEditModal(tipo, d) {
     $('#area_estado').val(d.estado)
     $('#modalAreaLabel').text('Editar Área')
     new bootstrap.Modal('#modalArea').show()
-  } else {
-    // reporte
-    resetReporteForm()
-    await cargarFincasSelect('#rep_finca_id', true)
-    await cargarApriscosSelect('#rep_aprisco_id', d.finca_id, true)
-    await cargarAreasSelect('#rep_area_id', d.aprisco_id, true)
-    $('#reporte_id').val(d.reporte_id)
-    $('#rep_finca_id').val(d.finca_id || '')
-    $('#rep_aprisco_id').val(d.aprisco_id || '')
-    $('#rep_area_id').val(d.area_id || '')
-    $('#rep_titulo').val(d.titulo)
-    $('#rep_descripcion').val(d.descripcion || '')
-    $('#rep_criticidad').val(d.criticidad)
-    $('#rep_estado').val(d.estado_reporte)
-    $('#modalReporteLabel').text('Editar Reporte de Daño')
-    new bootstrap.Modal('#modalReporte').show()
+  }
+
+  if (tipo === 'recinto') {
+    resetRecintoForm()
+    await cargarFincasSelect('#recinto_finca_id')
+    $('#recinto_finca_id').val(d.finca_id)
+    await cargarApriscosSelect('#recinto_aprisco_id', d.finca_id)
+    $('#recinto_aprisco_id').val(d.aprisco_id)
+    await cargarAreasSelect('#recinto_area_id', d.aprisco_id)
+    $('#recinto_area_id').val(d.area_id)
+
+    $('#recinto_id').val(d.recinto_id)
+    $('#recinto_capacidad').val(d.capacidad || '')
+    $('#recinto_estado').val(d.estado)
+    $('#recinto_observaciones').val(d.observaciones || '')
+
+    $('#modalRecintoLabel').text('Editar Recinto')
+    new bootstrap.Modal('#modalRecinto').show()
   }
 }
 
@@ -742,7 +667,8 @@ function resetAreaForm() {
   $('#formArea')[0]?.reset()
   $('#area_id').val('')
 }
-function resetReporteForm() {
-  $('#formReporte')[0]?.reset()
-  $('#reporte_id').val('')
+
+function resetRecintoForm() {
+  $('#formRecinto')[0]?.reset()
+  $('#recinto_id').val('')
 }
