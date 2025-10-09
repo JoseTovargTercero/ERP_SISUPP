@@ -7,7 +7,7 @@
             <i class="mdi mdi-refresh"></i> Refrescar todo
           </button>
         </div>
-        <h4 class="page-title">Gestión Agro — Fincas, Apriscos, Áreas y Reportes</h4>
+        <h4 class="page-title">Gestión Agro — Fincas, Apriscos y Áreas</h4>
       </div>
     </div>
   </div>
@@ -26,8 +26,8 @@
         role="tab">Áreas</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-reportes" data-bs-toggle="tab" data-bs-target="#pane-reportes" type="button"
-        role="tab">Reportes de Daño</button>
+      <button class="nav-link" id="tab-recintos" data-bs-toggle="tab" data-bs-target="#pane-recintos" type="button"
+        role="tab">Recintos</button>
     </li>
   </ul>
 
@@ -125,72 +125,56 @@
       </div>
     </div>
 
-    <div class="tab-pane fade" id="pane-reportes" role="tabpanel" aria-labelledby="tab-reportes">
+    <!-- Novedad: Pane Recintos -->
+    <div class="tab-pane fade" id="pane-recintos" role="tabpanel" aria-labelledby="tab-recintos">
       <div class="card">
         <div class="card-body">
           <div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-2">
             <div class="d-flex flex-wrap gap-2">
               <div>
-                <label class="form-label mb-1">Finca</label>
-                <select id="filtroRepFinca" class="form-select">
+                <label class="form-label mb-1">Filtrar por Finca</label>
+                <select id="filtroRecintosFinca" class="form-select">
                   <option value="">Todas</option>
                 </select>
               </div>
               <div>
-                <label class="form-label mb-1">Aprisco</label>
-                <select id="filtroRepAprisco" class="form-select">
+                <label class="form-label mb-1">Filtrar por Aprisco</label>
+                <select id="filtroRecintosAprisco" class="form-select">
                   <option value="">Todos</option>
                 </select>
               </div>
               <div>
-                <label class="form-label mb-1">Área</label>
-                <select id="filtroRepArea" class="form-select">
+                <label class="form-label mb-1">Filtrar por Área</label>
+                <select id="filtroRecintosArea" class="form-select">
                   <option value="">Todas</option>
-                </select>
-              </div>
-              <div>
-                <label class="form-label mb-1">Estado</label>
-                <select id="filtroRepEstado" class="form-select">
-                  <option value="">Todos</option>
-                  <option value="ABIERTO">Abierto</option>
-                  <option value="EN_PROCESO">En Proceso</option>
-                  <option value="CERRADO">Cerrado</option>
-                </select>
-              </div>
-              <div>
-                <label class="form-label mb-1">Criticidad</label>
-                <select id="filtroRepCrit" class="form-select">
-                  <option value="">Todas</option>
-                  <option value="BAJA">Baja</option>
-                  <option value="MEDIA">Media</option>
-                  <option value="ALTA">Alta</option>
                 </select>
               </div>
             </div>
-            <button class="btn btn-primary" id="btnNuevoReporte"><i class="mdi mdi-plus"></i> Nuevo Reporte</button>
+            <button class="btn btn-primary" id="btnNuevoRecinto"><i class="mdi mdi-plus"></i> Nuevo Recinto</button>
           </div>
 
-          <table id="tablaReportes" class="table table-striped table-hover align-middle" style="width:100%"
-            data-pagination="true" data-sort-name="fecha_reporte" data-sort-order="desc" data-locale="es-ES">
+          <table id="tablaRecintos" class="table table-striped table-hover align-middle" style="width:100%"
+            data-pagination="true" data-locale="es-ES">
             <thead>
               <tr>
-                <th data-field="fecha_reporte" data-formatter="reporteFechaFormatter" data-sortable="true">Fecha</th>
-                <th data-field="titulo" data-sortable="true">Título</th>
-                <th data-field="finca_nombre">Finca</th>
-                <th data-field="aprisco_nombre">Aprisco</th>
-                <th data-field="area_label">Área</th>
-                <th data-field="criticidad" data-formatter="criticidadFormatter" data-align="center">Criticidad</th>
-                <th data-field="estado_reporte" data-formatter="reporteEstadoFormatter" data-align="center">Estado</th>
-                <th data-field="reporte_id" data-formatter="reporteAccionesFormatter" data-align="center">Acciones</th>
+                <th data-field="codigo_recinto" data-sortable="true">Código</th>
+                <th data-field="nombre_area" data-sortable="true">Área</th>
+                <th data-field="nombre_aprisco" data-sortable="true">Aprisco</th>
+                <th data-field="nombre_finca" data-sortable="true">Finca</th>
+                <th data-field="capacidad" data-align="center">Capacidad</th>
+                <th data-field="estado" data-formatter="recintoEstadoFormatter" data-align="center">Estado</th>
+                <th data-field="recinto_id" data-formatter="recintoAccionesFormatter" data-align="center">Acciones</th>
               </tr>
             </thead>
-            <tbody></tbody>
           </table>
         </div>
       </div>
     </div>
 
   </div>
+</div>
+
+</div>
 </div>
 
 <div class="modal fade" id="modalDetalle" tabindex="-1" aria-labelledby="modalDetalleLabel" aria-hidden="true">
@@ -237,7 +221,6 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-cancelar" data-bs-dismiss="modal">Cancelar</button>
-
           <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
       </form>
@@ -273,7 +256,6 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-cancelar" data-bs-dismiss="modal">Cancelar</button>
-
           <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
       </form>
@@ -327,7 +309,6 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-cancelar" data-bs-dismiss="modal">Cancelar</button>
-
           <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
       </form>
@@ -335,59 +316,51 @@
   </div>
 </div>
 
-<div class="modal fade" id="modalReporte" tabindex="-1" aria-hidden="true">
+<!-- Novedad: Modal Recinto -->
+<div class="modal fade" id="modalRecinto" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalReporteLabel">Nuevo Reporte de Daño</h5>
+        <h5 class="modal-title" id="modalRecintoLabel">Crear Nuevo Recinto</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <form id="formReporte">
+      <form id="formRecinto">
         <div class="modal-body">
-          <input type="hidden" id="reporte_id" name="reporte_id">
-          <div class="row g-2">
-            <div class="col-md-4">
-              <label class="form-label">Finca</label>
-              <select class="form-select" id="rep_finca_id" name="finca_id"></select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Aprisco</label>
-              <select class="form-select" id="rep_aprisco_id" name="aprisco_id"></select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Área</label>
-              <select class="form-select" id="rep_area_id" name="area_id"></select>
-            </div>
+          <input type="hidden" id="recinto_id" name="recinto_id">
+
+          <div class="alert alert-info">El código del recinto se generará automáticamente basado en el área
+            seleccionada.</div>
+
+          <div class="mb-3">
+            <label class="form-label">Finca</label>
+            <select class="form-select" id="recinto_finca_id" required></select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Aprisco</label>
+            <select class="form-select" id="recinto_aprisco_id" required></select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Área</label>
+            <select class="form-select" id="recinto_area_id" name="area_id" required></select>
           </div>
 
-          <div class="mt-3">
-            <label class="form-label">Título</label>
-            <input type="text" class="form-control" id="rep_titulo" name="titulo" required>
-          </div>
-          <div class="mt-3">
-            <label class="form-label">Descripción</label>
-            <textarea class="form-control" id="rep_descripcion" name="descripcion" rows="3" required></textarea>
+          <div class="mb-3">
+            <label class="form-label">Capacidad (opcional)</label>
+            <input type="number" class="form-control" id="recinto_capacidad" name="capacidad" min="0">
           </div>
 
-          <div class="row g-2 mt-3">
-            <div class="col-md-6">
-              <label class="form-label">Criticidad</label>
-              <select class="form-select" id="rep_criticidad" name="criticidad" required>
-                <option value="BAJA">Baja</option>
-                <option value="MEDIA">Media</option>
-                <option value="ALTA">Alta</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Estado</label>
-              <select class="form-select" id="rep_estado" name="estado_reporte" required>
-                <option value="ABIERTO">Abierto</option>
-                <option value="EN_PROCESO">En Proceso</option>
-                <option value="CERRADO">Cerrado</option>
-              </select>
-            </div>
+          <div class="mb-3">
+            <label class="form-label">Estado</label>
+            <select class="form-select" id="recinto_estado" name="estado" required>
+              <option value="ACTIVO">Activo</option>
+              <option value="INACTIVO">Inactivo</option>
+            </select>
           </div>
 
+          <div class="mb-3">
+            <label class="form-label">Observaciones (opcional)</label>
+            <textarea class="form-control" id="recinto_observaciones" name="observaciones" rows="2"></textarea>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-cancelar" data-bs-dismiss="modal">Cancelar</button>
@@ -397,6 +370,7 @@
     </div>
   </div>
 </div>
+
 
 <style>
   .detail-card .label {
@@ -460,4 +434,4 @@
   })();
 </script>
 
-<script type="module" src="<?= BASE_URL ?>/public/assets/js/modules/agro_tabs_view.js"></script>
+<script type="module" src="<?= BASE_URL ?>public/assets/js/modules/fincas_view.js"></script>
