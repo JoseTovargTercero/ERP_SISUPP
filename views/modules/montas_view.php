@@ -1,10 +1,4 @@
 <?php
-$verracos = [
-    ['id' => '9e9394fe-00ac-47ef-a3b7-e97bd3ac0c63', 'identificador' => 'V001', 'raza' => 'Duroc'],
-];
-$hembras = [
-    ['id' => 'ab636534-891c-43fb-b501-56177e79f621', 'identificador' => 'H001', 'raza' => 'Yorkshire'],
-];
 
 // Verificaciones para hembras:
 // - Edad mínima: 8 meses
@@ -38,13 +32,13 @@ $hembras = [
                         class="table table-striped table-hover" style="width:100%">
                         <thead>
                             <tr>
-                                <th data-field="periodo_id" data-sortable="true">Verraco</th>
-                                <th data-field="hembra_id" data-sortable="true">Hembra</th>
-                                <th data-field="verraco_id" data-align="center">N° Servicios</th>
+                                <th data-field="verraco_identificador" data-sortable="true">Verraco</th>
+                                <th data-field="hembra_identificador" data-sortable="true">Hembra</th>
+                                <th data-field="cantidad_montas" data-align="center">N° Servicios</th>
                                 <th data-field="fecha_inicio" data-sortable="true">Inicio</th>
-                                <th data-field="observaciones" data-sortable="true">Último Servicio</th>
+                                <th data-field="fecha_ultima_monta" data-sortable="true">Último Servicio</th>
                                 <th data-field="estado_periodo" data-align="center">Estado</th>
-                                <th data-field="acciones" data-formatter="accionesFormatter" data-align="center">Acciones</th>
+                                <th data-field="periodo_id" data-formatter="accionesFormatter" data-align="center">Acciones</th>
                             </tr>
                         </thead>
                     </table>
@@ -53,6 +47,7 @@ $hembras = [
         </div>
     </div>
 </div>
+
 
 <!-- Modal: Registrar Periodo de Monta -->
 <div class="modal fade" id="modalPeriodoMonta" tabindex="-1" aria-labelledby="modalPeriodoMontaLabel" aria-hidden="true">
@@ -68,11 +63,11 @@ $hembras = [
                     <!-- Wizard Steps -->
                     <ul class="nav nav-tabs" id="wizardTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="paso1-tab" data-bs-toggle="tab" data-bs-target="#paso1" type="button"
+                            <button class="nav-link active disabled" id="paso1-tab" data-bs-toggle="tab" data-bs-target="#paso1" type="button"
                                 role="tab">1. Selección de Animales</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="paso2-tab" data-bs-toggle="tab" data-bs-target="#paso2" type="button"
+                            <button class="nav-link disabled" id="paso2-tab" data-bs-toggle="tab" data-bs-target="#paso2" type="button"
                                 role="tab">2. Información del Periodo</button>
                         </li>
                     </ul>
@@ -85,18 +80,13 @@ $hembras = [
                                     <label for="verraco_id" class="form-label">Seleccionar Verraco</label>
                                     <select class="form-select" id="verraco_id" name="verraco_id" required>
                                         <option value="">Seleccione...</option>
-                                        <?php foreach ($verracos as $v): ?>
-                                            <option value="<?= $v['id'] ?>"><?= $v['identificador'] ?> - <?= $v['raza'] ?></option>
-                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="hembra_id" class="form-label">Seleccionar Hembra</label>
                                     <select class="form-select" id="hembra_id" name="hembra_id" required>
                                         <option value="">Seleccione...</option>
-                                        <?php foreach ($hembras as $h): ?>
-                                            <option value="<?= $h['id'] ?>"><?= $h['identificador'] ?> - <?= $h['raza'] ?></option>
-                                        <?php endforeach; ?>
+
                                     </select>
                                 </div>
                                 <div class="col-md-12">
@@ -113,15 +103,11 @@ $hembras = [
                         <!-- Paso 2 -->
                         <div class="tab-pane fade" id="paso2" role="tabpanel">
                             <div class="row">
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-12 mb-3">
                                     <label for="fecha_inicio" class="form-label">Fecha de Inicio</label>
                                     <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" required>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="num_max_servicios" class="form-label">Número Máx. de Servicios</label>
-                                    <input type="number" class="form-control" id="num_max_servicios" name="num_max_servicios" value="5"
-                                        readonly>
-                                </div>
+
                                 <div class="col-md-12 mb-3">
                                     <label for="observaciones" class="form-label">Observaciones</label>
                                     <textarea class="form-control" id="observaciones" name="observaciones" rows="3"
@@ -152,20 +138,12 @@ $hembras = [
 
                 <div class="modal-body">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+
+                        <div class="col-md-12 mb-3">
                             <label for="fecha_servicio" class="form-label">Fecha del Servicio</label>
                             <input type="date" class="form-control" id="fecha_servicio" name="fecha_servicio" required>
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label for="resultado" class="form-label">Resultado</label>
-                            <select class="form-select" id="resultado" name="resultado" required>
-                                <option value="">Seleccione...</option>
-                                <option value="Éxito">Éxito</option>
-                                <option value="Fallido">Fallido</option>
-                                <option value="Pendiente">Pendiente</option>
-                            </select>
-                        </div>
 
                         <div class="col-md-12 mb-3">
                             <label for="observacion_servicio" class="form-label">Observaciones</label>
@@ -208,6 +186,9 @@ $hembras = [
         paso1Tab.show();
     });
 
+
+
+
     // --- Simulación de verificación genética ---
     document.getElementById('hembra_id').addEventListener('change', function() {
         const verraco = document.getElementById('verraco_id').value;
@@ -221,38 +202,7 @@ $hembras = [
     });
 
 
-    // --- Abrir modal de nuevo servicio ---
-    function abrirModalServicio(idPeriodo) {
-        document.getElementById('formServicio').reset();
-        document.getElementById('periodo_id').value = idPeriodo;
-        const modal = new bootstrap.Modal(document.getElementById('modalServicio'));
-        modal.show();
-    }
 
-
-    // --- Enviar formulario de servicio (AJAX) ---
-    /*  document.getElementById('formServicio').addEventListener('submit', async function(e) {
-          e.preventDefault();
-          const formData = new FormData(this);
-
-          try {
-              const response = await fetch('<?= BASE_URL ?>api/registrar_servicio_monta.php', {
-                  method: 'POST',
-                  body: formData
-              });
-              const result = await response.json();
-
-              if (result.success) {
-                  Swal.fire('Éxito', 'Servicio registrado correctamente', 'success');
-                  bootstrap.Modal.getInstance(document.getElementById('modalServicio')).hide();
-                  $('#tablaPeriodosMonta').bootstrapTable('refresh');
-              } else {
-                  Swal.fire('Error', result.message || 'No se pudo registrar el servicio', 'error');
-              }
-          } catch (error) {
-              Swal.fire('Error', 'Error de conexión con el servidor', 'error');
-          }
-      });*/
 
     const baseUrl = "<?php echo BASE_URL; ?>";
 </script>

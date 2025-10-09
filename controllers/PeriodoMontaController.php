@@ -52,6 +52,25 @@ class PeriodoMontaController
 
 
 
+    // PUT /montas/cerrar/{monta_id}
+    public function cerrar($params)
+    {
+
+        try {
+            $this->model->cerrarPeriodo($params['periodo']);
+            $this->jsonResponse(true, 'Periodo cerrado correctamente');
+        } catch (InvalidArgumentException $e) {
+            $this->jsonResponse(false, $e->getMessage(), null, 400);
+        } catch (RuntimeException $e) {
+            $this->jsonResponse(false, $e->getMessage(), null, 409);
+        } catch (Throwable $e) {
+            $this->jsonResponse(false, 'Error al modificar: ' . $e->getMessage(), null, 500);
+        }
+    }
+
+
+
+
     // GET /montas/{monta_id}
     public function mostrar(array $params): void
     {
@@ -69,7 +88,7 @@ class PeriodoMontaController
     }
 
     // POST /montas
-    // JSON: { verraco_id, hembra_id, fecha_inicio, num_max_servicios, observaciones, estado_periodo = ABIERTO }
+    // JSON: { verraco_id, hembra_id, fecha_inicio,  observaciones, estado_periodo = ABIERTO }
 
     public function crear(): void
     {
@@ -96,7 +115,7 @@ class PeriodoMontaController
     // JSON: { periodo_id?, numero_monta?, fecha_monta? }
     public function actualizar(array $params): void
     {
-        /*  $montaId = $params['monta_id'] ?? '';
+        $montaId = $params['monta_id'] ?? '';
         if ($montaId === '') {
             $this->jsonResponse(false, 'Parámetro monta_id es obligatorio.', null, 400);
         }
@@ -111,7 +130,7 @@ class PeriodoMontaController
             $this->jsonResponse(false, $e->getMessage(), null, 409);
         } catch (Throwable $e) {
             $this->jsonResponse(false, 'Error al actualizar monta: ' . $e->getMessage(), null, 500);
-        }*/
+        }
     }
 
     // DELETE /montas/{monta_id}

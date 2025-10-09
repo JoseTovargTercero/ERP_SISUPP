@@ -203,7 +203,7 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/periodos_monta',                ['controlador' => PeriodoMontaController::class, 'accion' => 'crear']);
     $router->post('/periodos_monta/{monta_id}',     ['controlador' => PeriodoMontaController::class, 'accion' => 'actualizar']);
     $router->delete('/periodos_monta/{monta_id}',   ['controlador' => PeriodoMontaController::class, 'accion' => 'eliminar']);
-
+    $router->post('/periodos_monta/{periodo}/cerrar', ['controlador' => PeriodoMontaController::class, 'accion' => 'cerrar']);
 
     // endpoints de montas
     $router->get('/montas',                 ['controlador' => MontaController::class, 'accion' => 'listar']);

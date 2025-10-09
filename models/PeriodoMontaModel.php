@@ -17,18 +17,28 @@ class PeriodoMontaModel
 
     private function generateUUIDv4(): string
     {
+        $data = random_bytes(16); // 128 bits aleatorios
+
+        // Establece la versión a 0100 (v4)
+        $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
+        // Establece la variante a 10xx
+        $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
+
+        $hex = bin2hex($data);
+
         return sprintf(
-            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0x0fff) | 0x4000,
-            mt_rand(0, 0x3fff) | 0x8000,
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff)
+            '%s-%s-%s-%s-%s',
+            substr($hex, 0, 8),
+            substr($hex, 8, 4),
+            substr($hex, 12, 4),
+            substr($hex, 16, 4),
+            substr($hex, 20, 12)
         );
     }
+
+
+
+
 
     private function nowWithAudit(): array
     {
@@ -51,6 +61,35 @@ class PeriodoMontaModel
         $stmt->close();
         return $ok;
     }
+
+
+    private function hembraDisponible(string $id): bool
+    {
+        $sql = "SELECT 1 
+        FROM periodos_servicio 
+        WHERE hembra_id = ? 
+          AND estado_periodo = 'ABIERTO' 
+          AND deleted_at IS NULL 
+        LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        if (!$stmt) {
+            throw new mysqli_sql_exception($this->db->error);
+        }
+
+        $stmt->bind_param('s', $id);
+        $stmt->execute();
+        $stmt->store_result();
+
+        // Si no hay registros, la hembra está disponible
+        $disponible = ($stmt->num_rows === 0);
+
+        $stmt->close();
+        return $disponible;
+    }
+
+
+
+
 
     /* ============ Lecturas ============ */
 
@@ -96,17 +135,41 @@ class PeriodoMontaModel
 
         $whereSql = implode(' AND ', $w);
 
+
         $sql = "SELECT
-                    m.periodo_id,
-                    m.hembra_id,
-                    m.verraco_id ,
-                    m.fecha_inicio,
-                    m.observaciones,
-                    m.estado_periodo,
-                    m.created_at, m.created_by, m.updated_at, m.updated_by
-                FROM {$this->table} m
-                WHERE {$whereSql}
-                LIMIT ? OFFSET ?";
+            m.periodo_id,
+            m.hembra_id,
+            m.verraco_id,
+            m.fecha_inicio,
+            m.observaciones,
+            m.estado_periodo,
+            h.identificador AS hembra_identificador,
+            v.identificador AS verraco_identificador,
+            m.created_at,
+            m.created_by,
+            m.updated_at,
+            m.updated_by,
+            COUNT(mt.monta_id) AS cantidad_montas,
+            MAX(mt.fecha_monta) AS fecha_ultima_monta
+        FROM {$this->table} m
+        LEFT JOIN animales h ON m.hembra_id = h.animal_id
+        LEFT JOIN animales v ON m.verraco_id = v.animal_id
+        LEFT JOIN montas mt ON mt.periodo_id = m.periodo_id
+        WHERE {$whereSql}
+        GROUP BY 
+            m.periodo_id,
+            m.hembra_id,
+            m.verraco_id,
+            m.fecha_inicio,
+            m.observaciones,
+            m.estado_periodo,
+            h.identificador,
+            v.identificador,
+            m.created_at,
+            m.created_by,
+            m.updated_at,
+            m.updated_by
+        LIMIT ? OFFSET ?";
 
         $stmt = $this->db->prepare($sql);
         if (!$stmt) throw new mysqli_sql_exception("Error al preparar listado: " . $this->db->error);
@@ -164,6 +227,12 @@ class PeriodoMontaModel
             throw new InvalidArgumentException('Faltan campos requeridos: verraco_id, hembra_id, fecha_inicio, observaciones. V:' . $verraco_id .  'H:' . $hembra_id . 'F' . $fecha_inicio . 'O:' . $observaciones);
         }
 
+
+        if (!$this->hembraDisponible($hembra_id)) {
+            throw new InvalidArgumentException('La hembra ya tiene un periodo de monta abierto.');
+        }
+
+
         $this->db->begin_transaction();
         try {
             $uuid    = $this->generateUUIDv4();
@@ -180,8 +249,8 @@ class PeriodoMontaModel
             $stmt->bind_param(
                 'sssssss',
                 $uuid,
-                $verraco_id,
                 $hembra_id,
+                $verraco_id,
                 $fecha_inicio,
                 $observaciones,
                 $now,
@@ -204,6 +273,46 @@ class PeriodoMontaModel
                 throw new mysqli_sql_exception("Error al ejecutar inserción: " . $err);
             }
 
+            // se debe registrar el primer servicio automáticamente: monta_id, periodo_id, numero_monta = 1, fecha_monta = fecha_inicio, created_at, created_by
+
+            // Se registra el primer servicio automáticamente
+
+            $sql2 = "INSERT INTO montas
+                    (monta_id, periodo_id, numero_monta, fecha_monta, created_at,
+                    created_by) 
+                    VALUES (?, ?, ?, ?, ?, ?)";
+            $stmt2 = $this->db->prepare($sql2);
+            if (!$stmt2) throw new mysqli_sql_exception("Error al preparar inserción de monta: " . $this->db->error);
+            $numero_monta = 1;
+            $uuid_monta    = $this->generateUUIDv4();
+            $stmt2->bind_param(
+                'ssssss',
+                $uuid_monta,
+                $uuid,
+                $numero_monta,
+                $fecha_inicio,
+                $now,
+                $actorId
+            );
+            if (!$stmt2->execute()) {
+                $err = $stmt2->error;
+                $stmt2->close();
+                $this->db->rollback();
+
+                $errLow = strtolower($err);
+                if (str_contains($errLow, 'foreign key')) {
+                    throw new RuntimeException('Referencia inválida al crear el primer servicio de la monta.');
+                }
+                if (str_contains($errLow, 'duplicate') || str_contains($errLow, 'unique')) {
+                    throw new RuntimeException('Ya existe un servicio con ese número en esta monta.');
+                }
+                throw new mysqli_sql_exception("Error al ejecutar inserción del primer servicio: " . $err);
+            }
+            $stmt2->close();
+
+
+
+
             $stmt->close();
             $this->db->commit();
             return $uuid;
@@ -212,6 +321,29 @@ class PeriodoMontaModel
             throw $e;
         }
     }
+
+
+    // Cierra el periodo de monta
+    public function cerrarPeriodo($id)
+    {
+        $stmt = $this->db->prepare("UPDATE {$this->table} SET estado_periodo = 'CERRADO' WHERE periodo_id = ?");
+
+        if (!$stmt) {
+            throw new RuntimeException("Error en prepare(): " . $this->db->error);
+        }
+
+        $stmt->bind_param("s", $id);
+
+        if (!$stmt->execute()) {
+            throw new RuntimeException("Error en execute(): " . $stmt->error);
+        }
+
+        $filas = $stmt->affected_rows;
+        $stmt->close();
+
+        return $filas > 0;
+    }
+
 
     /**
      * Actualiza campos explícitos de la monta.

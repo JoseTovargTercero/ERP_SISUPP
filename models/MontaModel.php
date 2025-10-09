@@ -19,11 +19,14 @@ class MontaModel
     {
         return sprintf(
             '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
             mt_rand(0, 0xffff),
             mt_rand(0, 0x0fff) | 0x4000,
             mt_rand(0, 0x3fff) | 0x8000,
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff)
         );
     }
 
@@ -39,9 +42,14 @@ class MontaModel
     private function periodoExiste(string $id): bool
     {
         $sql = "SELECT 1 FROM periodos_servicio WHERE periodo_id = ? AND deleted_at IS NULL LIMIT 1";
-        $stmt = $this->db->prepare($sql); if (!$stmt) throw new mysqli_sql_exception($this->db->error);
-        $stmt->bind_param('s', $id); $stmt->execute(); $stmt->store_result();
-        $ok = $stmt->num_rows > 0; $stmt->close(); return $ok;
+        $stmt = $this->db->prepare($sql);
+        if (!$stmt) throw new mysqli_sql_exception($this->db->error);
+        $stmt->bind_param('s', $id);
+        $stmt->execute();
+        $stmt->store_result();
+        $ok = $stmt->num_rows > 0;
+        $stmt->close();
+        return $ok;
     }
 
     /* ============ Lecturas ============ */
@@ -59,14 +67,32 @@ class MontaModel
         ?string $desde = null,
         ?string $hasta = null
     ): array {
-        $w=[]; $p=[]; $t='';
+        $w = [];
+        $p = [];
+        $t = '';
 
         $w[] = $incluirEliminados ? 'm.deleted_at IS NOT NULL OR m.deleted_at IS NULL' : 'm.deleted_at IS NULL';
 
-        if ($periodoId)   { $w[]='m.periodo_id = ?';     $p[]=$periodoId;   $t.='s'; }
-        if ($numeroMonta !== null) { $w[]='m.numero_monta = ?'; $p[]=$numeroMonta; $t.='i'; }
-        if ($desde)       { $w[]='m.fecha_monta >= ?';   $p[]=$desde;       $t.='s'; }
-        if ($hasta)       { $w[]='m.fecha_monta <= ?';   $p[]=$hasta;       $t.='s'; }
+        if ($periodoId) {
+            $w[] = 'm.periodo_id = ?';
+            $p[] = $periodoId;
+            $t .= 's';
+        }
+        if ($numeroMonta !== null) {
+            $w[] = 'm.numero_monta = ?';
+            $p[] = $numeroMonta;
+            $t .= 'i';
+        }
+        if ($desde) {
+            $w[] = 'm.fecha_monta >= ?';
+            $p[] = $desde;
+            $t .= 's';
+        }
+        if ($hasta) {
+            $w[] = 'm.fecha_monta <= ?';
+            $p[] = $hasta;
+            $t .= 's';
+        }
 
         $whereSql = implode(' AND ', $w);
 
@@ -84,7 +110,9 @@ class MontaModel
         $stmt = $this->db->prepare($sql);
         if (!$stmt) throw new mysqli_sql_exception("Error al preparar listado: " . $this->db->error);
 
-        $t.='ii'; $p[]=$limit; $p[]=$offset;
+        $t .= 'ii';
+        $p[] = $limit;
+        $p[] = $offset;
         $stmt->bind_param($t, ...$p);
         $stmt->execute();
         $res  = $stmt->get_result();
@@ -124,24 +152,28 @@ class MontaModel
      */
     public function crear(array $data): string
     {
-        $periodoId   = trim((string)($data['periodo_id'] ?? ''));
-        $fechaMonta  = trim((string)($data['fecha_monta'] ?? ''));
-        $numeroMonta = isset($data['numero_monta']) ? (int)$data['numero_monta'] : 0;
+        $fecha_servicio   = trim((string)($data['fecha_servicio'] ?? ''));
+        $observacion_servicio  = trim((string)($data['observacion_servicio'] ?? ''));
+        $periodo_id  = trim((string)($data['periodo_id'] ?? ''));
 
-        if ($periodoId === '' || $fechaMonta === '' || $numeroMonta === 0) {
+
+        if ($fecha_servicio === '' || $observacion_servicio === '' || $periodo_id === 0) {
             throw new InvalidArgumentException('Faltan campos requeridos: periodo_id, numero_monta, fecha_monta.');
         }
-        if ($numeroMonta < 1) {
-            throw new InvalidArgumentException('numero_monta debe ser >= 1.');
-        }
-        if (!$this->periodoExiste($periodoId)) {
+
+        if (!$this->periodoExiste($periodo_id)) {
             throw new RuntimeException('El periodo de servicio no existe o está eliminado.');
         }
+        $montas = $this->listar(100, 0, false, $periodo_id, null, null, null);
+        $numeroMonta = count($montas) + 1;
+
 
         $this->db->begin_transaction();
         try {
-            [$now, $env] = $this->nowWithAudit();
             $uuid    = $this->generateUUIDv4();
+            $now = (new DateTime())->format('Y-m-d H:i:s');
+
+
             $actorId = $_SESSION['user_id'] ?? $uuid;
 
             $sql = "INSERT INTO {$this->table}
@@ -153,11 +185,18 @@ class MontaModel
 
             $stmt->bind_param(
                 'ssisss',
-                $uuid, $periodoId, $numeroMonta, $fechaMonta, $now, $actorId
+                $uuid,
+                $periodo_id,
+                $numeroMonta,
+                $fecha_servicio,
+                $now,
+                $actorId
             );
 
             if (!$stmt->execute()) {
-                $err = $stmt->error; $stmt->close(); $this->db->rollback();
+                $err = $stmt->error;
+                $stmt->close();
+                $this->db->rollback();
 
                 $errLow = strtolower($err);
                 if (str_contains($errLow, 'foreign key')) {
@@ -185,26 +224,37 @@ class MontaModel
      */
     public function actualizar(string $montaId, array $data): bool
     {
-        $set = []; $p=[]; $t='';
+        $set = [];
+        $p = [];
+        $t = '';
 
         if (array_key_exists('periodo_id', $data)) {
             $v = $data['periodo_id'];
             if ($v !== null && $v !== '' && !$this->periodoExiste($v)) {
                 throw new InvalidArgumentException('periodo_id inválido.');
             }
-            $set[]='periodo_id = ?'; $p[] = ($v!==''?$v:null); $t.='s';
+            $set[] = 'periodo_id = ?';
+            $p[] = ($v !== '' ? $v : null);
+            $t .= 's';
         }
         if (array_key_exists('numero_monta', $data)) {
             $nm = $data['numero_monta'];
             if ($nm === null || $nm === '') {
-                $set[]='numero_monta = ?'; $p[]=null; $t.='s';
+                $set[] = 'numero_monta = ?';
+                $p[] = null;
+                $t .= 's';
             } else {
-                $nm = (int)$nm; if ($nm < 1) throw new InvalidArgumentException('numero_monta debe ser >= 1.');
-                $set[]='numero_monta = ?'; $p[]=$nm; $t.='i';
+                $nm = (int)$nm;
+                if ($nm < 1) throw new InvalidArgumentException('numero_monta debe ser >= 1.');
+                $set[] = 'numero_monta = ?';
+                $p[] = $nm;
+                $t .= 'i';
             }
         }
         if (isset($data['fecha_monta'])) {
-            $set[]='fecha_monta = ?'; $p[]=(string)$data['fecha_monta']; $t.='s';
+            $set[] = 'fecha_monta = ?';
+            $p[] = (string)$data['fecha_monta'];
+            $t .= 's';
         }
 
         if (empty($set)) throw new InvalidArgumentException('No hay campos para actualizar.');
@@ -212,18 +262,25 @@ class MontaModel
         [$now, $env] = $this->nowWithAudit();
         $actorId = $_SESSION['user_id'] ?? $montaId;
 
-        $set[]='updated_at = ?'; $p[]=$now; $t.='s';
-        $set[]='updated_by = ?'; $p[]=$actorId; $t.='s';
+        $set[] = 'updated_at = ?';
+        $p[] = $now;
+        $t .= 's';
+        $set[] = 'updated_by = ?';
+        $p[] = $actorId;
+        $t .= 's';
 
-        $sql = "UPDATE {$this->table} SET ".implode(', ', $set)." WHERE monta_id = ? AND deleted_at IS NULL";
+        $sql = "UPDATE {$this->table} SET " . implode(', ', $set) . " WHERE monta_id = ? AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
         if (!$stmt) throw new mysqli_sql_exception("Error al preparar actualización: " . $this->db->error);
 
-        $t.='s'; $p[]=$montaId;
+        $t .= 's';
+        $p[] = $montaId;
         $ok = $stmt->bind_param($t, ...$p);
         if (!$ok) throw new mysqli_sql_exception("Error al bind_param en actualización.");
 
-        $ok  = $stmt->execute(); $err = $stmt->error; $stmt->close();
+        $ok  = $stmt->execute();
+        $err = $stmt->error;
+        $stmt->close();
 
         if (!$ok) {
             $errLow = strtolower($err);

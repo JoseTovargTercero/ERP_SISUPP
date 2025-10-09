@@ -21,7 +21,7 @@ class MontaController
     {
         http_response_code($status);
         header('Content-Type: application/json');
-        echo json_encode(['value'=>$value,'message'=>$message,'data'=>$data]);
+        echo json_encode(['value' => $value, 'message' => $message, 'data' => $data]);
         exit;
     }
 
@@ -43,7 +43,7 @@ class MontaController
         } catch (InvalidArgumentException $e) {
             $this->jsonResponse(false, $e->getMessage(), null, 400);
         } catch (Throwable $e) {
-            $this->jsonResponse(false, 'Error al listar montas: '.$e->getMessage(), null, 500);
+            $this->jsonResponse(false, 'Error al listar montas: ' . $e->getMessage(), null, 500);
         }
     }
 
@@ -59,15 +59,25 @@ class MontaController
             if (!$row) $this->jsonResponse(false, 'Monta no encontrada.', null, 404);
             $this->jsonResponse(true, 'Monta encontrada.', $row);
         } catch (Throwable $e) {
-            $this->jsonResponse(false, 'Error al obtener monta: '.$e->getMessage(), null, 500);
+            $this->jsonResponse(false, 'Error al obtener monta: ' . $e->getMessage(), null, 500);
         }
     }
 
     // POST /montas
-    // JSON: { periodo_id, numero_monta, fecha_monta }
+    // JSON: { fecha_servicio, observacion_servicio, periodo_id }
     public function crear(): void
     {
-        $in = $this->getJsonInput();
+        $periodo_id = $_POST['periodo_id'] ?? '';
+        if ($periodo_id === '') {
+            $this->jsonResponse(false, 'Parámetro monta_id es obligatorio.', null, 400);
+        }
+
+        $in = [
+            'fecha_servicio'        => $_POST['fecha_servicio']    ?? null,
+            'observacion_servicio'  => $_POST['observacion_servicio']     ?? null,
+            'periodo_id'            => $_POST['periodo_id']  ?? null
+        ];
+
         try {
             $uuid = $this->model->crear($in);
             $this->jsonResponse(true, 'Monta creada correctamente.', ['monta_id' => $uuid]);
@@ -76,7 +86,7 @@ class MontaController
         } catch (RuntimeException $e) {
             $this->jsonResponse(false, $e->getMessage(), null, 409);
         } catch (Throwable $e) {
-            $this->jsonResponse(false, 'Error al crear monta: '.$e->getMessage(), null, 500);
+            $this->jsonResponse(false, 'Error al crear monta: ' . $e->getMessage(), null, 500);
         }
     }
 
@@ -89,7 +99,7 @@ class MontaController
             $this->jsonResponse(false, 'Parámetro monta_id es obligatorio.', null, 400);
         }
 
-        $in = $this->getJsonInput();
+
         try {
             $ok = $this->model->actualizar($montaId, $in);
             $this->jsonResponse(true, 'Monta actualizada correctamente.', ['updated' => $ok]);
@@ -98,7 +108,7 @@ class MontaController
         } catch (RuntimeException $e) {
             $this->jsonResponse(false, $e->getMessage(), null, 409);
         } catch (Throwable $e) {
-            $this->jsonResponse(false, 'Error al actualizar monta: '.$e->getMessage(), null, 500);
+            $this->jsonResponse(false, 'Error al actualizar monta: ' . $e->getMessage(), null, 500);
         }
     }
 
@@ -114,7 +124,7 @@ class MontaController
             if (!$ok) $this->jsonResponse(false, 'No se pudo eliminar (o ya estaba eliminada).', null, 400);
             $this->jsonResponse(true, 'Monta eliminada correctamente.', ['deleted' => true]);
         } catch (Throwable $e) {
-            $this->jsonResponse(false, 'Error al eliminar monta: '.$e->getMessage(), null, 500);
+            $this->jsonResponse(false, 'Error al eliminar monta: ' . $e->getMessage(), null, 500);
         }
     }
 }
