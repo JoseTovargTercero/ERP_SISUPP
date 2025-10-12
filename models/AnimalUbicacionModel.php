@@ -102,13 +102,58 @@ class AnimalUbicacionModel
         return isset($row['aprisco_id']);
     }
 
+    private function recintoExiste(?string $recintoId): bool
+    {
+        if ($recintoId === null) return true;
+        $sql = "SELECT area_id FROM recintos WHERE recinto_id = ? AND deleted_at IS NULL LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        if (!$stmt) throw new mysqli_sql_exception("Error verificación recinto: " . $this->db->error);
+        $stmt->bind_param('s', $recintoId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res->fetch_assoc();
+        $stmt->close();
+        return isset($row['area_id']);
+    }
+
     /**
      * Verifica la consistencia jerárquica:
-     * - si hay area_id ⇒ pertenece a aprisco_id indicado
+     * - si hay recinto_id ⇒ pertenece a area_id/aprisco_id/finca_id indicados (si fueron provistos)
+     * - si hay area_id ⇒ pertenece a aprisco_id/finca_id indicados
      * - si hay aprisco_id ⇒ pertenece a finca_id indicado
      */
-    private function validarJerarquia(?string $fincaId, ?string $apriscoId, ?string $areaId): void
+    private function validarJerarquia(?string $fincaId, ?string $apriscoId, ?string $areaId, ?string $recintoId): void
     {
+        if ($recintoId !== null) {
+            $sql = "SELECT r.area_id, a.aprisco_id, ap.finca_id
+                    FROM recintos r
+                    JOIN areas a    ON a.area_id = r.area_id
+                    JOIN apriscos ap ON ap.aprisco_id = a.aprisco_id
+                    WHERE r.recinto_id = ? AND r.deleted_at IS NULL AND a.deleted_at IS NULL AND ap.deleted_at IS NULL";
+            $stmt = $this->db->prepare($sql);
+            if (!$stmt) throw new mysqli_sql_exception("Error jerarquía recinto: " . $this->db->error);
+            $stmt->bind_param('s', $recintoId);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            $row = $res->fetch_assoc();
+            $stmt->close();
+
+            if (!$row) throw new InvalidArgumentException("El recinto no existe o está eliminado.");
+            if ($areaId !== null && $row['area_id'] !== $areaId) {
+                throw new InvalidArgumentException("El recinto no pertenece al área especificada.");
+            }
+            if ($apriscoId !== null && $row['aprisco_id'] !== $apriscoId) {
+                throw new InvalidArgumentException("El recinto no pertenece al aprisco especificado.");
+            }
+            if ($fincaId !== null && $row['finca_id'] !== $fincaId) {
+                throw new InvalidArgumentException("El recinto no pertenece a la finca especificada.");
+            }
+            // Si no vino area/aprisco pero sí recinto, propagamos los IDs derivados
+            if ($areaId === null)   $areaId   = $row['area_id'];
+            if ($apriscoId === null)$apriscoId= $row['aprisco_id'];
+            if ($fincaId === null)  $fincaId  = $row['finca_id'];
+        }
+
         if ($areaId !== null) {
             $sql = "SELECT ap.aprisco_id, ap.finca_id
                     FROM areas a
@@ -172,6 +217,7 @@ class AnimalUbicacionModel
         ?string $fincaId = null,
         ?string $apriscoId = null,
         ?string $areaId = null,
+        ?string $recintoId = null,
         ?string $desde = null,
         ?string $hasta = null,
         bool $soloActivas = false
@@ -184,10 +230,11 @@ class AnimalUbicacionModel
             $where[] = 'u.deleted_at IS NULL';
         }
 
-        if ($animalId) { $where[] = 'u.animal_id = ?';  $params[] = $animalId;  $types .= 's'; }
-        if ($fincaId)  { $where[] = 'u.finca_id = ?';   $params[] = $fincaId;   $types .= 's'; }
-        if ($apriscoId){ $where[] = 'u.aprisco_id = ?'; $params[] = $apriscoId; $types .= 's'; }
-        if ($areaId)   { $where[] = 'u.area_id = ?';    $params[] = $areaId;    $types .= 's'; }
+        if ($animalId) { $where[] = 'u.animal_id = ?';   $params[] = $animalId;   $types .= 's'; }
+        if ($fincaId)  { $where[] = 'u.finca_id = ?';    $params[] = $fincaId;    $types .= 's'; }
+        if ($apriscoId){ $where[] = 'u.aprisco_id = ?';  $params[] = $apriscoId;  $types .= 's'; }
+        if ($areaId)   { $where[] = 'u.area_id = ?';     $params[] = $areaId;     $types .= 's'; }
+        if ($recintoId){ $where[] = 'u.recinto_id = ?';  $params[] = $recintoId;  $types .= 's'; }
         if ($soloActivas) {
             $where[] = 'u.fecha_hasta IS NULL';
         }
@@ -206,18 +253,22 @@ class AnimalUbicacionModel
                     u.animal_ubicacion_id,
                     u.animal_id,
                     a.identificador AS animal_identificador,
-                    u.finca_id,  f.nombre AS nombre_finca,
+                    u.finca_id,   f.nombre AS nombre_finca,
                     u.aprisco_id, ap.nombre AS nombre_aprisco,
-                    u.area_id,   ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
-                    u.fecha_desde, u.fecha_hasta,
+                    u.area_id,    ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
+                    u.recinto_id
+                    -- Si tu tabla recintos tiene estos campos, descomenta:
+                    -- , r.nombre AS nombre_recinto, r.numeracion AS recinto_numeracion
+                    , u.fecha_desde, u.fecha_hasta,
                     u.motivo, u.estado, u.observaciones,
                     u.created_at, u.created_by, u.updated_at, u.updated_by,
                     u.deleted_at, u.deleted_by
                 FROM {$this->table} u
-                LEFT JOIN animales a ON a.animal_id = u.animal_id
-                LEFT JOIN fincas   f ON f.finca_id   = u.finca_id
-                LEFT JOIN apriscos ap ON ap.aprisco_id = u.aprisco_id
-                LEFT JOIN areas   ar ON ar.area_id   = u.area_id
+                LEFT JOIN animales a  ON a.animal_id   = u.animal_id
+                LEFT JOIN fincas   f  ON f.finca_id    = u.finca_id
+                LEFT JOIN apriscos ap  ON ap.aprisco_id = u.aprisco_id
+                LEFT JOIN areas   ar  ON ar.area_id    = u.area_id
+                LEFT JOIN recintos r  ON r.recinto_id  = u.recinto_id
                 $whereSql
                 ORDER BY COALESCE(u.fecha_hasta, '9999-12-31') DESC, u.fecha_desde DESC, u.created_at DESC
                 LIMIT ? OFFSET ?";
@@ -242,18 +293,21 @@ class AnimalUbicacionModel
                     u.animal_ubicacion_id,
                     u.animal_id,
                     a.identificador AS animal_identificador,
-                    u.finca_id,  f.nombre AS nombre_finca,
+                    u.finca_id,   f.nombre AS nombre_finca,
                     u.aprisco_id, ap.nombre AS nombre_aprisco,
-                    u.area_id,   ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
-                    u.fecha_desde, u.fecha_hasta,
+                    u.area_id,    ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
+                    u.recinto_id
+                    -- , r.nombre AS nombre_recinto, r.numeracion AS recinto_numeracion
+                    , u.fecha_desde, u.fecha_hasta,
                     u.motivo, u.estado, u.observaciones,
                     u.created_at, u.created_by, u.updated_at, u.updated_by,
                     u.deleted_at, u.deleted_by
                 FROM {$this->table} u
-                LEFT JOIN animales a ON a.animal_id = u.animal_id
-                LEFT JOIN fincas   f ON f.finca_id   = u.finca_id
-                LEFT JOIN apriscos ap ON ap.aprisco_id = u.aprisco_id
-                LEFT JOIN areas   ar ON ar.area_id   = u.area_id
+                LEFT JOIN animales a  ON a.animal_id   = u.animal_id
+                LEFT JOIN fincas   f  ON f.finca_id    = u.finca_id
+                LEFT JOIN apriscos ap  ON ap.aprisco_id = u.aprisco_id
+                LEFT JOIN areas   ar  ON ar.area_id    = u.area_id
+                LEFT JOIN recintos r  ON r.recinto_id  = u.recinto_id
                 WHERE u.animal_ubicacion_id = ?";
         $stmt = $this->db->prepare($sql);
         if (!$stmt) throw new mysqli_sql_exception("Error al preparar consulta: " . $this->db->error);
@@ -272,16 +326,19 @@ class AnimalUbicacionModel
                     u.animal_ubicacion_id,
                     u.animal_id,
                     a.identificador AS animal_identificador,
-                    u.finca_id,  f.nombre AS nombre_finca,
+                    u.finca_id,   f.nombre AS nombre_finca,
                     u.aprisco_id, ap.nombre AS nombre_aprisco,
-                    u.area_id,   ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
-                    u.fecha_desde, u.fecha_hasta,
+                    u.area_id,    ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
+                    u.recinto_id
+                    -- , r.nombre AS nombre_recinto, r.numeracion AS recinto_numeracion
+                    , u.fecha_desde, u.fecha_hasta,
                     u.motivo, u.estado, u.observaciones
                 FROM {$this->table} u
-                LEFT JOIN animales a ON a.animal_id = u.animal_id
-                LEFT JOIN fincas   f ON f.finca_id   = u.finca_id
-                LEFT JOIN apriscos ap ON ap.aprisco_id = u.aprisco_id
-                LEFT JOIN areas   ar ON ar.area_id   = u.area_id
+                LEFT JOIN animales a  ON a.animal_id   = u.animal_id
+                LEFT JOIN fincas   f  ON f.finca_id    = u.finca_id
+                LEFT JOIN apriscos ap  ON ap.aprisco_id = u.aprisco_id
+                LEFT JOIN areas   ar  ON ar.area_id    = u.area_id
+                LEFT JOIN recintos r  ON r.recinto_id  = u.recinto_id
                 WHERE u.animal_id = ?
                   AND u.fecha_hasta IS NULL
                   AND u.deleted_at IS NULL
@@ -313,9 +370,10 @@ class AnimalUbicacionModel
         }
 
         $animalId   = (string)trim($data['animal_id']);
-        $fincaId    = isset($data['finca_id'])   ? (string)trim((string)$data['finca_id'])   : null;
-        $apriscoId  = isset($data['aprisco_id']) ? (string)trim((string)$data['aprisco_id']) : null;
-        $areaId     = isset($data['area_id'])    ? (string)trim((string)$data['area_id'])    : null;
+        $fincaId    = isset($data['finca_id'])    ? (string)trim((string)$data['finca_id'])    : null;
+        $apriscoId  = isset($data['aprisco_id'])  ? (string)trim((string)$data['aprisco_id'])  : null;
+        $areaId     = isset($data['area_id'])     ? (string)trim((string)$data['area_id'])     : null;
+        $recintoId  = isset($data['recinto_id'])  ? (string)trim((string)$data['recinto_id'])  : null;
 
         $fechaDesde = (string)trim((string)$data['fecha_desde']);
         $this->validarFecha($fechaDesde, 'fecha_desde');
@@ -341,10 +399,16 @@ class AnimalUbicacionModel
         if (!$this->animalExiste($animalId)) {
             throw new RuntimeException('El animal especificado no existe o está eliminado.');
         }
-        if (!$this->fincaExiste($fincaId) || !$this->apriscoExiste($apriscoId) || !$this->areaExiste($areaId)) {
-            throw new RuntimeException('Finca, aprisco o área no existen o están eliminados.');
+        if (
+            !$this->fincaExiste($fincaId) ||
+            !$this->apriscoExiste($apriscoId) ||
+            !$this->areaExiste($areaId) ||
+            !$this->recintoExiste($recintoId)
+        ) {
+            throw new RuntimeException('Finca, aprisco, área o recinto no existen o están eliminados.');
         }
-        $this->validarJerarquia($fincaId, $apriscoId, $areaId);
+
+        $this->validarJerarquia($fincaId, $apriscoId, $areaId, $recintoId);
 
         // Evitar doble activa
         if ($fechaHasta === null && $this->existeActiva($animalId)) {
@@ -360,16 +424,16 @@ class AnimalUbicacionModel
             $actorId = $_SESSION['user_id'] ?? $uuid;
 
             $sql = "INSERT INTO {$this->table}
-                    (animal_ubicacion_id, animal_id, finca_id, aprisco_id, area_id,
+                    (animal_ubicacion_id, animal_id, finca_id, aprisco_id, area_id, recinto_id,
                      fecha_desde, fecha_hasta, motivo, estado, observaciones,
                      created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
             $stmt = $this->db->prepare($sql);
             if (!$stmt) throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
 
             $stmt->bind_param(
-                'ssssssssssss',
-                $uuid, $animalId, $fincaId, $apriscoId, $areaId,
+                'ssssssssssssss',
+                $uuid, $animalId, $fincaId, $apriscoId, $areaId, $recintoId,
                 $fechaDesde, $fechaHasta, $motivo, $estado, $observaciones,
                 $now, $actorId
             );
@@ -380,7 +444,7 @@ class AnimalUbicacionModel
                 $this->db->rollback();
 
                 if (str_contains($err, 'foreign key')) {
-                    throw new RuntimeException('FK inválida (animal/finca/aprisco/area).');
+                    throw new RuntimeException('FK inválida (animal/finca/aprisco/area/recinto).');
                 }
                 throw new mysqli_sql_exception("Error al ejecutar inserción: " . $err);
             }
@@ -414,12 +478,14 @@ class AnimalUbicacionModel
         $fincaId    = $current['finca_id'];
         $apriscoId  = $current['aprisco_id'];
         $areaId     = $current['area_id'];
+        $recintoId  = $current['recinto_id'];
         $fechaDesde = $current['fecha_desde'];
         $fechaHasta = $current['fecha_hasta']; // puede ser null
 
-        if (array_key_exists('finca_id', $data))   { $fincaId   = $data['finca_id']   !== null ? (string)$data['finca_id']   : null; }
-        if (array_key_exists('aprisco_id', $data)) { $apriscoId = $data['aprisco_id'] !== null ? (string)$data['aprisco_id'] : null; }
-        if (array_key_exists('area_id', $data))    { $areaId    = $data['area_id']    !== null ? (string)$data['area_id']    : null; }
+        if (array_key_exists('finca_id', $data))    { $fincaId    = $data['finca_id']    !== null ? (string)$data['finca_id']    : null; }
+        if (array_key_exists('aprisco_id', $data))  { $apriscoId  = $data['aprisco_id']  !== null ? (string)$data['aprisco_id']  : null; }
+        if (array_key_exists('area_id', $data))     { $areaId     = $data['area_id']     !== null ? (string)$data['area_id']     : null; }
+        if (array_key_exists('recinto_id', $data))  { $recintoId  = $data['recinto_id']  !== null ? (string)$data['recinto_id']  : null; }
 
         if (isset($data['fecha_desde'])) {
             $this->validarFecha((string)$data['fecha_desde'], 'fecha_desde');
@@ -439,7 +505,6 @@ class AnimalUbicacionModel
             $campos[] = 'fecha_hasta = ?'; $params[] = $fechaHasta; $types .= 's';
         }
 
-        // observaciones
         if (array_key_exists('observaciones', $data)) {
             $campos[] = 'observaciones = ?';
             $params[] = $data['observaciones'] !== null ? trim((string)$data['observaciones']) : null;
@@ -447,10 +512,15 @@ class AnimalUbicacionModel
         }
 
         // Validar FKs y jerarquía si cambiaron
-        if (!$this->fincaExiste($fincaId) || !$this->apriscoExiste($apriscoId) || !$this->areaExiste($areaId)) {
-            throw new RuntimeException('Finca, aprisco o área no existen o están eliminados.');
+        if (
+            !$this->fincaExiste($fincaId) ||
+            !$this->apriscoExiste($apriscoId) ||
+            !$this->areaExiste($areaId) ||
+            !$this->recintoExiste($recintoId)
+        ) {
+            throw new RuntimeException('Finca, aprisco, área o recinto no existen o están eliminados.');
         }
-        $this->validarJerarquia($fincaId, $apriscoId, $areaId);
+        $this->validarJerarquia($fincaId, $apriscoId, $areaId, $recintoId);
 
         // Regla de única activa
         if ($fechaHasta === null) {
@@ -475,9 +545,10 @@ class AnimalUbicacionModel
         $campos[] = 'estado = ?'; $params[] = $estado; $types .= 's';
 
         // Aplicar cambios en FKs si vinieron
-        if (array_key_exists('finca_id', $data))   { $campos[] = 'finca_id = ?';   $params[] = $fincaId;   $types .= 's'; }
-        if (array_key_exists('aprisco_id', $data)) { $campos[] = 'aprisco_id = ?'; $params[] = $apriscoId; $types .= 's'; }
-        if (array_key_exists('area_id', $data))    { $campos[] = 'area_id = ?';    $params[] = $areaId;    $types .= 's'; }
+        if (array_key_exists('finca_id', $data))    { $campos[] = 'finca_id = ?';    $params[] = $fincaId;    $types .= 's'; }
+        if (array_key_exists('aprisco_id', $data))  { $campos[] = 'aprisco_id = ?';  $params[] = $apriscoId;  $types .= 's'; }
+        if (array_key_exists('area_id', $data))     { $campos[] = 'area_id = ?';     $params[] = $areaId;     $types .= 's'; }
+        if (array_key_exists('recinto_id', $data))  { $campos[] = 'recinto_id = ?';  $params[] = $recintoId;  $types .= 's'; }
 
         if (empty($campos)) {
             throw new InvalidArgumentException('No hay campos para actualizar.');
@@ -504,7 +575,7 @@ class AnimalUbicacionModel
 
         if (!$ok) {
             if (str_contains($err, 'foreign key')) {
-                throw new RuntimeException('FK inválida (animal/finca/aprisco/area).');
+                throw new RuntimeException('FK inválida (animal/finca/aprisco/area/recinto).');
             }
             throw new mysqli_sql_exception("Error al actualizar: " . $err);
         }

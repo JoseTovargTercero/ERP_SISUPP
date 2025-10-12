@@ -29,7 +29,7 @@ class AnimalUbicacionController
         exit;
     }
 
-    // GET /animal_ubicaciones?animal_id=&finca_id=&aprisco_id=&area_id=&desde=&hasta=&soloActivas=0|1&incluirEliminados=0|1&limit=&offset=
+    // GET /animal_ubicaciones?animal_id=&finca_id=&aprisco_id=&area_id=&recinto_id=&desde=&hasta=&soloActivas=0|1&incluirEliminados=0|1&limit=&offset=
     public function listar(): void
     {
         // Límite “clamp” 1..500
@@ -42,6 +42,7 @@ class AnimalUbicacionController
         $fincaId     = isset($_GET['finca_id']) ? trim((string)$_GET['finca_id']) : null;
         $apriscoId   = isset($_GET['aprisco_id']) ? trim((string)$_GET['aprisco_id']) : null;
         $areaId      = isset($_GET['area_id']) ? trim((string)$_GET['area_id']) : null;
+        $recintoId   = isset($_GET['recinto_id']) ? trim((string)$_GET['recinto_id']) : null;
         $desde       = isset($_GET['desde']) ? trim((string)$_GET['desde']) : null;
         $hasta       = isset($_GET['hasta']) ? trim((string)$_GET['hasta']) : null;
         $soloActivas = isset($_GET['soloActivas']) ? ((int)$_GET['soloActivas'] === 1) : false;
@@ -55,6 +56,7 @@ class AnimalUbicacionController
                 $fincaId,
                 $apriscoId,
                 $areaId,
+                $recintoId,
                 $desde,
                 $hasta,
                 $soloActivas
@@ -155,11 +157,11 @@ class AnimalUbicacionController
         $fechaHasta = (string)($in['fecha_hasta'] ?? date('Y-m-d'));
 
         try {
-            // Nota: este método del modelo debe:
-            // - poner fecha_hasta = $fechaHasta
-            // - estado = 'CERRADA'
-            // - updated_at = NOW()
-            // y sólo si actualmente está activa (fecha_hasta IS NULL / o activo=1 según tu esquema)
+            // Este método del modelo:
+            // - pone fecha_hasta = $fechaHasta
+            // - estado = 'INACTIVA'
+            // - updated_at / updated_by según auditoría
+            // y sólo si actualmente está activa (fecha_hasta IS NULL)
             $ok = $this->model->cerrarUbicacion($id, $fechaHasta);
             if (!$ok) {
                 $this->jsonResponse(false, 'Ubicación no encontrada o ya estaba cerrada.', null, 404);
@@ -167,7 +169,7 @@ class AnimalUbicacionController
             $this->jsonResponse(true, 'Ubicación cerrada correctamente.', [
                 'animal_ubicacion_id' => $id,
                 'fecha_hasta' => $fechaHasta,
-                'estado' => 'CERRADA'
+                'estado' => 'INACTIVA'
             ]);
         } catch (InvalidArgumentException $e) {
             $this->jsonResponse(false, $e->getMessage(), null, 400);
