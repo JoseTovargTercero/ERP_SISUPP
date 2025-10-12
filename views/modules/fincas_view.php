@@ -125,7 +125,6 @@
       </div>
     </div>
 
-    <!-- Pane Recintos -->
     <div class="tab-pane fade" id="pane-recintos" role="tabpanel" aria-labelledby="tab-recintos">
       <div class="card">
         <div class="card-body">
@@ -150,7 +149,7 @@
                 </select>
               </div>
             </div>
-            <button class="btn btn-primary" id="btnNuevoRecinto"><i class="mdi mdi-plus"></i> Novo Recinto</button>
+            <button class="btn btn-primary" id="btnNuevoRecinto"><i class="mdi mdi-plus"></i> Nuevo Recinto</button>
           </div>
 
           <table id="tablaRecintos" class="table table-striped table-hover align-middle" style="width:100%"
@@ -161,9 +160,9 @@
                 <th data-field="area_nombre_personalizado" data-sortable="true">Área</th>
                 <th data-field="aprisco_nombre" data-sortable="true">Aprisco</th>
                 <th data-field="finca_nombre" data-sortable="true">Finca</th>
-                <th data-field="capacidad" data-align="center">Capacidade</th>
+                <th data-field="capacidad" data-align="center">Capacidad</th>
                 <th data-field="estado" data-formatter="recintoEstadoFormatter" data-align="center">Estado</th>
-                <th data-field="recinto_id" data-formatter="recintoAccionesFormatter" data-align="center">Accións</th>
+                <th data-field="recinto_id" data-formatter="recintoAccionesFormatter" data-align="center">Acciones</th>
               </tr>
             </thead>
           </table>
@@ -316,19 +315,19 @@
   </div>
 </div>
 
-<!-- Novedad: Modal Recinto -->
 <div class="modal fade" id="modalRecinto" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalRecintoLabel">Crear Novo Recinto</h5>
+        <h5 class="modal-title" id="modalRecintoLabel">Crear Nuevo Recinto</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form id="formRecinto">
         <div class="modal-body">
           <input type="hidden" id="recinto_id" name="recinto_id">
 
-          <div class="alert alert-info">O código do recinto xerarase automaticamente baseado na área seleccionada.</div>
+          <div class="alert alert-info">El código del recinto se generará automáticamente basado en el área
+            seleccionada.</div>
 
           <div class="mb-3">
             <label class="form-label">Finca</label>
@@ -344,7 +343,7 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Capacidade (opcional)</label>
+            <label class="form-label">Capacidad (opcional)</label>
             <input type="number" class="form-control" id="recinto_capacidad" name="capacidad" min="0">
           </div>
 
@@ -357,13 +356,13 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Observacións (opcional)</label>
+            <label class="form-label">Observaciones (opcional)</label>
             <textarea class="form-control" id="recinto_observaciones" name="observaciones" rows="2"></textarea>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-cancelar" data-bs-dismiss="modal">Cancelar</button>
-          <button class="btn btn-primary" type="submit">Gardar</button>
+          <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
       </form>
     </div>

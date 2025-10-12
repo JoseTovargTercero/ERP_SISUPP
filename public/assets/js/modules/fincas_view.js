@@ -577,7 +577,7 @@ function renderDetailCard(tipo, d = {}) {
               <div><span class="label">Estado</span><span class="value">${window.recintoEstadoFormatter(
                 d.estado
               )}</span></div>
-              <div><span class="label">Capacidade</span><span class="value">${
+              <div><span class="label">Capacidad</span><span class="value">${
                 d.capacidad ?? '-'
               }</span></div>
               <div><span class="label">Área</span><span class="value">${
@@ -589,7 +589,7 @@ function renderDetailCard(tipo, d = {}) {
               <div><span class="label">Finca</span><span class="value">${
                 d.finca_nombre ?? '-'
               }</span></div>
-              <div style="grid-column:1/-1"><span class="label">Observacións</span><div class="value">${
+              <div style="grid-column:1/-1"><span class="label">Observaciones</span><div class="value">${
                 d.observaciones ?? '-'
               }</div></div>
             </div></div>`
