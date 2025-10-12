@@ -1,7 +1,7 @@
 import { showErrorToast } from '../helpers/helpers.js'
 
 // --- HELPERS Y FORMATTERS PARA LA TABLA ---
-// ... (Todo el contenido sin cambios hasta la sección de "Botones para abrir modales")
+
 /**
  * Adapta la respuesta de la API al formato que Bootstrap Table espera.
  */
@@ -37,9 +37,15 @@ window.pesoFormatter = function (value, row) {
  * Formatea la columna de ubicación para mostrarla de forma legible.
  */
 window.ubicacionFormatter = function (value, row) {
-  // Corregido para usar los nombres de campo correctos de la API: nombre_finca, nombre_aprisco, nombre_area
+  console.log(row)
+
   if (row.nombre_finca) {
-    let path = [row.nombre_finca, row.nombre_aprisco, row.nombre_area]
+    let path = [
+      row.nombre_finca,
+      row.nombre_aprisco,
+      row.nombre_area,
+      row.codigo_recinto,
+    ]
       .filter(Boolean)
       .join(' / ')
     return path
@@ -96,7 +102,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // --- MANEJO DE LA VISTA PRINCIPAL (TABLA Y CREACIÓN) ---
 
-  // Abrir modal para crear nuevo animal
   $('#btnNuevoAnimal').on('click', function () {
     formAnimal.reset()
     $('#animal_id').val('')
@@ -108,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function () {
     modalAnimal.show()
   })
 
-  // Envío del formulario de crear/editar animal
   $(formAnimal).on('submit', function (e) {
     e.preventDefault()
     const animalId = $('#animal_id').val()
@@ -138,7 +142,6 @@ document.addEventListener('DOMContentLoaded', function () {
     })
   })
 
-  // Acciones de los botones en la tabla (Ver, Editar, Eliminar)
   $('#tablaAnimales').on('click', 'button', function () {
     const action = $(this).attr('class')
     const animalId = $(this).data('id')
@@ -152,7 +155,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   })
 
-  // Preview de la fotografía
   $('#fotografia').on('change', function () {
     if (this.files && this.files[0]) {
       const reader = new FileReader()
@@ -165,14 +167,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // --- LÓGICA DE DETALLES Y REGISTROS ANIDADOS ---
 
-  let currentAnimalIdForDetails = null // Variable para guardar el ID del animal en vista
+  let currentAnimalIdForDetails = null
 
-  // Función central para mostrar el modal de detalles
   function mostrarDetalles(animalId) {
     currentAnimalIdForDetails = animalId
     $('#detalles-content').addClass('d-none')
     $('#detalles-loader').removeClass('d-none')
-    // Asegurarse que la primera tab esté activa al abrir
     $('#animalDetailsTab button[data-bs-target="#info"]').tab('show')
 
     modalDetallesAnimal.show()
@@ -186,10 +186,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const requests = Object.values(endpoints).map((url) =>
-      $.ajax({
-        url: url,
-        method: 'GET',
-      })
+      $.ajax({ url: url, method: 'GET' })
     )
 
     Promise.all(requests)
@@ -276,15 +273,11 @@ document.addEventListener('DOMContentLoaded', function () {
       : '<tr><td colspan="5" class="text-center">No hay movimientos registrados.</td></tr>'
     movimientos.forEach((m) => {
       const origen =
-        [m.finca_origen_nombre, m.aprisco_origen_nombre, m.area_origen_nombre]
+        [m.finca_origen, m.aprisco_origen, m.area_origen, m.recinto_origen]
           .filter(Boolean)
           .join(' / ') || 'Externo'
       const destino =
-        [
-          m.finca_destino_nombre,
-          m.aprisco_destino_nombre,
-          m.area_destino_nombre,
-        ]
+        [m.finca_destino, m.aprisco_destino, m.area_destino, m.recinto_destino]
           .filter(Boolean)
           .join(' / ') || 'Externo'
       movHtml += `<tr><td>${formatDate(m.fecha_mov)}</td><td>${
@@ -299,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
       : '<tr><td colspan="5" class="text-center">No hay ubicaciones registradas.</td></tr>'
     ubicaciones.forEach((u) => {
       const ubicacion =
-        [u.nombre_finca, u.nombre_aprisco, u.nombre_area]
+        [u.nombre_finca, u.nombre_aprisco, u.nombre_area, u.nombre_recinto]
           .filter(Boolean)
           .join(' / ') || 'N/A'
       const estadoClass = u.estado === 'ACTIVA' ? 'success' : 'secondary'
@@ -316,7 +309,6 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#tablaDetallesUbicaciones').html(ubiHtml)
   }
 
-  // Botones para abrir modales de registro desde Detalles
   $('#btnRegistrarPeso').on('click', function () {
     modalDetallesAnimal.hide()
     formRegistroPeso.reset()
@@ -335,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   $('#btnRegistrarMovimiento').on('click', function () {
     modalDetallesAnimal.hide()
-    $(formRegistroMovimiento).trigger('reset') // Usar .trigger('reset') para jQuery
+    $(formRegistroMovimiento).trigger('reset')
     $('#movimiento_animal_id').val(currentAnimalIdForDetails)
     $('#fecha_mov').val(new Date().toISOString().slice(0, 10))
 
@@ -345,10 +337,6 @@ document.addEventListener('DOMContentLoaded', function () {
       placeholder: 'Seleccione Finca de Origen',
       valueField: 'finca_id',
       textField: 'nombre',
-      useSelect2: true,
-      select2Options: {
-        dropdownParent: $(formRegistroMovimiento),
-      },
     })
 
     populateSelect({
@@ -357,26 +345,19 @@ document.addEventListener('DOMContentLoaded', function () {
       placeholder: 'Seleccione Finca de Destino',
       valueField: 'finca_id',
       textField: 'nombre',
-      useSelect2: true,
-      select2Options: {
-        dropdownParent: $(formRegistroMovimiento),
-      },
     })
 
-    // Limpiar selects dependientes
     const selectsToReset = [
       '#formRegistroMovimiento select[name="aprisco_origen_id"]',
       '#formRegistroMovimiento select[name="area_origen_id"]',
+      '#formRegistroMovimiento select[name="recinto_id_origen"]',
       '#formRegistroMovimiento select[name="aprisco_destino_id"]',
       '#formRegistroMovimiento select[name="area_destino_id"]',
+      '#formRegistroMovimiento select[name="recinto_id_destino"]',
     ]
 
     selectsToReset.forEach((selector) => {
-      const $select = $(selector)
-      if ($select.data('select2')) {
-        $select.val(null).trigger('change')
-      }
-      $select.html('<option value="">--</option>')
+      $(selector).html('<option value="">--</option>')
     })
 
     modalRegistroMovimiento.show()
@@ -384,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   $('#btnRegistrarUbicacion').on('click', function () {
     modalDetallesAnimal.hide()
-    $(formRegistroUbicacion).trigger('reset') // Usar .trigger('reset') para jQuery
+    $(formRegistroUbicacion).trigger('reset')
     $('#ubicacion_animal_id').val(currentAnimalIdForDetails)
     $('#fecha_desde_ubicacion').val(new Date().toISOString().slice(0, 10))
 
@@ -394,41 +375,29 @@ document.addEventListener('DOMContentLoaded', function () {
       placeholder: 'Seleccione Finca',
       valueField: 'finca_id',
       textField: 'nombre',
-      useSelect2: true,
-      select2Options: {
-        dropdownParent: $(formRegistroUbicacion),
-      },
     })
 
-    // Limpiar selects dependientes
     const selectsToReset = [
       '#formRegistroUbicacion select[name="aprisco_id"]',
       '#formRegistroUbicacion select[name="area_id"]',
+      '#formRegistroUbicacion select[name="recinto_id"]',
     ]
 
     selectsToReset.forEach((selector) => {
-      const $select = $(selector)
-      if ($select.data('select2')) {
-        $select.val(null).trigger('change')
-      }
-      $select.html('<option value="">--</option>')
+      $(selector).html('<option value="">--</option>')
     })
 
     modalRegistroUbicacion.show()
   })
 
-  // Botones 'cancelar' en los modales de registro para volver a detalles
   $(
     '#btnCancelarRegistroPeso, #btnCancelarRegistroSalud, #btnCancelarRegistroMovimiento, #btnCancelarRegistroUbicacion, #btnCerrarDetalleSalud'
   ).on('click', function () {
-    // Cierra el modal actual (el atributo data-bs-dismiss se encarga) y reabre el de detalles
     if (currentAnimalIdForDetails) {
-      // Se necesita un pequeño timeout para evitar problemas de superposición de modales
       setTimeout(() => modalDetallesAnimal.show(), 200)
     }
   })
 
-  // --- LÓGICA DEL BOTÓN "VER" DE SALUD ---
   $('#tablaDetallesSalud').on('click', '.btn-ver-salud', function () {
     const saludId = $(this).data('salud-id')
     $.ajax({
@@ -478,8 +447,8 @@ document.addEventListener('DOMContentLoaded', function () {
       success: function (response) {
         modalRegistroPeso.hide()
         Swal.fire('¡Éxito!', response.message, 'success')
-        mostrarDetalles(currentAnimalIdForDetails) // Recargar y mostrar detalles
-        $('#tablaAnimales').bootstrapTable('refresh') // Refrescar tabla principal
+        mostrarDetalles(currentAnimalIdForDetails)
+        $('#tablaAnimales').bootstrapTable('refresh')
       },
       error: function (xhr) {
         showErrorToast(xhr.responseJSON)
@@ -489,19 +458,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   $(formRegistroSalud).on('submit', function (e) {
     e.preventDefault()
-
     const formDataObject = Object.fromEntries(new FormData(e.target).entries())
-
-    // Si campos opcionales como fecha o costo están vacíos, eliminarlos para no enviar cadenas vacías
-    if (formDataObject.proxima_revision === '') {
+    if (formDataObject.proxima_revision === '')
       delete formDataObject.proxima_revision
-    }
-    if (formDataObject.costo === '') {
-      delete formDataObject.costo
-    }
-
+    if (formDataObject.costo === '') delete formDataObject.costo
     const data = JSON.stringify(formDataObject)
-
     $.ajax({
       url: `${baseUrl}api/animal_salud`,
       method: 'POST',
@@ -543,13 +504,8 @@ document.addEventListener('DOMContentLoaded', function () {
   $(formRegistroUbicacion).on('submit', function (e) {
     e.preventDefault()
     const formDataObject = Object.fromEntries(new FormData(e.target).entries())
-
-    if (formDataObject.fecha_hasta === '') {
-      delete formDataObject.fecha_hasta
-    }
-
+    if (formDataObject.fecha_hasta === '') delete formDataObject.fecha_hasta
     const data = JSON.stringify(formDataObject)
-
     $.ajax({
       url: `${baseUrl}api/animal_ubicaciones`,
       method: 'POST',
@@ -569,26 +525,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // --- FUNCIONES Y LÓGICA PARA SELECTS DINÁMICOS ---
 
-  /**
-   * Popula un elemento <select> con datos de una URL y opcionalmente lo inicializa con Select2.
-   */
   function populateSelect({
     selector,
     url,
     valueField,
     textField,
     placeholder = 'Seleccione una opción',
-    useSelect2 = false,
-    select2Options = {},
   }) {
     const $select = $(selector)
-
-    if ($select.data('select2')) {
-      $select.select2('destroy')
-    }
-
     $select.html(`<option value="">Cargando...</option>`).prop('disabled', true)
-
     $.ajax({
       url: url,
       method: 'GET',
@@ -605,17 +550,8 @@ document.addEventListener('DOMContentLoaded', function () {
           })
         }
         $select.html(options).prop('disabled', false)
-
-        if (useSelect2) {
-          $select.select2(select2Options)
-        }
       },
-      error: function (jqXHR, textStatus, errorThrown) {
-        console.error(
-          'Error al cargar datos para el select:',
-          textStatus,
-          errorThrown
-        )
+      error: function () {
         $select
           .html(`<option value="">Error al cargar</option>`)
           .prop('disabled', true)
@@ -623,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function () {
     })
   }
 
-  // Lógica para el modal de Movimientos
+  // --- Lógica para el modal de Movimientos (ORIGEN) ---
   $('#formRegistroMovimiento').on(
     'change',
     'select[name="finca_origen_id"]',
@@ -635,11 +571,12 @@ document.addEventListener('DOMContentLoaded', function () {
       const $areaSelect = $(
         '#formRegistroMovimiento select[name="area_origen_id"]'
       )
+      const $recintoSelect = $(
+        '#formRegistroMovimiento select[name="recinto_id_origen"]'
+      )
 
-      $areaSelect
-        .html('<option value="">--</option>')
-        .val(null)
-        .trigger('change')
+      $areaSelect.html('<option value="">--</option>')
+      $recintoSelect.html('<option value="">--</option>')
 
       if (fincaId) {
         populateSelect({
@@ -648,14 +585,11 @@ document.addEventListener('DOMContentLoaded', function () {
           placeholder: 'Seleccione Aprisco',
           valueField: 'aprisco_id',
           textField: 'nombre',
-          useSelect2: true,
-          select2Options: { dropdownParent: $(formRegistroMovimiento) },
         })
       } else {
-        $apriscoSelect
-          .html('<option value="">Seleccione Finca primero</option>')
-          .val(null)
-          .trigger('change')
+        $apriscoSelect.html(
+          '<option value="">Seleccione Finca primero</option>'
+        )
       }
     }
   )
@@ -668,6 +602,12 @@ document.addEventListener('DOMContentLoaded', function () {
       const $areaSelect = $(
         '#formRegistroMovimiento select[name="area_origen_id"]'
       )
+      const $recintoSelect = $(
+        '#formRegistroMovimiento select[name="recinto_id_origen"]'
+      )
+
+      $recintoSelect.html('<option value="">--</option>')
+
       if (apriscoId) {
         populateSelect({
           selector: $areaSelect,
@@ -678,18 +618,36 @@ document.addEventListener('DOMContentLoaded', function () {
             `${item.nombre_personalizado || 'Área'} (${
               item.numeracion || 'S/N'
             })`,
-          useSelect2: true,
-          select2Options: { dropdownParent: $(formRegistroMovimiento) },
         })
       } else {
-        $areaSelect
-          .html('<option value="">Seleccione Aprisco primero</option>')
-          .val(null)
-          .trigger('change')
+        $areaSelect.html('<option value="">Seleccione Aprisco primero</option>')
       }
     }
   )
 
+  $('#formRegistroMovimiento').on(
+    'change',
+    'select[name="area_origen_id"]',
+    function () {
+      const areaId = $(this).val()
+      const $recintoSelect = $(
+        '#formRegistroMovimiento select[name="recinto_id_origen"]'
+      )
+      if (areaId) {
+        populateSelect({
+          selector: $recintoSelect,
+          url: `${baseUrl}api/recintos?area_id=${areaId}`,
+          placeholder: 'Seleccione Recinto',
+          valueField: 'recinto_id',
+          textField: 'nombre',
+        })
+      } else {
+        $recintoSelect.html('<option value="">Seleccione Área primero</option>')
+      }
+    }
+  )
+
+  // --- Lógica para el modal de Movimientos (DESTINO) ---
   $('#formRegistroMovimiento').on(
     'change',
     'select[name="finca_destino_id"]',
@@ -701,11 +659,12 @@ document.addEventListener('DOMContentLoaded', function () {
       const $areaSelect = $(
         '#formRegistroMovimiento select[name="area_destino_id"]'
       )
+      const $recintoSelect = $(
+        '#formRegistroMovimiento select[name="recinto_id_destino"]'
+      )
 
-      $areaSelect
-        .html('<option value="">--</option>')
-        .val(null)
-        .trigger('change')
+      $areaSelect.html('<option value="">--</option>')
+      $recintoSelect.html('<option value="">--</option>')
 
       if (fincaId) {
         populateSelect({
@@ -714,14 +673,11 @@ document.addEventListener('DOMContentLoaded', function () {
           placeholder: 'Seleccione Aprisco',
           valueField: 'aprisco_id',
           textField: 'nombre',
-          useSelect2: true,
-          select2Options: { dropdownParent: $(formRegistroMovimiento) },
         })
       } else {
-        $apriscoSelect
-          .html('<option value="">Seleccione Finca primero</option>')
-          .val(null)
-          .trigger('change')
+        $apriscoSelect.html(
+          '<option value="">Seleccione Finca primero</option>'
+        )
       }
     }
   )
@@ -734,6 +690,12 @@ document.addEventListener('DOMContentLoaded', function () {
       const $areaSelect = $(
         '#formRegistroMovimiento select[name="area_destino_id"]'
       )
+      const $recintoSelect = $(
+        '#formRegistroMovimiento select[name="recinto_id_destino"]'
+      )
+
+      $recintoSelect.html('<option value="">--</option>')
+
       if (apriscoId) {
         populateSelect({
           selector: $areaSelect,
@@ -744,19 +706,36 @@ document.addEventListener('DOMContentLoaded', function () {
             `${item.nombre_personalizado || 'Área'} (${
               item.numeracion || 'S/N'
             })`,
-          useSelect2: true,
-          select2Options: { dropdownParent: $(formRegistroMovimiento) },
         })
       } else {
-        $areaSelect
-          .html('<option value="">Seleccione Aprisco primero</option>')
-          .val(null)
-          .trigger('change')
+        $areaSelect.html('<option value="">Seleccione Aprisco primero</option>')
       }
     }
   )
 
-  // Lógica para el modal de Ubicaciones
+  $('#formRegistroMovimiento').on(
+    'change',
+    'select[name="area_destino_id"]',
+    function () {
+      const areaId = $(this).val()
+      const $recintoSelect = $(
+        '#formRegistroMovimiento select[name="recinto_id_destino"]'
+      )
+      if (areaId) {
+        populateSelect({
+          selector: $recintoSelect,
+          url: `${baseUrl}api/recintos?area_id=${areaId}`,
+          placeholder: 'Seleccione Recinto',
+          valueField: 'recinto_id',
+          textField: 'nombre',
+        })
+      } else {
+        $recintoSelect.html('<option value="">Seleccione Área primero</option>')
+      }
+    }
+  )
+
+  // --- Lógica para el modal de Ubicaciones ---
   $('#formRegistroUbicacion').on(
     'change',
     'select[name="finca_id"]',
@@ -766,11 +745,12 @@ document.addEventListener('DOMContentLoaded', function () {
         '#formRegistroUbicacion select[name="aprisco_id"]'
       )
       const $areaSelect = $('#formRegistroUbicacion select[name="area_id"]')
+      const $recintoSelect = $(
+        '#formRegistroUbicacion select[name="recinto_id"]'
+      )
 
-      $areaSelect
-        .html('<option value="">--</option>')
-        .val(null)
-        .trigger('change')
+      $areaSelect.html('<option value="">--</option>')
+      $recintoSelect.html('<option value="">--</option>')
 
       if (fincaId) {
         populateSelect({
@@ -779,14 +759,11 @@ document.addEventListener('DOMContentLoaded', function () {
           placeholder: 'Seleccione Aprisco',
           valueField: 'aprisco_id',
           textField: 'nombre',
-          useSelect2: true,
-          select2Options: { dropdownParent: $(formRegistroUbicacion) },
         })
       } else {
-        $apriscoSelect
-          .html('<option value="">Seleccione Finca primero</option>')
-          .val(null)
-          .trigger('change')
+        $apriscoSelect.html(
+          '<option value="">Seleccione Finca primero</option>'
+        )
       }
     }
   )
@@ -797,6 +774,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function () {
       const apriscoId = $(this).val()
       const $areaSelect = $('#formRegistroUbicacion select[name="area_id"]')
+      const $recintoSelect = $(
+        '#formRegistroUbicacion select[name="recinto_id"]'
+      )
+
+      $recintoSelect.html('<option value="">--</option>')
+
       if (apriscoId) {
         populateSelect({
           selector: $areaSelect,
@@ -807,14 +790,31 @@ document.addEventListener('DOMContentLoaded', function () {
             `${item.nombre_personalizado || 'Área'} (${
               item.numeracion || 'S/N'
             })`,
-          useSelect2: true,
-          select2Options: { dropdownParent: $(formRegistroUbicacion) },
         })
       } else {
-        $areaSelect
-          .html('<option value="">Seleccione Aprisco primero</option>')
-          .val(null)
-          .trigger('change')
+        $areaSelect.html('<option value="">Seleccione Aprisco primero</option>')
+      }
+    }
+  )
+
+  $('#formRegistroUbicacion').on(
+    'change',
+    'select[name="area_id"]',
+    function () {
+      const areaId = $(this).val()
+      const $recintoSelect = $(
+        '#formRegistroUbicacion select[name="recinto_id"]'
+      )
+      if (areaId) {
+        populateSelect({
+          selector: $recintoSelect,
+          url: `${baseUrl}api/recintos?area_id=${areaId}`,
+          placeholder: 'Seleccione Recinto',
+          valueField: 'recinto_id',
+          textField: 'nombre',
+        })
+      } else {
+        $recintoSelect.html('<option value="">Seleccione Área primero</option>')
       }
     }
   )

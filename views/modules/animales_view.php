@@ -350,7 +350,6 @@ $enums = [
                 <div class="modal-body">
                     <input type="hidden" name="animal_id" id="salud_animal_id">
                     <div class="row">
-                        <!-- Fila 1: Fecha y Tipo -->
                         <div class="col-md-6 mb-3">
                             <label for="fecha_evento" class="form-label">Fecha del Evento</label>
                             <input type="date" class="form-control" id="fecha_evento" name="fecha_evento" required>
@@ -363,8 +362,6 @@ $enums = [
                                     </option><?php endforeach; ?>
                             </select>
                         </div>
-
-                        <!-- Fila 2: Diagnóstico y Severidad -->
                         <div class="col-md-6 mb-3">
                             <label for="diagnostico" class="form-label">Diagnóstico</label>
                             <input type="text" class="form-control" id="diagnostico" name="diagnostico">
@@ -374,18 +371,15 @@ $enums = [
                             <select class="form-select" id="severidad" name="severidad">
                                 <?php foreach ($enums['severidad_salud'] as $value): ?>
                                     <option value="<?php echo $value; ?>">
-                                        <?php echo str_replace('_', ' ', ucfirst(strtolower($value))); ?></option>
+                                        <?php echo str_replace('_', ' ', ucfirst(strtolower($value))); ?>
+                                    </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-
-                        <!-- Fila 3: Tratamiento -->
                         <div class="col-md-12 mb-3">
                             <label for="tratamiento" class="form-label">Tratamiento</label>
                             <textarea class="form-control" id="tratamiento" name="tratamiento" rows="2"></textarea>
                         </div>
-
-                        <!-- Fila 4: Medicamento, Dosis, Vía -->
                         <div class="col-md-6 mb-3">
                             <label for="medicamento" class="form-label">Medicamento</label>
                             <input type="text" class="form-control" id="medicamento" name="medicamento">
@@ -398,8 +392,6 @@ $enums = [
                             <label for="via_administracion" class="form-label">Vía Admin.</label>
                             <input type="text" class="form-control" id="via_administracion" name="via_administracion">
                         </div>
-
-                        <!-- Fila 5: Costo y Estado -->
                         <div class="col-md-6 mb-3">
                             <label for="costo" class="form-label">Costo</label>
                             <input type="number" step="0.01" class="form-control" id="costo" name="costo"
@@ -413,8 +405,6 @@ $enums = [
                                     </option><?php endforeach; ?>
                             </select>
                         </div>
-
-                        <!-- Fila 6: Próxima Revisión y Responsable -->
                         <div class="col-md-6 mb-3">
                             <label for="proxima_revision" class="form-label">Próxima Revisión</label>
                             <input type="date" class="form-control" id="proxima_revision" name="proxima_revision">
@@ -423,8 +413,6 @@ $enums = [
                             <label for="responsable" class="form-label">Responsable</label>
                             <input type="text" class="form-control" id="responsable" name="responsable">
                         </div>
-
-                        <!-- Fila 7: Observaciones -->
                         <div class="col-md-12 mb-3">
                             <label for="observaciones_salud" class="form-label">Observaciones</label>
                             <textarea class="form-control" id="observaciones_salud" name="observaciones"
@@ -522,6 +510,8 @@ $enums = [
                                     name="aprisco_origen_id" class="form-select"></select></div>
                             <div class="mb-3"><label class="form-label">Área Origen</label><select name="area_origen_id"
                                     class="form-select"></select></div>
+                            <div class="mb-3"><label class="form-label">Recinto Origen</label><select
+                                    name="recinto_id_origen" class="form-select"></select></div>
                         </div>
                         <div class="col-md-6">
                             <h6>Destino</h6>
@@ -532,6 +522,8 @@ $enums = [
                                     name="aprisco_destino_id" class="form-select"></select></div>
                             <div class="mb-3"><label class="form-label">Área Destino</label><select
                                     name="area_destino_id" class="form-select"></select></div>
+                            <div class="mb-3"><label class="form-label">Recinto Destino</label><select
+                                    name="recinto_id_destino" class="form-select"></select></div>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -585,6 +577,8 @@ $enums = [
                     <div class="mb-3"><label class="form-label">Aprisco</label><select name="aprisco_id"
                             class="form-select"></select></div>
                     <div class="mb-3"><label class="form-label">Área</label><select name="area_id"
+                            class="form-select"></select></div>
+                    <div class="mb-3"><label class="form-label">Recinto</label><select name="recinto_id"
                             class="form-select"></select></div>
                     <div class="mb-3">
                         <label for="observaciones_ubicacion" class="form-label">Observaciones</label>
