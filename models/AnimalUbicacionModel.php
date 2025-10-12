@@ -231,176 +231,139 @@ class AnimalUbicacionModel
 
     /* ============ Lecturas ============ */
 
-    public function listar(
-        int $limit = 100,
-        int $offset = 0,
-        bool $incluirEliminados = false,
-        ?string $animalId = null,
-        ?string $fincaId = null,
-        ?string $apriscoId = null,
-        ?string $areaId = null,
-        ?string $recintoId = null,
-        ?string $desde = null,
-        ?string $hasta = null,
-        bool $soloActivas = false
-    ): array {
-        $where = [];
-        $params = [];
-        $types = '';
+   public function listar(
+    int $limit = 100,
+    int $offset = 0,
+    bool $incluirEliminados = false,
+    ?string $animalId = null,
+    ?string $fincaId = null,
+    ?string $apriscoId = null,
+    ?string $areaId = null,
+    ?string $recintoId = null,
+    ?string $desde = null,
+    ?string $hasta = null,
+    bool $soloActivas = false
+): array {
+    $where = [];
+    $params = [];
+    $types = '';
 
-        if (!$incluirEliminados) {
-            $where[] = 'u.deleted_at IS NULL';
-        }
+    if (!$incluirEliminados) $where[] = 'u.deleted_at IS NULL';
+    if ($animalId)  { $where[]='u.animal_id = ?'; $params[]=$animalId;  $types.='s'; }
+    if ($fincaId)   { $where[]='u.finca_id  = ?'; $params[]=$fincaId;   $types.='s'; }
+    if ($apriscoId) { $where[]='u.aprisco_id= ?'; $params[]=$apriscoId; $types.='s'; }
+    if ($areaId)    { $where[]='u.area_id   = ?'; $params[]=$areaId;    $types.='s'; }
+    if ($recintoId) { $where[]='u.recinto_id= ?'; $params[]=$recintoId; $types.='s'; }
+    if ($soloActivas) $where[] = 'u.fecha_hasta IS NULL';
+    if ($desde) { $this->validarFecha($desde,'desde'); $where[]='COALESCE(u.fecha_hasta,"9999-12-31") >= ?'; $params[]=$desde; $types.='s'; }
+    if ($hasta) { $this->validarFecha($hasta,'hasta'); $where[]='u.fecha_desde <= ?'; $params[]=$hasta; $types.='s'; }
 
-        if ($animalId) {
-            $where[] = 'u.animal_id = ?';
-            $params[] = $animalId;
-            $types .= 's';
-        }
-        if ($fincaId) {
-            $where[] = 'u.finca_id = ?';
-            $params[] = $fincaId;
-            $types .= 's';
-        }
-        if ($apriscoId) {
-            $where[] = 'u.aprisco_id = ?';
-            $params[] = $apriscoId;
-            $types .= 's';
-        }
-        if ($areaId) {
-            $where[] = 'u.area_id = ?';
-            $params[] = $areaId;
-            $types .= 's';
-        }
-        if ($recintoId) {
-            $where[] = 'u.recinto_id = ?';
-            $params[] = $recintoId;
-            $types .= 's';
-        }
-        if ($soloActivas) {
-            $where[] = 'u.fecha_hasta IS NULL';
-        }
-        if ($desde) {
-            $this->validarFecha($desde, 'desde');
-            $where[] = 'COALESCE(u.fecha_hasta, "9999-12-31") >= ?';
-            $params[] = $desde;
-            $types .= 's';
-        }
-        if ($hasta) {
-            $this->validarFecha($hasta, 'hasta');
-            $where[] = 'u.fecha_desde <= ?';
-            $params[] = $hasta;
-            $types .= 's';
-        }
+    $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-        $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+    $sql = "SELECT
+                u.animal_ubicacion_id,
+                u.animal_id,
+                a.identificador AS animal_identificador,
+                u.finca_id,   f.nombre AS nombre_finca,
+                u.aprisco_id, ap.nombre AS nombre_aprisco,
+                u.area_id,    ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
+                u.recinto_id,
+                r.codigo_recinto AS codigo_recinto,
+                u.fecha_desde, u.fecha_hasta,
+                u.motivo, u.estado, u.observaciones,
+                u.created_at, u.created_by, u.updated_at, u.updated_by,
+                u.deleted_at, u.deleted_by
+            FROM {$this->table} u
+            LEFT JOIN animales a ON a.animal_id = u.animal_id
+            LEFT JOIN fincas   f ON f.finca_id  = u.finca_id
+            LEFT JOIN apriscos ap ON ap.aprisco_id = u.aprisco_id
+            LEFT JOIN areas   ar ON ar.area_id  = u.area_id
+            LEFT JOIN recintos r ON r.recinto_id = u.recinto_id
+            $whereSql
+            ORDER BY COALESCE(u.fecha_hasta,'9999-12-31') DESC, u.fecha_desde DESC, u.created_at DESC
+            LIMIT ? OFFSET ?";
 
-        $sql = "SELECT
-                    u.animal_ubicacion_id,
-                    u.animal_id,
-                    a.identificador AS animal_identificador,
-                    u.finca_id,   f.nombre AS nombre_finca,
-                    u.aprisco_id, ap.nombre AS nombre_aprisco,
-                    u.area_id,    ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
-                    u.recinto_id
-                    -- Si tu tabla recintos tiene estos campos, descomenta:
-                    , r.codigo_recinto AS codigo_recinto
-                    , u.fecha_desde, u.fecha_hasta,
-                    u.motivo, u.estado, u.observaciones,
-                    u.created_at, u.created_by, u.updated_at, u.updated_by,
-                    u.deleted_at, u.deleted_by
-                FROM {$this->table} u
-                LEFT JOIN animales a  ON a.animal_id   = u.animal_id
-                LEFT JOIN fincas   f  ON f.finca_id    = u.finca_id
-                LEFT JOIN apriscos ap  ON ap.aprisco_id = u.aprisco_id
-                LEFT JOIN areas   ar  ON ar.area_id    = u.area_id
-                LEFT JOIN recintos r  ON r.recinto_id  = u.recinto_id
-                $whereSql
-                ORDER BY COALESCE(u.fecha_hasta, '9999-12-31') DESC, u.fecha_desde DESC, u.created_at DESC
-                LIMIT ? OFFSET ?";
+    $stmt = $this->db->prepare($sql);
+    if (!$stmt) throw new mysqli_sql_exception("Error al preparar listado: ".$this->db->error);
 
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt)
-            throw new mysqli_sql_exception("Error al preparar listado: " . $this->db->error);
+    $types .= 'ii'; $params[]=$limit; $params[]=$offset;
 
-        $types .= 'ii';
-        $params[] = $limit;
-        $params[] = $offset;
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = $res->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    return $rows;
+}
 
-        $stmt->bind_param($types, ...$params);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $rows = $res->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-        return $rows;
-    }
 
-    public function obtenerPorId(string $id): ?array
-    {
-        $sql = "SELECT
-                    u.animal_ubicacion_id,
-                    u.animal_id,
-                    a.identificador AS animal_identificador,
-                    u.finca_id,   f.nombre AS nombre_finca,
-                    u.aprisco_id, ap.nombre AS nombre_aprisco,
-                    u.area_id,    ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
-                    u.recinto_id, r.codigo_recinto AS codigo_recinto, u.fecha_desde, u.fecha_hasta,
-                    u.motivo, u.estado, u.observaciones,
-                    u.created_at, u.created_by, u.updated_at, u.updated_by,
-                    u.deleted_at, u.deleted_by
-                FROM {$this->table} u
-                LEFT JOIN animales a  ON a.animal_id   = u.animal_id
-                LEFT JOIN fincas   f  ON f.finca_id    = u.finca_id
-                LEFT JOIN apriscos ap  ON ap.aprisco_id = u.aprisco_id
-                LEFT JOIN areas   ar  ON ar.area_id    = u.area_id
-                LEFT JOIN recintos r  ON r.recinto_id  = u.recinto_id
-                WHERE u.animal_ubicacion_id = ?";
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt)
-            throw new mysqli_sql_exception("Error al preparar consulta: " . $this->db->error);
+public function obtenerPorId(string $id): ?array
+{
+    $sql = "SELECT
+                u.animal_ubicacion_id,
+                u.animal_id,
+                a.identificador AS animal_identificador,
+                u.finca_id,   f.nombre AS nombre_finca,
+                u.aprisco_id, ap.nombre AS nombre_aprisco,
+                u.area_id,    ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
+                u.recinto_id,
+                r.codigo_recinto AS codigo_recinto,
+                u.fecha_desde, u.fecha_hasta,
+                u.motivo, u.estado, u.observaciones,
+                u.created_at, u.created_by, u.updated_at, u.updated_by,
+                u.deleted_at, u.deleted_by
+            FROM {$this->table} u
+            LEFT JOIN animales a ON a.animal_id = u.animal_id
+            LEFT JOIN fincas   f ON f.finca_id  = u.finca_id
+            LEFT JOIN apriscos ap ON ap.aprisco_id = u.aprisco_id
+            LEFT JOIN areas   ar ON ar.area_id  = u.area_id
+            LEFT JOIN recintos r ON r.recinto_id = u.recinto_id
+            WHERE u.animal_ubicacion_id = ?";
+    $stmt = $this->db->prepare($sql);
+    if (!$stmt) throw new mysqli_sql_exception("Error al preparar consulta: ".$this->db->error);
 
-        $stmt->bind_param('s', $id);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $row = $res->fetch_assoc();
-        $stmt->close();
-        return $row ?: null;
-    }
+    $stmt->bind_param('s', $id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res->fetch_assoc();
+    $stmt->close();
+    return $row ?: null;
+}
 
-    public function getActual(string $animalId): ?array
-    {
-        $sql = "SELECT
-                    u.animal_ubicacion_id,
-                    u.animal_id,
-                    a.identificador AS animal_identificador,
-                    u.finca_id,   f.nombre AS nombre_finca,
-                    u.aprisco_id, ap.nombre AS nombre_aprisco,
-                    u.area_id,    ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
-                    u.recinto_id
-                    -- , r.nombre AS nombre_recinto, r.numeracion AS recinto_numeracion
-                    , u.fecha_desde, u.fecha_hasta,
-                    u.motivo, u.estado, u.observaciones
-                FROM {$this->table} u
-                LEFT JOIN animales a  ON a.animal_id   = u.animal_id
-                LEFT JOIN fincas   f  ON f.finca_id    = u.finca_id
-                LEFT JOIN apriscos ap  ON ap.aprisco_id = u.aprisco_id
-                LEFT JOIN areas   ar  ON ar.area_id    = u.area_id
-                LEFT JOIN recintos r  ON r.recinto_id  = u.recinto_id
-                WHERE u.animal_id = ?
-                  AND u.fecha_hasta IS NULL
-                  AND u.deleted_at IS NULL
-                ORDER BY u.fecha_desde DESC, u.created_at DESC
-                LIMIT 1";
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt)
-            throw new mysqli_sql_exception("Error al preparar getActual: " . $this->db->error);
-        $stmt->bind_param('s', $animalId);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $row = $res->fetch_assoc();
-        $stmt->close();
-        return $row ?: null;
-    }
+public function getActual(string $animalId): ?array
+{
+    $sql = "SELECT
+                u.animal_ubicacion_id,
+                u.animal_id,
+                a.identificador AS animal_identificador,
+                u.finca_id,   f.nombre AS nombre_finca,
+                u.aprisco_id, ap.nombre AS nombre_aprisco,
+                u.area_id,    ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
+                u.recinto_id,
+                r.codigo_recinto AS codigo_recinto,
+                u.fecha_desde, u.fecha_hasta,
+                u.motivo, u.estado, u.observaciones
+            FROM {$this->table} u
+            LEFT JOIN animales a ON a.animal_id = u.animal_id
+            LEFT JOIN fincas   f ON f.finca_id  = u.finca_id
+            LEFT JOIN apriscos ap ON ap.aprisco_id = u.aprisco_id
+            LEFT JOIN areas   ar ON ar.area_id  = u.area_id
+            LEFT JOIN recintos r ON r.recinto_id = u.recinto_id
+            WHERE u.animal_id = ?
+              AND u.fecha_hasta IS NULL
+              AND u.deleted_at IS NULL
+            ORDER BY u.fecha_desde DESC, u.created_at DESC
+            LIMIT 1";
+    $stmt = $this->db->prepare($sql);
+    if (!$stmt) throw new mysqli_sql_exception("Error al preparar getActual: ".$this->db->error);
+    $stmt->bind_param('s', $animalId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res->fetch_assoc();
+    $stmt->close();
+    return $row ?: null;
+}
+
 
     /* ============ Escrituras ============ */
 

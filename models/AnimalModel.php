@@ -273,178 +273,185 @@ private function labelCommonAncestor(int $dA, int $dB): string
 }
 
 
-    public function listar(
-        int $limit = 100,
-        int $offset = 0,
-        bool $incluirEliminados = false,
-        ?string $q = null,
-        ?string $sexo = null,
-        ?string $especie = null,
-        ?string $estado = null,
-        ?string $etapa = null,
-        ?string $categoria = null,
-        ?string $nacDesde = null,
-        ?string $nacHasta = null,
-        ?string $fincaId = null,
-        ?string $apriscoId = null,
-        ?string $areaId = null
-    ): array {
-        $w=[]; $p=[]; $t='';
+  public function listar(
+    int $limit = 100,
+    int $offset = 0,
+    bool $incluirEliminados = false,
+    ?string $q = null,
+    ?string $sexo = null,
+    ?string $especie = null,
+    ?string $estado = null,
+    ?string $etapa = null,
+    ?string $categoria = null,
+    ?string $nacDesde = null,
+    ?string $nacHasta = null,
+    ?string $fincaId = null,
+    ?string $apriscoId = null,
+    ?string $areaId = null
+): array {
+    $w=[]; $p=[]; $t='';
 
-        $w[] = $incluirEliminados ? 'a.deleted_at IS NOT NULL OR a.deleted_at IS NULL' : 'a.deleted_at IS NULL';
+    $w[] = $incluirEliminados ? 'a.deleted_at IS NOT NULL OR a.deleted_at IS NULL' : 'a.deleted_at IS NULL';
 
-        if ($q)     { $w[]='a.identificador LIKE ?'; $p[]='%'.$q.'%'; $t.='s'; }
-        if ($sexo)  { $w[]='a.sexo = ?'; $p[]=$this->validarEnum($sexo,['MACHO','HEMBRA'],'sexo'); $t.='s'; }
-        if ($especie){$w[]='a.especie = ?'; $p[]=$this->validarEnum($especie,['BOVINO','OVINO','CAPRINO','PORCINO','OTRO'],'especie'); $t.='s';}
-        if ($estado){ $w[]='a.estado = ?'; $p[]=$this->validarEnum($estado,['ACTIVO','INACTIVO','MUERTO','VENDIDO'],'estado'); $t.='s';}
-        if ($etapa) { $w[]='a.etapa_productiva = ?'; $p[]=$this->validarEnum($etapa,['TERNERO','LEVANTE','CEBA','REPRODUCTOR','LACTANTE','SECA','GESTANTE','OTRO'],'etapa_productiva'); $t.='s';}
-        if ($categoria){$w[]='a.categoria = ?'; $p[]=$this->validarEnum($categoria,['CRIA','MADRE','PADRE','ENGORDE','REEMPLAZO','OTRO'],'categoria'); $t.='s';}
+    if ($q)       { $w[]='a.identificador LIKE ?'; $p[]='%'.$q.'%'; $t.='s'; }
+    if ($sexo)    { $w[]='a.sexo = ?'; $p[]=$this->validarEnum($sexo,['MACHO','HEMBRA'],'sexo'); $t.='s'; }
+    if ($especie) { $w[]='a.especie = ?'; $p[]=$this->validarEnum($especie,['BOVINO','OVINO','CAPRINO','PORCINO','OTRO'],'especie'); $t.='s';}
+    if ($estado)  { $w[]='a.estado = ?'; $p[]=$this->validarEnum($estado,['ACTIVO','INACTIVO','MUERTO','VENDIDO'],'estado'); $t.='s';}
+    if ($etapa)   { $w[]='a.etapa_productiva = ?'; $p[]=$this->validarEnum($etapa,['TERNERO','LEVANTE','CEBA','REPRODUCTOR','LACTANTE','SECA','GESTANTE','OTRO'],'etapa_productiva'); $t.='s';}
+    if ($categoria){$w[]='a.categoria = ?'; $p[]=$this->validarEnum($categoria,['CRIA','MADRE','PADRE','ENGORDE','REEMPLAZO','OTRO'],'categoria'); $t.='s';}
 
-        if ($nacDesde) { $this->validarFecha($nacDesde,'nac_desde'); $w[]='a.fecha_nacimiento >= ?'; $p[]=$nacDesde; $t.='s'; }
-        if ($nacHasta) { $this->validarFecha($nacHasta,'nac_hasta'); $w[]='a.fecha_nacimiento <= ?'; $p[]=$nacHasta; $t.='s'; }
+    if ($nacDesde) { $this->validarFecha($nacDesde,'nac_desde'); $w[]='a.fecha_nacimiento >= ?'; $p[]=$nacDesde; $t.='s'; }
+    if ($nacHasta) { $this->validarFecha($nacHasta,'nac_hasta'); $w[]='a.fecha_nacimiento <= ?'; $p[]=$nacHasta; $t.='s'; }
 
-        if ($fincaId || $apriscoId || $areaId) {
-            if ($fincaId)   { $w[]='ua.finca_id = ?';   $p[]=$fincaId;   $t.='s'; }
-            if ($apriscoId) { $w[]='ua.aprisco_id = ?'; $p[]=$apriscoId; $t.='s'; }
-            if ($areaId)    { $w[]='ua.area_id = ?';    $p[]=$areaId;    $t.='s'; }
-        }
-
-        $where = implode(' AND ', $w);
-
-        $sql = "
-            SELECT
-                a.animal_id,
-                a.identificador,
-                a.sexo,
-                a.especie,
-                a.raza,
-                a.color,
-                a.fecha_nacimiento,
-                a.estado,
-                a.etapa_productiva,
-                a.categoria,
-                a.origen,
-                a.madre_id,
-                a.padre_id,
-                a.fotografia_url,
-                a.created_at, a.created_by, a.updated_at, a.updated_by,
-
-                pw.fecha_peso AS ultima_fecha_peso,
-                pw.peso_kg    AS ultimo_peso_kg,
-
-                ua.finca_id,  f.nombre AS nombre_finca,
-                ua.aprisco_id, ap.nombre AS nombre_aprisco,
-                ua.area_id,   ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion
-
-            FROM {$this->table} a
-
-            LEFT JOIN (
-                SELECT u1.*
-                FROM animal_ubicaciones u1
-                JOIN (
-                    SELECT animal_id, MAX(fecha_desde) AS md
-                    FROM animal_ubicaciones
-                    WHERE deleted_at IS NULL AND fecha_hasta IS NULL
-                    GROUP BY animal_id
-                ) u2 ON u2.animal_id = u1.animal_id AND u2.md = u1.fecha_desde
-                WHERE u1.deleted_at IS NULL AND u1.fecha_hasta IS NULL
-            ) ua ON ua.animal_id = a.animal_id
-            LEFT JOIN fincas f    ON f.finca_id    = ua.finca_id
-            LEFT JOIN apriscos ap ON ap.aprisco_id = ua.aprisco_id
-            LEFT JOIN areas ar    ON ar.area_id    = ua.area_id
-
-            LEFT JOIN (
-                SELECT p1.*
-                FROM animal_pesos p1
-                JOIN (
-                    SELECT animal_id, MAX(fecha_peso) AS mf
-                    FROM animal_pesos
-                    WHERE deleted_at IS NULL
-                    GROUP BY animal_id
-                ) p2 ON p2.animal_id = p1.animal_id AND p2.mf = p1.fecha_peso
-                WHERE p1.deleted_at IS NULL
-            ) pw ON pw.animal_id = a.animal_id
-
-            WHERE {$where}
-            ORDER BY a.created_at DESC, a.identificador ASC
-            LIMIT ? OFFSET ?";
-
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt) throw new mysqli_sql_exception("Error al preparar listado: " . $this->db->error);
-
-        $t .= 'ii'; $p[]=$limit; $p[]=$offset;
-        $stmt->bind_param($t, ...$p);
-        $stmt->execute();
-        $res  = $stmt->get_result();
-        $rows = $res->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-        return $rows;
+    if ($fincaId || $apriscoId || $areaId) {
+        if ($fincaId)   { $w[]='ua.finca_id = ?';   $p[]=$fincaId;   $t.='s'; }
+        if ($apriscoId) { $w[]='ua.aprisco_id = ?'; $p[]=$apriscoId; $t.='s'; }
+        if ($areaId)    { $w[]='ua.area_id = ?';    $p[]=$areaId;    $t.='s'; }
     }
 
-    public function obtenerPorId(string $animalId): ?array
-    {
-        $sql = "
-            SELECT
-                a.animal_id,
-                a.identificador,
-                a.sexo,
-                a.especie,
-                a.raza,
-                a.color,
-                a.fecha_nacimiento,
-                a.estado,
-                a.etapa_productiva,
-                a.categoria,
-                a.origen,
-                a.madre_id,
-                a.padre_id,
-                a.fotografia_url,
-                a.created_at, a.created_by, a.updated_at, a.updated_by, a.deleted_at, a.deleted_by,
+    $where = implode(' AND ', $w);
 
-                pw.fecha_peso AS ultima_fecha_peso,
-                pw.peso_kg    AS ultimo_peso_kg,
+    $sql = "
+        SELECT
+            a.animal_id,
+            a.identificador,
+            a.sexo,
+            a.especie,
+            a.raza,
+            a.color,
+            a.fecha_nacimiento,
+            a.estado,
+            a.etapa_productiva,
+            a.categoria,
+            a.origen,
+            a.madre_id,
+            a.padre_id,
+            a.fotografia_url,
+            a.created_at, a.created_by, a.updated_at, a.updated_by,
 
-                ua.finca_id,  f.nombre AS nombre_finca,
-                ua.aprisco_id, ap.nombre AS nombre_aprisco,
-                ua.area_id,   ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion
+            pw.fecha_peso AS ultima_fecha_peso,
+            pw.peso_kg    AS ultimo_peso_kg,
 
-            FROM {$this->table} a
-            LEFT JOIN (
-                SELECT u1.*
-                FROM animal_ubicaciones u1
-                JOIN (
-                    SELECT animal_id, MAX(fecha_desde) AS md
-                    FROM animal_ubicaciones
-                    WHERE deleted_at IS NULL AND fecha_hasta IS NULL
-                    GROUP BY animal_id
-                ) u2 ON u2.animal_id = u1.animal_id AND u2.md = u1.fecha_desde
-                WHERE u1.deleted_at IS NULL AND u1.fecha_hasta IS NULL
-            ) ua ON ua.animal_id = a.animal_id
-            LEFT JOIN fincas f    ON f.finca_id    = ua.finca_id
-            LEFT JOIN apriscos ap ON ap.aprisco_id = ua.aprisco_id
-            LEFT JOIN areas ar    ON ar.area_id    = ua.area_id
-            LEFT JOIN (
-                SELECT p1.*
-                FROM animal_pesos p1
-                JOIN (
-                    SELECT animal_id, MAX(fecha_peso) AS mf
-                    FROM animal_pesos
-                    WHERE deleted_at IS NULL
-                    GROUP BY animal_id
-                ) p2 ON p2.animal_id = p1.animal_id AND p2.mf = p1.fecha_peso
-                WHERE p1.deleted_at IS NULL
-            ) pw ON pw.animal_id = a.animal_id
-            WHERE a.animal_id = ?";
+            ua.finca_id,   f.nombre AS nombre_finca,
+            ua.aprisco_id, ap.nombre AS nombre_aprisco,
+            ua.area_id,    ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
+            ua.recinto_id,
+            r.codigo_recinto AS codigo_recinto
 
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt) throw new mysqli_sql_exception("Error al preparar consulta: " . $this->db->error);
-        $stmt->bind_param('s', $animalId);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $row = $res->fetch_assoc();
-        $stmt->close();
-        return $row ?: null;
-    }
+        FROM {$this->table} a
+
+        LEFT JOIN (
+            SELECT u1.*
+            FROM animal_ubicaciones u1
+            JOIN (
+                SELECT animal_id, MAX(fecha_desde) AS md
+                FROM animal_ubicaciones
+                WHERE deleted_at IS NULL AND fecha_hasta IS NULL
+                GROUP BY animal_id
+            ) u2 ON u2.animal_id = u1.animal_id AND u2.md = u1.fecha_desde
+            WHERE u1.deleted_at IS NULL AND u1.fecha_hasta IS NULL
+        ) ua ON ua.animal_id = a.animal_id
+        LEFT JOIN fincas   f  ON f.finca_id    = ua.finca_id
+        LEFT JOIN apriscos ap ON ap.aprisco_id = ua.aprisco_id
+        LEFT JOIN areas    ar ON ar.area_id    = ua.area_id
+        LEFT JOIN recintos r  ON r.recinto_id  = ua.recinto_id
+
+        LEFT JOIN (
+            SELECT p1.*
+            FROM animal_pesos p1
+            JOIN (
+                SELECT animal_id, MAX(fecha_peso) AS mf
+                FROM animal_pesos
+                WHERE deleted_at IS NULL
+                GROUP BY animal_id
+            ) p2 ON p2.animal_id = p1.animal_id AND p2.mf = p1.fecha_peso
+            WHERE p1.deleted_at IS NULL
+        ) pw ON pw.animal_id = a.animal_id
+
+        WHERE {$where}
+        ORDER BY a.created_at DESC, a.identificador ASC
+        LIMIT ? OFFSET ?";
+
+    $stmt = $this->db->prepare($sql);
+    if (!$stmt) throw new mysqli_sql_exception("Error al preparar listado: " . $this->db->error);
+
+    $t .= 'ii'; $p[]=$limit; $p[]=$offset;
+    $stmt->bind_param($t, ...$p);
+    $stmt->execute();
+    $res  = $stmt->get_result();
+    $rows = $res->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    return $rows;
+}
+public function obtenerPorId(string $animalId): ?array
+{
+    $sql = "
+        SELECT
+            a.animal_id,
+            a.identificador,
+            a.sexo,
+            a.especie,
+            a.raza,
+            a.color,
+            a.fecha_nacimiento,
+            a.estado,
+            a.etapa_productiva,
+            a.categoria,
+            a.origen,
+            a.madre_id,
+            a.padre_id,
+            a.fotografia_url,
+            a.created_at, a.created_by, a.updated_at, a.updated_by, a.deleted_at, a.deleted_by,
+
+            pw.fecha_peso AS ultima_fecha_peso,
+            pw.peso_kg    AS ultimo_peso_kg,
+
+            ua.finca_id,   f.nombre AS nombre_finca,
+            ua.aprisco_id, ap.nombre AS nombre_aprisco,
+            ua.area_id,    ar.nombre_personalizado AS nombre_area, ar.numeracion AS area_numeracion,
+            ua.recinto_id,
+            r.codigo_recinto AS codigo_recinto
+
+        FROM {$this->table} a
+        LEFT JOIN (
+            SELECT u1.*
+            FROM animal_ubicaciones u1
+            JOIN (
+                SELECT animal_id, MAX(fecha_desde) AS md
+                FROM animal_ubicaciones
+                WHERE deleted_at IS NULL AND fecha_hasta IS NULL
+                GROUP BY animal_id
+            ) u2 ON u2.animal_id = u1.animal_id AND u2.md = u1.fecha_desde
+            WHERE u1.deleted_at IS NULL AND u1.fecha_hasta IS NULL
+        ) ua ON ua.animal_id = a.animal_id
+        LEFT JOIN fincas   f  ON f.finca_id    = ua.finca_id
+        LEFT JOIN apriscos ap ON ap.aprisco_id = ua.aprisco_id
+        LEFT JOIN areas    ar ON ar.area_id    = ua.area_id
+        LEFT JOIN recintos r  ON r.recinto_id  = ua.recinto_id
+
+        LEFT JOIN (
+            SELECT p1.*
+            FROM animal_pesos p1
+            JOIN (
+                SELECT animal_id, MAX(fecha_peso) AS mf
+                FROM animal_pesos
+                WHERE deleted_at IS NULL
+                GROUP BY animal_id
+            ) p2 ON p2.animal_id = p1.animal_id AND p2.mf = p1.fecha_peso
+            WHERE p1.deleted_at IS NULL
+        ) pw ON pw.animal_id = a.animal_id
+        WHERE a.animal_id = ?";
+
+    $stmt = $this->db->prepare($sql);
+    if (!$stmt) throw new mysqli_sql_exception("Error al preparar consulta: " . $this->db->error);
+    $stmt->bind_param('s', $animalId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res->fetch_assoc();
+    $stmt->close();
+    return $row ?: null;
+}
+
 
     public function getOptions(?string $q = null): array
     {

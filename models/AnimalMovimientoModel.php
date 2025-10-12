@@ -123,6 +123,10 @@ class AnimalMovimientoModel
         if ($areaId !== null) {
             $sql = "SELECT ap.aprisco_id, ap.finca_id
                     FROM areas a JOIN apriscos ap ON ap.aprisco_id = a.aprisco_id
+                    WHERE a.area_id = ? AND a.deleted_at IS NOT NULL IS FALSE";
+            // (mantengo el original; si tu motor no acepta IS NOT NULL IS FALSE, reemplaza por 'AND a.deleted_at IS NULL')
+            $sql = "SELECT ap.aprisco_id, ap.finca_id
+                    FROM areas a JOIN apriscos ap ON ap.aprisco_id = a.aprisco_id
                     WHERE a.area_id = ? AND a.deleted_at IS NULL";
             $stmt = $this->db->prepare($sql); if(!$stmt) throw new mysqli_sql_exception($this->db->error);
             $stmt->bind_param('s', $areaId); $stmt->execute(); $res = $stmt->get_result();
@@ -195,15 +199,13 @@ class AnimalMovimientoModel
                     m.finca_origen_id, fo.nombre AS finca_origen,
                     m.aprisco_origen_id, ao.nombre AS aprisco_origen,
                     m.area_origen_id, aro.nombre_personalizado AS area_origen_nombre, aro.numeracion AS area_origen_nro,
-                    m.recinto_id_origen
-                    -- , ro.nombre AS recinto_origen, ro.numeracion AS recinto_origen_nro
-                    ,
+                    m.recinto_id_origen,
+                    ro.codigo_recinto AS codigo_recinto_origen,
                     m.finca_destino_id, fd.nombre AS finca_destino,
                     m.aprisco_destino_id, ad.nombre AS aprisco_destino,
                     m.area_destino_id, ard.nombre_personalizado AS area_destino_nombre, ard.numeracion AS area_destino_nro,
-                    m.recinto_id_destino
-                    -- , rd.nombre AS recinto_destino, rd.numeracion AS recinto_destino_nro
-                    ,
+                    m.recinto_id_destino,
+                    rd.codigo_recinto AS codigo_recinto_destino,
                     m.observaciones,
                     m.created_at, m.created_by, m.updated_at, m.updated_by
                 FROM {$this->table} m
@@ -235,9 +237,14 @@ class AnimalMovimientoModel
     public function obtenerPorId(string $id): ?array
     {
         $sql = "SELECT
-                    m.*, a.identificador AS animal_identificador
+                    m.*,
+                    a.identificador AS animal_identificador,
+                    ro.codigo_recinto AS codigo_recinto_origen,
+                    rd.codigo_recinto AS codigo_recinto_destino
                 FROM {$this->table} m
                 LEFT JOIN animales a ON a.animal_id = m.animal_id
+                LEFT JOIN recintos ro ON ro.recinto_id = m.recinto_id_origen
+                LEFT JOIN recintos rd ON rd.recinto_id = m.recinto_id_destino
                 WHERE m.animal_movimiento_id = ?";
         $stmt = $this->db->prepare($sql);
         if (!$stmt) throw new mysqli_sql_exception("Error preparar consulta: " . $this->db->error);
@@ -320,7 +327,7 @@ class AnimalMovimientoModel
         // Reglas por tipo
         $this->validarReglasTipo($tipo, $fOri, $aOri, $arOri, $rOri, $fDes, $aDes, $arDes, $rDes);
 
-        // costo nullable (mantener null si viene vacío)
+        // costo nullable
         $costo = (isset($data['costo']) && $data['costo'] !== '' && $data['costo'] !== null) ? (string)(float)$data['costo'] : null;
 
         $documento = isset($data['documento_ref']) ? trim((string)$data['documento_ref']) : null;
