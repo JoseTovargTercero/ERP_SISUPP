@@ -97,12 +97,13 @@ class MenuModel
 
         $whereSql = implode(' AND ', $where);
 
-        $sql = "SELECT m.menu_id, m.categoria, m.nombre, m.url, m.icono, m.user_level,
-                       m.created_at, m.created_by, m.updated_at, m.updated_by
-                FROM {$this->table} m
-                WHERE {$whereSql}
-                ORDER BY m.categoria ASC, m.user_level ASC, m.nombre ASC
-                LIMIT ? OFFSET ?";
+        // MODIFICADO: Se añade `orden` a la consulta y al criterio de ordenamiento.
+        $sql = "SELECT m.menu_id, m.categoria, m.nombre, m.url, m.icono, m.user_level, m.orden,
+                   m.created_at, m.created_by, m.updated_at, m.updated_by
+            FROM {$this->table} m
+            WHERE {$whereSql}
+            ORDER BY m.orden ASC, m.nombre ASC
+            LIMIT ? OFFSET ?";
 
         $stmt = $this->db->prepare($sql);
         if (!$stmt)
@@ -122,7 +123,8 @@ class MenuModel
 
     public function obtenerPorId(string $menuId): ?array
     {
-        $sql = "SELECT m.menu_id, m.categoria, m.nombre, m.url, m.icono, m.user_level,
+        // MODIFICADO: Se añade `orden` a la consulta.
+        $sql = "SELECT m.menu_id, m.categoria, m.nombre, m.url, m.icono, m.user_level, m.orden,
                        m.created_at, m.created_by, m.updated_at, m.updated_by,
                        m.deleted_at, m.deleted_by
                 FROM {$this->table} m
@@ -141,7 +143,7 @@ class MenuModel
 
     /* ===== Escrituras ===== */
 
-    // Requeridos: categoria, nombre, url, user_level. Opcional: icono
+    // Requeridos: categoria, nombre, url, user_level. Opcional: icono, orden
     public function crear(array $data): string
     {
         if (empty($data['categoria']) || empty($data['nombre']) || empty($data['url'])) {
@@ -153,6 +155,8 @@ class MenuModel
         $url = trim((string) strtolower($data['url']));
         $icono = isset($data['icono']) ? trim((string) $data['icono']) : null;
         $userLevel = $this->validarUserLevel($data['user_level'] ?? null);
+        // MODIFICADO: Se añade el campo `orden`.
+        $orden = isset($data['orden']) && is_numeric($data['orden']) ? (int) $data['orden'] : 0;
 
         $this->validarUrl($url);
 
@@ -163,22 +167,25 @@ class MenuModel
             $uuid = $this->generateUUIDv4();
             $actorId = $_SESSION['user_id'] ?? $uuid;
 
+            // MODIFICADO: Se añade `orden` a la inserción.
             $sql = "INSERT INTO {$this->table}
-                    (menu_id, categoria, nombre, url, icono, user_level,
+                    (menu_id, categoria, nombre, url, icono, user_level, orden,
                      created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
             $stmt = $this->db->prepare($sql);
             if (!$stmt)
                 throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
 
+            // MODIFICADO: Se actualiza el bind_param para incluir `orden`.
             $stmt->bind_param(
-                'ssssisss',
+                'sssssiisss', // s for string, i for integer
                 $uuid,
                 $categoria,
                 $nombre,
                 $url,
                 $icono,
                 $userLevel,
+                $orden,
                 $now,
                 $actorId
             );
@@ -189,7 +196,6 @@ class MenuModel
                 $this->db->rollback();
 
                 if (str_contains(strtolower($err), 'duplicate')) {
-                    // Suponiendo índice único razonable (p.ej. categoria + nombre) o url única
                     throw new RuntimeException('Ya existe un menú con esos datos (conflicto de unicidad).');
                 }
                 throw new mysqli_sql_exception("Error al ejecutar inserción: " . $err);
@@ -237,6 +243,12 @@ class MenuModel
             $lvl = $this->validarUserLevel($data['user_level']);
             $campos[] = 'user_level = ?';
             $params[] = $lvl;
+            $types .= 'i';
+        }
+        // MODIFICADO: Se añade la capacidad de actualizar `orden`.
+        if (isset($data['orden']) && is_numeric($data['orden'])) {
+            $campos[] = 'orden = ?';
+            $params[] = (int) $data['orden'];
             $types .= 'i';
         }
 
@@ -295,5 +307,37 @@ class MenuModel
         $ok = $stmt->execute();
         $stmt->close();
         return $ok;
+    }
+
+    // AÑADIDO: Nueva función para reordenar
+    public function reordenar(array $menuIds): bool
+    {
+        if (empty($menuIds)) {
+            throw new InvalidArgumentException('Se requiere un array de IDs de menú.');
+        }
+
+        $this->db->begin_transaction();
+        try {
+            $sql = "UPDATE {$this->table} SET orden = ? WHERE menu_id = ?";
+            $stmt = $this->db->prepare($sql);
+            if (!$stmt) {
+                throw new mysqli_sql_exception("Error al preparar la actualización de orden: " . $this->db->error);
+            }
+
+            foreach ($menuIds as $index => $menuId) {
+                $orden = $index;
+                $stmt->bind_param('is', $orden, $menuId);
+                if (!$stmt->execute()) {
+                    throw new mysqli_sql_exception("Error al actualizar el orden para el menú $menuId: " . $stmt->error);
+                }
+            }
+
+            $stmt->close();
+            $this->db->commit();
+            return true;
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
     }
 }

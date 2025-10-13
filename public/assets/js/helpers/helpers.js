@@ -69,6 +69,17 @@ export function showErrorToast(response) {
   })
 }
 
+export function showSuccessToast(response) {
+  let message = 'Operación realizada con éxito.' // Mensaje genérico
+  if (response && response.message) {
+    message = response.message // Mensaje del backend si existe
+  }
+  Toast.fire({
+    icon: 'success',
+    title: message,
+  })
+}
+
 // función para formatear fecha a DD/MM/YYYY usando tolocaleDateString
 export function formatDate(dateString) {
   const options = { year: 'numeric', month: '2-digit', day: '2-digit' }

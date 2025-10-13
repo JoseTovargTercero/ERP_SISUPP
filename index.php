@@ -123,6 +123,8 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/menus/{menu_id}', ['controlador' => MenuController::class, 'accion' => 'actualizar']);
     $router->delete('/menus/{menu_id}', ['controlador' => MenuController::class, 'accion' => 'eliminar']);
 
+    $router->post('/menus-reordenar', ['controlador' => MenuController::class, 'accion' => 'reordenar']);
+
     // endpoints de permisos de usuarios
     $router->post('/users-permisos', ['controlador' => UsersPermisosController::class, 'accion' => 'asignar']);
     $router->get('/users-permisos/user/{user_id}', ['controlador' => UsersPermisosController::class, 'accion' => 'listarPorUsuario']);

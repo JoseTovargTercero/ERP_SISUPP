@@ -1,3 +1,7 @@
+<link rel="stylesheet"
+    href="https://unpkg.com/bootstrap-table@1.22.1/dist/extensions/reorder-rows/bootstrap-table-reorder-rows.css">
+
+
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -16,12 +20,17 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <table id="tablaMenus" data-toggle="table" data-url="<?php echo BASE_URL; ?>api/menus"
-                        data-response-handler="responseHandler" data-pagination="true" data-search="true"
-                        data-show-refresh="true" data-show-columns="true" data-locale="es-ES"
-                        class="table table-striped table-hover" style="width:100%">
+                    <table id="tablaMenus" data-sort-name="orden" y data-sort-order="asc" data-toggle="table"
+                        data-url="<?php echo BASE_URL; ?>api/menus" data-response-handler="responseHandler"
+                        data-pagination="true" data-search="true" data-show-refresh="true" data-show-columns="true"
+                        data-locale="es-ES" data-reorderable-rows="true" data-use-row-attr-func="true"
+                        data-drag-handle=".drag-handle" class="table table-striped table-hover" style="width:100%">
                         <thead>
                             <tr>
+                                <th data-field="drag" data-formatter="dragHandleFormatter" class="drag-handle"
+                                    data-halign="center" data-align="center"></th>
+                                <th data-field="orden" data-halign="center" data-align="center">
+                                    Orden</th>
                                 <th data-field="nombre" data-sortable="true">Nombre</th>
                                 <th data-field="categoria" data-sortable="true">Categoría</th>
                                 <th data-field="url" data-sortable="true">URL</th>
@@ -83,10 +92,21 @@
                         <input type="text" class="form-control" id="icono" name="icono" placeholder="Ej: mdi mdi-sheep">
                     </div>
 
-                    <div class="mb-3">
-                        <label for="user_level" class="form-label">Nivel de Acceso</label>
-                        <input type="number" class="form-control" id="user_level" name="user_level" required min="0"
-                            max="10" value="0">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="user_level" class="form-label">Nivel de Acceso</label>
+                                <input type="number" class="form-control" id="user_level" name="user_level" required
+                                    min="0" max="10" value="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="orden" class="form-label">Orden</label>
+                                <input type="number" class="form-control" id="orden" name="orden" required min="0"
+                                    value="0">
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -122,6 +142,9 @@
         </div>
     </div>
 </div>
+
+
+
 
 <script>
     const baseUrl = "<?php echo BASE_URL; ?>";

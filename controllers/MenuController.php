@@ -12,7 +12,7 @@ class MenuController
 
     private function getJsonInput(): array
     {
-        $raw  = file_get_contents('php://input') ?: '';
+        $raw = file_get_contents('php://input') ?: '';
         $json = json_decode($raw, true);
         return is_array($json) ? $json : [];
     }
@@ -22,23 +22,25 @@ class MenuController
         http_response_code($status);
         header('Content-Type: application/json');
         echo json_encode([
-            'value'   => $value,
+            'value' => $value,
             'message' => $message,
-            'data'    => $data
+            'data' => $data
         ]);
         exit;
     }
+
+    // ... (métodos listar, mostrar, crear, actualizar, eliminar sin cambios) ...
 
     // GET /menus?limit=&offset=&incluirEliminados=0|1&categoria=...&user_level=...
     // Opcional: ?q= (busca por nombre o url)
     public function listar(): void
     {
-        $limit      = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
-        $offset     = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
-        $incluir    = isset($_GET['incluirEliminados']) ? ((int)$_GET['incluirEliminados'] === 1) : false;
-        $categoria  = isset($_GET['categoria']) ? trim((string)$_GET['categoria']) : null;
-        $userLevel  = isset($_GET['user_level']) ? (string)$_GET['user_level'] : null;
-        $q          = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
+        $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 100;
+        $offset = isset($_GET['offset']) ? (int) $_GET['offset'] : 0;
+        $incluir = isset($_GET['incluirEliminados']) ? ((int) $_GET['incluirEliminados'] === 1) : false;
+        $categoria = isset($_GET['categoria']) ? trim((string) $_GET['categoria']) : null;
+        $userLevel = isset($_GET['user_level']) ? (string) $_GET['user_level'] : null;
+        $q = isset($_GET['q']) ? trim((string) $_GET['q']) : null;
 
         try {
             $data = $this->model->listar($limit, $offset, $incluir, $categoria, $userLevel, $q);
@@ -60,7 +62,8 @@ class MenuController
 
         try {
             $row = $this->model->obtenerPorId($menuId);
-            if (!$row) $this->jsonResponse(false, 'Menú no encontrado.', null, 404);
+            if (!$row)
+                $this->jsonResponse(false, 'Menú no encontrado.', null, 404);
             $this->jsonResponse(true, 'Menú encontrado.', $row);
         } catch (Throwable $e) {
             $this->jsonResponse(false, 'Error al obtener menú: ' . $e->getMessage(), null, 500);
@@ -68,7 +71,7 @@ class MenuController
     }
 
     // POST /menus
-    // JSON: { categoria, nombre, url, icono?, user_level }
+    // JSON: { categoria, nombre, url, icono?, user_level, orden? }
     public function crear(): void
     {
         $in = $this->getJsonInput();
@@ -85,7 +88,7 @@ class MenuController
     }
 
     // PUT/POST /menus/{menu_id}
-    // JSON: { categoria?, nombre?, url?, icono?, user_level? }
+    // JSON: { categoria?, nombre?, url?, icono?, user_level?, orden? }
     public function actualizar(array $params): void
     {
         $menuId = $params['menu_id'] ?? '';
@@ -116,10 +119,35 @@ class MenuController
 
         try {
             $ok = $this->model->eliminar($menuId);
-            if (!$ok) $this->jsonResponse(false, 'No se pudo eliminar (o ya estaba eliminado).', null, 400);
+            if (!$ok)
+                $this->jsonResponse(false, 'No se pudo eliminar (o ya estaba eliminado).', null, 400);
             $this->jsonResponse(true, 'Menú eliminado correctamente.', ['deleted' => true]);
         } catch (Throwable $e) {
             $this->jsonResponse(false, 'Error al eliminar menú: ' . $e->getMessage(), null, 500);
+        }
+    }
+
+    /**
+     * AÑADIDO: Nuevo método para reordenar.
+     * POST /menus/reordenar
+     * JSON: ["uuid-menu-3", "uuid-menu-1", "uuid-menu-2"]
+     */
+    public function reordenar(): void
+    {
+        $menuIds = $this->getJsonInput();
+
+        // Verificación básica del input
+        if (empty($menuIds) || !is_array($menuIds) || array_filter($menuIds, 'is_string') !== $menuIds) {
+            $this->jsonResponse(false, 'El cuerpo de la solicitud debe ser un array de strings (menu_id).', null, 400);
+        }
+
+        try {
+            $this->model->reordenar($menuIds);
+            $this->jsonResponse(true, 'Menús reordenados correctamente.', ['reordered' => true]);
+        } catch (InvalidArgumentException $e) {
+            $this->jsonResponse(false, $e->getMessage(), null, 400);
+        } catch (Throwable $e) {
+            $this->jsonResponse(false, 'Error al reordenar los menús: ' . $e->getMessage(), null, 500);
         }
     }
 }

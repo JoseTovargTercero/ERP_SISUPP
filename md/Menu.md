@@ -6,7 +6,13 @@ Función: listar()
 
 Endpoint: GET /menus
 
-Descripción: Devuelve una lista de elementos del menú. Permite una serie de filtros a través de parámetros query en la URL para refinar la búsqueda.
+
+1. Listar Elementos del Menú
+Función: listar()
+
+Endpoint: GET /menus
+
+Descripción: Devuelve una lista de elementos del menú. **Los resultados se ordenan por `categoria` (asc), luego por `orden` (asc) y finalmente por `nombre` (asc)**. Permite una serie de filtros a través de parámetros query en la URL para refinar la búsqueda.
 
 Parámetros (Query):
 
@@ -66,21 +72,21 @@ Error (400 Bad Request): Si no se proporciona el menu_id.
 3. Crear un Nuevo Elemento del Menú
 Función: crear()
 
+3. Crear un Nuevo Elemento del Menú
+Función: crear()
+
 Endpoint: POST /menus
 
 Descripción: Crea un nuevo elemento en el menú.
 
 Parámetros (Cuerpo JSON):
 
-categoria (string, requerido)
-
-nombre (string, requerido)
-
-url (string, requerido): Debe ser una URL válida o una ruta relativa (ej. /perfil).
-
-user_level (int, requerido): Nivel de acceso (0-10).
-
-icono (string, opcional): Clase o identificador del ícono.
+- `categoria` (string, requerido)
+- `nombre` (string, requerido)
+- `url` (string, requerido): Debe ser una URL válida o una ruta relativa (ej. /perfil).
+- `user_level` (int, requerido): Nivel de acceso (0-10).
+- `icono` (string, opcional): Clase o identificador del ícono.
+- **`orden` (int, opcional, por defecto 0): Posición del ítem dentro de su categoría.**
 
 Respuestas Posibles
 Éxito (200 OK):
@@ -98,15 +104,17 @@ Conflicto (409 Conflict): Si ya existe un menú con datos que violan una restric
 4. Actualizar un Elemento del Menú
 Función: actualizar()
 
+4. Actualizar un Elemento del Menú
+Función: actualizar()
+
 Endpoint: POST /menus/{menu_id} (usa POST para emular PUT/PATCH).
 
 Descripción: Actualiza uno o más campos de un elemento del menú existente.
 
 Parámetros:
+- URL: `menu_id` (string, requerido)
+- Cuerpo (JSON): Un objeto con los campos a actualizar (ej. `{ "nombre": "Nuevo Nombre", "orden": 2 }`). **Puedes actualizar el campo `orden` aquí.**
 
-URL: menu_id (string, requerido)
-
-Cuerpo (JSON): Un objeto con los campos a actualizar (ej. { "nombre": "Nuevo Nombre", "user_level": 3 }).
 
 Respuestas Posibles
 Éxito (200 OK):
@@ -142,3 +150,21 @@ Respuestas Posibles
 }
 
 Error (400 Bad Request): Si falta el menu_id o el elemento ya fue eliminado.
+
+**6. Reordenar Elementos del Menú (Nuevo)**
+**Función: reordenar()**
+
+**Endpoint: POST /menus/reordenar**
+
+**Descripción:** Actualiza el orden de múltiples elementos del menú de una sola vez. Es ideal para interfaces de arrastrar y soltar (drag and drop). El orden de los IDs en el array determinará su nueva posición (`orden`), empezando desde 0.
+
+**Parámetros (Cuerpo JSON):**
+Un array de strings, donde cada string es el `menu_id` de un elemento del menú.
+
+**Ejemplo de cuerpo:**
+```json
+[
+  "uuid-del-item-que-va-primero",
+  "uuid-del-item-que-va-segundo",
+  "uuid-del-tercer-item"
+]

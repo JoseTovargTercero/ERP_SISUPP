@@ -1,4 +1,4 @@
-import { showErrorToast } from '../helpers/helpers.js'
+import { showErrorToast, showSuccessToast } from '../helpers/helpers.js'
 
 /**
  * Adapta la respuesta de tu API al formato que Bootstrap Table espera.
@@ -26,19 +26,62 @@ window.accionesFormatter = function (value, row) {
     `
 }
 
+/**
+ * Formateador para la columna de arrastre. Muestra un ícono.
+ */
+
+window.dragHandleFormatter = function (value, row, index) {
+  return '<i class="mdi mdi-drag-vertical" style="cursor: grab;"></i>'
+}
+
+/**
+ * Función requerida por la extensión para asignar un ID único a cada <tr>.
+ */
+window.rowAttrFunc = function (row, index) {
+  return {
+    'data-id': row.menu_id,
+  }
+}
+
+/**
+ * Se ejecuta después de que el usuario arrastra y suelta una fila.
+ * @param {Array} newData El array de datos de la tabla en el nuevo orden.
+ */
+window.onReorderRow = function (newData) {
+  // 1. Mapeamos el array para obtener solo los IDs en el nuevo orden.
+  const orderedIds = newData.map((row) => row.menu_id)
+
+  // 2. Enviamos el nuevo orden a la API.
+  $.ajax({
+    url: baseUrl + 'api/menus/reordenar',
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify(orderedIds),
+    success: function (response) {
+      // Usamos un toast para una notificación menos intrusiva.
+      showSuccessToast(response.message)
+      // Recargamos la tabla para asegurar que los números de 'orden' se actualicen.
+      $('#tablaMenus').bootstrapTable('refresh')
+    },
+    error: function (xhr) {
+      showErrorToast(xhr.responseJSON)
+      // Si falla, es importante recargar para revertir el cambio visual.
+      $('#tablaMenus').bootstrapTable('refresh')
+    },
+  })
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-  // Inicialización de Select2 (sin cambios)
-  $('#categoria').select2({ dropdownParent: $('#modalMenu') })
-
-  // --- INICIALIZACIÓN DE DATATABLE ELIMINADA ---
-
+  const $table = $('#tablaMenus') // Guardamos la referencia a la tabla
   const modalMenu = new bootstrap.Modal(document.getElementById('modalMenu'))
   const modalDetallesMenu = new bootstrap.Modal(
     document.getElementById('modalDetallesMenu')
   )
   const formMenu = document.getElementById('formMenu')
 
-  // 2. ABRIR MODAL PARA CREAR NUEVO MENÚ (Sin cambios)
+  $('#categoria').select2({ dropdownParent: $('#modalMenu') })
+
+  // ABRIR MODAL PARA CREAR (sin cambios)
   $('#btnNuevoMenu').on('click', function () {
     formMenu.reset()
     $('#menu_id').val('')
@@ -47,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
     modalMenu.show()
   })
 
-  // 3. LÓGICA DEL FORMULARIO (CREAR Y ACTUALIZAR)
+  // LÓGICA DEL FORMULARIO (sin cambios)
   $('#formMenu').on('submit', function (e) {
     e.preventDefault()
     const menuId = $('#menu_id').val()
@@ -77,11 +120,34 @@ document.addEventListener('DOMContentLoaded', function () {
           title: '¡Éxito!',
           text: response.message,
         })
-        // CAMBIO: Así se recarga la tabla
         $('#tablaMenus').bootstrapTable('refresh')
       },
       error: function (xhr) {
         showErrorToast(xhr.responseJSON)
+      },
+    })
+  })
+
+  $table.on('reorder-row.bs.table', function (e, newOrder) {
+    // El segundo argumento 'newOrder' es el array con los datos en el nuevo orden.
+    const orderedIds = newOrder.map((row) => row.menu_id)
+
+    // Hacemos la llamada AJAX para guardar el nuevo orden.
+    $.ajax({
+      url: baseUrl + 'api/menus-reordenar',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(orderedIds),
+      success: function (response) {
+        showSuccessToast(response.message)
+        // No es necesario refrescar aquí, la tabla ya está visualmente ordenada.
+        // Pero si quieres actualizar los números de la columna "Orden", sí debes hacerlo.
+        $table.bootstrapTable('refresh')
+      },
+      error: function (xhr) {
+        showErrorToast(xhr.responseJSON)
+        // Si falla, refrescamos para revertir el cambio visual a como estaba antes.
+        $table.bootstrapTable('refresh')
       },
     })
   })
@@ -124,6 +190,8 @@ document.addEventListener('DOMContentLoaded', function () {
           $('#url').val(data.url)
           $('#icono').val(data.icono)
           $('#user_level').val(data.user_level)
+          // MODIFICADO: Llenar el campo de orden al editar
+          $('#orden').val(data.orden)
           $('#modalMenuLabel').text('Editar Menú')
           modalMenu.show()
         },
