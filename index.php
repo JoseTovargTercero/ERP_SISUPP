@@ -7,6 +7,7 @@ require_once __DIR__ . '/controllers/FincaController.php';
 require_once __DIR__ . '/controllers/ApriscoController.php';
 require_once __DIR__ . '/controllers/ReporteDanoController.php';
 require_once __DIR__ . '/controllers/MenuController.php';
+require_once __DIR__ . '/controllers/MenuCategoriaController.php';
 require_once __DIR__ . '/controllers/UsersPermisosController.php';
 require_once __DIR__ . '/middlewares/AuthMiddleware.php';
 require_once __DIR__ . '/controllers/AnimalController.php';
@@ -123,8 +124,11 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/menus', ['controlador' => MenuController::class, 'accion' => 'crear']);
     $router->post('/menus/{menu_id}', ['controlador' => MenuController::class, 'accion' => 'actualizar']);
     $router->delete('/menus/{menu_id}', ['controlador' => MenuController::class, 'accion' => 'eliminar']);
-
     $router->post('/menus-reordenar', ['controlador' => MenuController::class, 'accion' => 'reordenar']);
+
+    // Endpoints para la gestión de categorías del menú
+    $router->get('/menus-categorias', ['controlador' => MenuCategoriaController::class, 'accion' => 'listar']);
+    $router->post('/menus-categorias/reordenar', ['controlador' => MenuCategoriaController::class, 'accion' => 'reordenar']);
 
     // endpoints de permisos de usuarios
     $router->post('/users-permisos', ['controlador' => UsersPermisosController::class, 'accion' => 'asignar']);
@@ -226,14 +230,14 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/montas/{monta_id}', ['controlador' => MontaController::class, 'accion' => 'actualizar']);
     $router->delete('/montas/{monta_id}', ['controlador' => MontaController::class, 'accion' => 'eliminar']);
 
-        // endpoints de session_management
-$router->get('/session_management',                    ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'showAll']);
-$router->get('/session_management/{id}',               ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'showById']);
-$router->post('/session_management',                   ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'create']);
-$router->post('/session_management/kick',              ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'kick']);
-$router->post('/session_management/store-status',      ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'storeStatus']);
-$router->get('/session_management/check-status',       ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'checkStatus']);
-$router->get('/session_management/export',             ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'export']);
+    // endpoints de session_management
+    $router->get('/session_management', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'showAll']);
+    $router->get('/session_management/{id}', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'showById']);
+    $router->post('/session_management', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'create']);
+    $router->post('/session_management/kick', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'kick']);
+    $router->post('/session_management/store-status', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'storeStatus']);
+    $router->get('/session_management/check-status', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'checkStatus']);
+    $router->get('/session_management/export', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'export']);
 
 
     // endpoints de recintos

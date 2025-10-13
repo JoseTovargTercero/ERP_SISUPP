@@ -83,7 +83,7 @@ class MenuModel
         }
         if ($userLevel !== null && $userLevel !== '') {
             $lvl = $this->validarUserLevel($userLevel);
-            $where[] = 'm.user_level <= ?'; // muestra accesibles hasta ese nivel
+            $where[] = 'm.user_level <= ?';
             $params[] = $lvl;
             $types .= 'i';
         }
@@ -97,13 +97,18 @@ class MenuModel
 
         $whereSql = implode(' AND ', $where);
 
-        // MODIFICADO: Se añade `orden` a la consulta y al criterio de ordenamiento.
+        // =========================================================================
+        // MODIFICACIÓN PRINCIPAL: Se une con `menu_categorias` y se cambia el ORDER BY
+        // =========================================================================
         $sql = "SELECT m.menu_id, m.categoria, m.nombre, m.url, m.icono, m.user_level, m.orden,
-                   m.created_at, m.created_by, m.updated_at, m.updated_by
-            FROM {$this->table} m
-            WHERE {$whereSql}
-            ORDER BY m.orden ASC, m.nombre ASC
-            LIMIT ? OFFSET ?";
+                       m.created_at, m.created_by, m.updated_at, m.updated_by,
+                       c.orden as categoria_orden
+                FROM {$this->table} m
+                LEFT JOIN menu_categorias c ON m.categoria = c.nombre
+                WHERE {$whereSql}
+                ORDER BY c.orden ASC, m.orden ASC, m.nombre ASC
+                LIMIT ? OFFSET ?";
+        // =========================================================================
 
         $stmt = $this->db->prepare($sql);
         if (!$stmt)
