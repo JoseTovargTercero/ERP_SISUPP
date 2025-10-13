@@ -77,11 +77,11 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="estado" class="form-label">Estado</label>
-                        <select class="form-select" id="estado" name="estado" required>
-                            <option value="1">Activo</option>
-                            <option value="0">Inactivo</option>
-                        </select>
+                        <label class="form-label">Estado</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="estado" name="estado" value="1" checked>
+                            <label class="form-check-label" for="estado">Activo</label>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

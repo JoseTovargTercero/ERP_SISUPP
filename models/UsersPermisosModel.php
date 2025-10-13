@@ -76,6 +76,101 @@ class UsersPermisosModel
     }
 
     /* ===== Escrituras ===== */
+    /**
+     * Sincroniza los permisos de un usuario con una lista dada de menu_ids.
+     * Añade los que faltan y elimina los que sobran.
+     *
+     * @param string $userId
+     * @param array $nuevosMenuIds
+     * @return array { added: array, removed_count: int, errors: array }
+     */
+    public function sincronizarPermisos(string $userId, array $nuevosMenuIds): array
+    {
+        $this->validarUUID($userId, 'user_id');
+        if (!$this->existeUsuario($userId)) {
+            throw new InvalidArgumentException('user_id no existe o está eliminado.');
+        }
+
+        // 1. Sanear y validar los menu_ids de entrada
+        $menuIdsValidos = [];
+        $errors = [];
+        foreach ($nuevosMenuIds as $menuId) {
+            $id = trim((string) $menuId);
+            if ($id !== '') {
+                if ($this->existeMenu($id)) {
+                    $menuIdsValidos[] = $id;
+                } else {
+                    $errors[] = ['menu_id' => $id, 'error' => 'menú no existe o está eliminado'];
+                }
+            }
+        }
+        // Nos aseguramos de que no haya duplicados en la lista de entrada
+        $menuIdsValidos = array_unique($menuIdsValidos);
+
+        $this->db->begin_transaction();
+        try {
+            // 2. Obtener los permisos actuales del usuario
+            $sqlExistentes = "SELECT menu_id FROM {$this->table} WHERE user_id = ?";
+            $stmtExistentes = $this->db->prepare($sqlExistentes);
+            $stmtExistentes->bind_param('s', $userId);
+            $stmtExistentes->execute();
+            $res = $stmtExistentes->get_result();
+            $menuIdsActuales = [];
+            while ($row = $res->fetch_assoc()) {
+                $menuIdsActuales[] = $row['menu_id'];
+            }
+            $stmtExistentes->close();
+
+            // 3. Calcular diferencias: qué añadir y qué eliminar
+            $menuIdsParaAgregar = array_diff($menuIdsValidos, $menuIdsActuales);
+            $menuIdsParaEliminar = array_diff($menuIdsActuales, $menuIdsValidos);
+
+            // 4. Eliminar permisos sobrantes (si los hay)
+            $eliminadosCount = 0;
+            if (!empty($menuIdsParaEliminar)) {
+                $placeholders = implode(',', array_fill(0, count($menuIdsParaEliminar), '?'));
+                $sqlDelete = "DELETE FROM {$this->table} WHERE user_id = ? AND menu_id IN ($placeholders)";
+                $stmtDelete = $this->db->prepare($sqlDelete);
+                $types = 's' . str_repeat('s', count($menuIdsParaEliminar));
+                $params = array_merge([$userId], $menuIdsParaEliminar);
+                $stmtDelete->bind_param($types, ...$params);
+                $stmtDelete->execute();
+                $eliminadosCount = $stmtDelete->affected_rows;
+                $stmtDelete->close();
+            }
+
+            // 5. Añadir nuevos permisos (si los hay)
+            $agregados = [];
+            if (!empty($menuIdsParaAgregar)) {
+                [$now, $env] = $this->nowWithAudit();
+                $actorId = $_SESSION['user_id'] ?? $userId;
+                $sqlInsert = "INSERT INTO {$this->table} (users_permisos_id, user_id, menu_id, created_at, created_by) VALUES (?, ?, ?, ?, ?)";
+                $stmtInsert = $this->db->prepare($sqlInsert);
+
+                foreach ($menuIdsParaAgregar as $menuId) {
+                    $uuid = $this->generateUUIDv4();
+                    $stmtInsert->bind_param('sssss', $uuid, $userId, $menuId, $now, $actorId);
+                    if ($stmtInsert->execute()) {
+                        $agregados[] = ['users_permisos_id' => $uuid, 'menu_id' => $menuId];
+                    } else {
+                        throw new mysqli_sql_exception("Error al insertar permiso para menu_id $menuId: " . $stmtInsert->error);
+                    }
+                }
+                $stmtInsert->close();
+            }
+
+            $this->db->commit();
+
+            return [
+                'added' => $agregados,
+                'removed_count' => $eliminadosCount,
+                'errors' => $errors
+            ];
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
+    }
 
     /**
      * Asigna permisos en lote: inserta N filas (user_id, menu_id) una por una.

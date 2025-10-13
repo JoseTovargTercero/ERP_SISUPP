@@ -145,9 +145,13 @@ document.addEventListener('DOMContentLoaded', function () {
       .forEach((item) => {
         formData[item.name] = item.value
       })
+
+    formData.estado = $('#estado').is(':checked') ? '1' : '0'
+
     if (method === 'PUT' && !formData.contrasena) {
       delete formData.contrasena
     }
+
     $.ajax({
       url: url,
       method: method,
@@ -213,7 +217,8 @@ document.addEventListener('DOMContentLoaded', function () {
           $('#nombre').val(data.nombre)
           $('#email').val(data.email)
           $('#nivel').val(data.nivel)
-          $('#estado').val(data.estado)
+          $('#estado').prop('checked', data.estado == 1)
+
           $('#contrasena').val('')
           $('#contrasena').prop('required', false)
           $('#modalUsuarioLabel').text('Editar Usuario')

@@ -12,7 +12,7 @@ class UsersPermisosController
 
     private function getJsonInput(): array
     {
-        $raw  = file_get_contents('php://input') ?: '';
+        $raw = file_get_contents('php://input') ?: '';
         $json = json_decode($raw, true);
         return is_array($json) ? $json : [];
     }
@@ -22,9 +22,9 @@ class UsersPermisosController
         http_response_code($status);
         header('Content-Type: application/json');
         echo json_encode([
-            'value'   => $value,
+            'value' => $value,
             'message' => $message,
-            'data'    => $data
+            'data' => $data
         ]);
         exit;
     }
@@ -35,19 +35,25 @@ class UsersPermisosController
     {
         $in = $this->getJsonInput();
         try {
-            $userId  = (string)($in['user_id'] ?? '');
-            $menuIds = $in['menu_ids'] ?? [];
-            if ($userId === '' || !is_array($menuIds) || count($menuIds) === 0) {
-                throw new InvalidArgumentException('Campos requeridos: user_id y menu_ids (array no vacío).');
+            $userId = (string) ($in['user_id'] ?? '');
+            // Se permite que menu_ids sea un array vacío para poder quitar todos los permisos
+            $menuIds = $in['menu_ids'] ?? null;
+
+            if ($userId === '' || !is_array($menuIds)) {
+                throw new InvalidArgumentException('Campos requeridos: user_id (string) y menu_ids (array).');
             }
-            $result = $this->model->asignarPermisos($userId, $menuIds);
-            $this->jsonResponse(true, 'Permisos asignados correctamente.', $result);
+            // Llamamos al nuevo método de sincronización
+            $result = $this->model->sincronizarPermisos($userId, $menuIds);
+
+            // Actualizamos el mensaje para reflejar la acción de sincronización
+            $this->jsonResponse(true, 'Permisos del usuario sincronizados correctamente.', $result);
+
         } catch (InvalidArgumentException $e) {
             $this->jsonResponse(false, $e->getMessage(), null, 400);
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException $e) { // Aunque no se usa en el nuevo método, es buena práctica mantenerlo
             $this->jsonResponse(false, $e->getMessage(), null, 409);
         } catch (Throwable $e) {
-            $this->jsonResponse(false, 'Error al asignar permisos: ' . $e->getMessage(), null, 500);
+            $this->jsonResponse(false, 'Error al sincronizar permisos: ' . $e->getMessage(), null, 500);
         }
     }
 
@@ -58,7 +64,7 @@ class UsersPermisosController
         if ($userId === '') {
             $this->jsonResponse(false, 'Parámetro user_id es obligatorio.', null, 400);
         }
-        $via = isset($_GET['via']) ? (string)$_GET['via'] : 'join';
+        $via = isset($_GET['via']) ? (string) $_GET['via'] : 'join';
 
         try {
             if ($via === 'menuModel') {
@@ -81,7 +87,8 @@ class UsersPermisosController
         }
         try {
             $ok = $this->model->eliminarUno($id);
-            if (!$ok) $this->jsonResponse(false, 'No se pudo eliminar (no existe).', null, 400);
+            if (!$ok)
+                $this->jsonResponse(false, 'No se pudo eliminar (no existe).', null, 400);
             $this->jsonResponse(true, 'Permiso eliminado.', ['deleted' => true]);
         } catch (Throwable $e) {
             $this->jsonResponse(false, 'Error al eliminar permiso: ' . $e->getMessage(), null, 500);
