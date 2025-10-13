@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 13-10-2025 a las 04:03:18
+-- Tiempo de generación: 13-10-2025 a las 04:05:16
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -510,7 +510,7 @@ CREATE TABLE `session_management` (
   `session_id` char(36) NOT NULL,
   `user_id` char(36) DEFAULT NULL,
   `user_name` varchar(100) DEFAULT NULL,
-  `user_type` enum('Administrator','Usuario') NOT NULL,
+  `user_type` enum('Administrator','User') NOT NULL,
   `full_name` varchar(100) DEFAULT NULL,
   `login_time` datetime NOT NULL,
   `logout_time` datetime DEFAULT NULL,
