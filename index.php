@@ -67,6 +67,7 @@ $router->group(['middleware' => AuthMiddleware::class], function ($router) {
     $router->get('/reportes', ['vista' => 'modules/reportes_dano_view', 'vistaData' => ['titulo' => 'Reportes de daño']]);
     $router->get('/animales', ['vista' => 'modules/animales_view', 'vistaData' => ['titulo' => 'Fincas del Sistema']]);
     $router->get('/montas', ['vista' => 'modules/montas_view', 'vistaData' => ['titulo' => 'Registro de montas']]);
+    $router->get('/sesiones', ['vista' => 'modules/session_management', 'vistaData' => ['titulo' => 'Auditoria de Sesiones']]);
 });
 
 $router->group(['prefix' => '/api'], function ($router) {
@@ -225,7 +226,14 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/montas/{monta_id}', ['controlador' => MontaController::class, 'accion' => 'actualizar']);
     $router->delete('/montas/{monta_id}', ['controlador' => MontaController::class, 'accion' => 'eliminar']);
 
-
+        // endpoints de session_management
+$router->get('/session_management',                    ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'showAll']);
+$router->get('/session_management/{id}',               ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'showById']);
+$router->post('/session_management',                   ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'create']);
+$router->post('/session_management/kick',              ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'kick']);
+$router->post('/session_management/store-status',      ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'storeStatus']);
+$router->get('/session_management/check-status',       ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'checkStatus']);
+$router->get('/session_management/export',             ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'export']);
 
 
     // endpoints de recintos

@@ -35,72 +35,182 @@ class SystemUserController
     // POST /system-users/login
 // POST /system-users/login
 // POST /system-users/login
-    public function login(): void
-    {
-        $in = $this->getJsonInput();
-        $email = trim($in['email'] ?? '');
-        $password = (string) ($in['contrasena'] ?? '');
+public function login(): void
+{
+    $input    = $this->getJsonInput();
+    $email    = trim((string)($input['email'] ?? ''));
+    $password = (string)($input['password'] ?? ($input['contrasena'] ?? ''));
 
-        if ($email === '' || $password === '') {
-            $this->jsonResponse(false, 'Correo y contraseña son obligatorios.', null, 400);
-            return;
+    // Auditoría / contexto
+    $deviceId    = $input['device_id'] ?? null;
+    $isMobile    = isset($input['is_mobile']) ? (bool)$input['is_mobile'] : null;
+    $deviceType  = ($isMobile === null ? '' : ($isMobile ? 'mobile' : 'desktop'));
+    $userTypeDef = 'user'; // por defecto antes de conocer nivel
+
+    require_once __DIR__ . '/../helpers/login_helpers.php';
+    require_once __DIR__ . '/../models/SessionManagementModel.php';
+    $SessionManagementModel = new SessionManagementModel();
+
+    $maxIntentos   = 3;
+    $tiempoBloqueo = 60; // seg
+    $keyIntentos   = 'login_attempts_' . md5($email);
+    $ahora         = time();
+    $intentos      = $_SESSION[$keyIntentos] ?? ['count' => 0, 'last_attempt' => 0, 'locked_until' => 0];
+
+    /* ───── RATE LIMIT: bloqueado ───── */
+    if ($intentos['locked_until'] > $ahora) {
+        $espera = ceil(($intentos['locked_until'] - $ahora) / 60);
+
+        // 🔎 NUEVO: si el correo es válido y existe el usuario, auditar con su user_id y user_type correcto
+        $audUserId   = null;
+        $audUserType = $userTypeDef;
+
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            // Usa el helper del modelo que te pasé antes
+            if (method_exists($this->model, 'obtenerPorEmail')) {
+                $u = $this->model->obtenerPorEmail($email);
+                if (is_array($u) && !empty($u)) {
+                    $audUserId   = $u['user_id'];
+                    $nivel       = (int)($u['nivel'] ?? 1);
+                    $audUserType = ($nivel === 0) ? 'administrator' : 'user';
+                }
+            }
         }
 
-        try {
-            $user = $this->model->loginBasico($email, $password);
+        $SessionManagementModel->create(
+            $audUserId,          // ← si existe, va el real; si no, null
+            $audUserType,        // ← administrator/user según nivel si lo conocemos
+            $deviceId,
+            $deviceType,
+            false,
+            'Demasiados intentos fallidos'
+        );
 
-            // Credenciales inválidas o usuario inexistente/borrado
-            if (!$user) {
-                $this->jsonResponse(false, 'Credenciales inválidas o usuario inactivo.', null, 401);
+        $this->jsonResponse(false, "Demasiados intentos. Intente nuevamente en {$espera} minuto(s).", ['espera_minutos' => $espera], 429);
+        return;
+    }
+
+    /* ───── VALIDACIONES INICIALES ───── */
+    if ($email === '' || $password === '') {
+        $SessionManagementModel->create(null, $userTypeDef, $deviceId, $deviceType, false, 'Correo y/o contraseña vacíos');
+        $intentos['count']++;
+        $intentos['last_attempt'] = $ahora;
+        if ($intentos['count'] >= $maxIntentos) {
+            $intentos['locked_until'] = $ahora + $tiempoBloqueo;
+        }
+        $_SESSION[$keyIntentos] = $intentos;
+        $this->jsonResponse(false, 'Correo y contraseña son obligatorios.', null, 400);
+        return;
+    }
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $SessionManagementModel->create(null, $userTypeDef, $deviceId, $deviceType, false, 'Formato de correo inválido');
+        $intentos['count']++;
+        $intentos['last_attempt'] = $ahora;
+        if ($intentos['count'] >= $maxIntentos) {
+            $intentos['locked_until'] = $ahora + $tiempoBloqueo;
+        }
+        $_SESSION[$keyIntentos] = $intentos;
+        $this->jsonResponse(false, 'El formato del correo electrónico no es válido.', null, 400);
+        return;
+    }
+
+    /* ───── AUTENTICACIÓN con contrato loginBasico (ok/code/user) ───── */
+    try {
+        $result = $this->model->loginBasico($email, $password);
+
+        if (!$result['ok']) {
+            $code = $result['code'] ?? 'unknown';
+            $u    = $result['user'] ?? null;
+
+            if ($code === 'user_not_found') {
+                $SessionManagementModel->create(null, $userTypeDef, $deviceId, $deviceType, false, 'Usuario no encontrado');
+                $this->jsonResponse(false, 'Credenciales inválidas.', null, 401);
                 return;
             }
 
-            // Si el nivel es 0 (Administrador), se omite la verificación de permisos
-            if ((int) $user['nivel'] !== 0) {
-                $permisosModel = new UsersPermisosModel();
-                $permisos = $permisosModel->listarPermisosConMenu($user['user_id']);
-
-                if (empty($permisos)) {
-                    $this->jsonResponse(false, 'El usuario no puede ingresar porque no tiene permisos asignados.', null, 403);
-                    return;
-                }
-
-                $user['permisos'] = $permisos;
-                $urlsPermitidas = [];
-
-
-                foreach ($user['permisos'] as $permiso) {
-                    $urlsPermitidas[] = $permiso['menu']['url'];
-                }
-                $_SESSION['permisos'] = $urlsPermitidas;
-
-            } else {
-                // Acceso completo para nivel 0
-                $_SESSION['permisos'] = ['*']; // Indica acceso total
-            }
-
-            // Crear sesión
-            $_SESSION['logged_in'] = true;
-            $_SESSION['user_id'] = $user['user_id'];
-            $_SESSION['nombre'] = $user['nombre'];
-            $_SESSION['nivel'] = $user['nivel'];
-
-
-
-
-            $this->jsonResponse(true, 'Inicio de sesión exitoso.', $user);
-
-        } catch (DomainException $e) {
-            if ($e->getCode() === 1001 || $e->getMessage() === 'USER_DISABLED') {
+            if ($code === 'user_disabled') {
+                $nivel = (int)($u['nivel'] ?? 1);
+                $userType = ($nivel === 0) ? 'administrator' : 'user';
+                $SessionManagementModel->create($u['user_id'], $userType, $deviceId, $deviceType, false, 'Usuario desactivado');
                 $this->jsonResponse(false, 'Este usuario ha sido desactivado y no puede ingresar.', null, 403);
                 return;
             }
-            $this->jsonResponse(false, 'No se pudo iniciar sesión: ' . $e->getMessage(), null, 400);
-        } catch (Throwable $e) {
-            error_log($e->getMessage());
-            $this->jsonResponse(false, 'Error al iniciar sesión: ' . $e->getMessage(), null, 500);
+
+            if ($code === 'invalid_password') {
+                // ❗ Contraseña incorrecta: ya tenemos user_id y nivel → auditar con datos reales
+                $nivel = (int)($u['nivel'] ?? 1);
+                $userType = ($nivel === 0) ? 'administrator' : 'user';
+                $SessionManagementModel->create($u['user_id'], $userType, $deviceId, $deviceType, false, 'Contraseña incorrecta');
+
+                // rate-limit
+                $intentos['count']++;
+                $intentos['last_attempt'] = $ahora;
+                if ($intentos['count'] >= $maxIntentos) {
+                    $intentos['locked_until'] = $ahora + $tiempoBloqueo;
+                }
+                $_SESSION[$keyIntentos] = $intentos;
+
+                $this->jsonResponse(false, 'Contraseña incorrecta.', null, 401);
+                return;
+            }
+
+            // Fallback
+            $SessionManagementModel->create($u['user_id'] ?? null, $userTypeDef, $deviceId, $deviceType, false, 'Fallo de autenticación');
+            $this->jsonResponse(false, 'No se pudo iniciar sesión.', null, 401);
+            return;
         }
+
+        // ✅ Éxito
+        unset($_SESSION[$keyIntentos]);
+        $usuario  = $result['user'];
+        $nivel    = (int)$usuario['nivel'];
+        $userType = ($nivel === 0) ? 'administrator' : 'user';
+
+        $_SESSION['logged_in'] = true;
+        $_SESSION['user_id']   = $usuario['user_id'];
+        $_SESSION['nombre']    = $usuario['nombre'] ?? 'Usuario';
+        $_SESSION['nivel']     = $nivel;
+        $_SESSION['user_type'] = $userType;
+
+        if ($nivel === 0) {
+            $_SESSION['permisos'] = ['*'];
+        } else {
+            $permisosModel = new UsersPermisosModel();
+            $permisos = $permisosModel->listarPermisosConMenu($usuario['user_id']);
+            if (empty($permisos)) {
+                $SessionManagementModel->create($usuario['user_id'], $userType, $deviceId, $deviceType, false, 'Sin permisos asignados');
+                $this->jsonResponse(false, 'El usuario no tiene permisos asignados.', null, 403);
+                return;
+            }
+            $_SESSION['permisos'] = array_map(fn($p) => $p['menu']['url'] ?? '', $permisos);
+        }
+
+        $sessionId = $SessionManagementModel->create(
+            $usuario['user_id'],
+            $userType,
+            $deviceId,
+            $deviceType,
+            true,
+            null
+        );
+        $_SESSION['session_id'] = $sessionId;
+
+        $this->jsonResponse(true, 'Inicio de sesión exitoso.', $usuario);
+
+    } catch (Throwable $e) {
+        error_log("Error en login: " . $e->getMessage());
+        $nivelAudit    = isset($usuario['nivel']) ? (int)$usuario['nivel'] : 1;
+        $userTypeAudit = ($nivelAudit === 0) ? 'administrator' : 'user';
+        $SessionManagementModel->create($usuario['user_id'] ?? null, $userTypeAudit, $deviceId, $deviceType, false, 'Error inesperado: ' . $e->getMessage());
+        $this->jsonResponse(false, 'Error al iniciar sesión: ' . $e->getMessage(), null, 500);
     }
+}
+
+
+
+
+
 
     // POST /system-users/logout
     // POST /system-users/logout

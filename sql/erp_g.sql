@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 12-10-2025 a las 02:07:21
+-- Tiempo de generación: 13-10-2025 a las 04:03:18
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -301,6 +301,7 @@ CREATE TABLE `menu` (
   `url` varchar(255) DEFAULT NULL,
   `icono` varchar(255) DEFAULT NULL,
   `user_level` int(11) NOT NULL DEFAULT 0,
+  `orden` int(11) NOT NULL DEFAULT 0,
   `created_at` datetime DEFAULT NULL,
   `created_by` char(36) DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
@@ -313,13 +314,14 @@ CREATE TABLE `menu` (
 -- Volcado de datos para la tabla `menu`
 --
 
-INSERT INTO `menu` (`menu_id`, `categoria`, `nombre`, `url`, `icono`, `user_level`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
-('1be82974-a797-4bea-aae1-0d7112727ec4', 'animales', 'Gestión de Rebaño', 'animales', 'mdi mdi-sheep', 1, '2025-10-05 16:54:24', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 17:17:58', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
-('25d17a58-3186-48ed-81cc-8d396074b62d', 'usuarios', 'Modulos', 'modulos', 'mdi mdi-view-module', 0, '2025-10-04 11:28:50', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 17:19:35', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
-('35f8606a-a133-11f0-a92b-74d02b268d93', 'usuarios', 'Usuarios', 'users', 'mdi mdi-account-group', 0, NULL, NULL, '2025-10-05 17:19:29', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
-('6d583c24-a39e-11f0-8f58-2a144d1110c0', 'animales', 'Registro de montas', 'montas', 'mdi mdi-reproduction', 0, NULL, NULL, NULL, NULL, NULL, NULL),
-('920a038d-e341-4c61-9915-d35fb41d1a6b', 'area', 'Fincas', 'fincas', 'mdi mdi-office-building-marker', 1, '2025-10-04 10:41:51', '920a038d-e341-4c61-9915-d35fb41d1a6b', '2025-10-05 17:20:20', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
-('95765136-0404-4810-8dc4-5b38751c8522', 'partos', 'asdasd', 'https://github.com/jesuszapataDev/digital-signature-form.git', '0', 1, '2025-10-04 10:05:19', '95765136-0404-4810-8dc4-5b38751c8522', '2025-10-04 10:12:35', '95765136-0404-4810-8dc4-5b38751c8522', '2025-10-04 10:12:40', '95765136-0404-4810-8dc4-5b38751c8522');
+INSERT INTO `menu` (`menu_id`, `categoria`, `nombre`, `url`, `icono`, `user_level`, `orden`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
+('1be82974-a797-4bea-aae1-0d7112727ec4', 'animales', 'Gestión de Rebaño', 'animales', 'mdi mdi-sheep', 1, 4, '2025-10-05 16:54:24', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 17:17:58', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
+('25d17a58-3186-48ed-81cc-8d396074b62d', 'usuarios', 'Modulos', 'modulos', 'mdi mdi-view-module', 0, 2, '2025-10-04 11:28:50', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 17:19:35', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
+('35f8606a-a133-11f0-a92b-74d02b268d93', 'usuarios', 'Usuarios', 'users', 'mdi mdi-account-group', 0, 1, NULL, NULL, '2025-10-05 17:19:29', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
+('6d583c24-a39e-11f0-8f58-2a144d1110c0', 'animales', 'Registro de montas', 'montas', 'mdi mdi-reproduction', 0, 0, NULL, NULL, NULL, NULL, NULL, NULL),
+('920a038d-e341-4c61-9915-d35fb41d1a6b', 'area', 'Fincas', 'fincas', 'mdi mdi-office-building-marker', 1, 3, '2025-10-04 10:41:51', '920a038d-e341-4c61-9915-d35fb41d1a6b', '2025-10-12 21:31:16', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
+('95765136-0404-4810-8dc4-5b38751c8522', 'partos', 'asdasd', 'https://github.com/jesuszapataDev/digital-signature-form.git', '0', 1, 0, '2025-10-04 10:05:19', '95765136-0404-4810-8dc4-5b38751c8522', '2025-10-04 10:12:35', '95765136-0404-4810-8dc4-5b38751c8522', '2025-10-04 10:12:40', '95765136-0404-4810-8dc4-5b38751c8522'),
+('ba3b2b7e-a7d8-11f0-872b-00e04cf70151', 'usuarios', 'Gestor de Sesiones', 'sesiones', 'mdi mdi-account', 0, 3, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -476,6 +478,70 @@ CREATE TABLE `revisiones_servicio` (
   `resultado` enum('ENTRO_EN_CELO','SOSPECHA_PREÑEZ','CONFIRMADA_PREÑEZ') DEFAULT NULL,
   `observaciones` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `session_config`
+--
+
+CREATE TABLE `session_config` (
+  `config_id` int(11) NOT NULL,
+  `timeout_minutes` int(11) NOT NULL DEFAULT 30,
+  `allow_ip_change` tinyint(1) NOT NULL DEFAULT 0,
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `updated_by` char(36) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `session_config`
+--
+
+INSERT INTO `session_config` (`config_id`, `timeout_minutes`, `allow_ip_change`, `updated_at`, `updated_by`) VALUES
+(1, 15, 0, '2025-07-16 09:13:28', '3');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `session_management`
+--
+
+CREATE TABLE `session_management` (
+  `session_id` char(36) NOT NULL,
+  `user_id` char(36) DEFAULT NULL,
+  `user_name` varchar(100) DEFAULT NULL,
+  `user_type` enum('Administrator','Usuario') NOT NULL,
+  `full_name` varchar(100) DEFAULT NULL,
+  `login_time` datetime NOT NULL,
+  `logout_time` datetime DEFAULT NULL,
+  `inactivity_duration` varchar(255) DEFAULT NULL,
+  `login_success` tinyint(1) NOT NULL DEFAULT 1,
+  `failure_reason` varchar(255) DEFAULT NULL,
+  `session_status` enum('active','closed','expired','failed','kicked') NOT NULL DEFAULT 'active',
+  `ip_address` varchar(45) DEFAULT NULL,
+  `city` varchar(100) DEFAULT NULL,
+  `region` varchar(100) DEFAULT NULL,
+  `country` varchar(100) DEFAULT NULL,
+  `zipcode` varchar(20) DEFAULT NULL,
+  `coordinates` varchar(50) DEFAULT NULL,
+  `hostname` varchar(100) DEFAULT NULL,
+  `os` varchar(100) DEFAULT NULL,
+  `browser` varchar(100) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `device_id` varchar(100) DEFAULT NULL,
+  `device_type` tinyint(1) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `session_management`
+--
+
+INSERT INTO `session_management` (`session_id`, `user_id`, `user_name`, `user_type`, `full_name`, `login_time`, `logout_time`, `inactivity_duration`, `login_success`, `failure_reason`, `session_status`, `ip_address`, `city`, `region`, `country`, `zipcode`, `coordinates`, `hostname`, `os`, `browser`, `user_agent`, `device_id`, `device_type`, `created_at`) VALUES
+('313aa437-66f1-40d1-a6f7-82baf418e3f4', '202b02fa-053d-48d5-a307-b52adb5525f4', 'moisescelis21@gmail.com', 'Administrator', 'Moises', '2025-10-12 21:52:25', NULL, NULL, 0, 'Contraseña incorrecta', 'failed', '::1', 'Unknown', 'Unknown', 'Unknown', 'Unknown', '0.0,0.0', 'DESKTOP-92VMM39', 'Windows 10', 'Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', NULL, 0, '2025-10-12 21:52:25'),
+('763ab6d5-7e6d-48da-bf67-9e365f373a6d', '202b02fa-053d-48d5-a307-b52adb5525f4', 'moisescelis21@gmail.com', 'Administrator', 'Moises', '2025-10-12 21:45:09', NULL, NULL, 1, NULL, 'active', '::1', 'Unknown', 'Unknown', 'Unknown', 'Unknown', '0.0,0.0', 'DESKTOP-92VMM39', 'Windows 10', 'Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', NULL, 0, '2025-10-12 21:45:09'),
+('94f63bd1-a7a7-4d31-9765-a253a11aa160', '202b02fa-053d-48d5-a307-b52adb5525f4', 'moisescelis21@gmail.com', 'Administrator', 'Moises', '2025-10-12 21:52:27', NULL, NULL, 1, NULL, 'active', '::1', 'Unknown', 'Unknown', 'Unknown', 'Unknown', '0.0,0.0', 'DESKTOP-92VMM39', 'Windows 10', 'Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', NULL, 0, '2025-10-12 21:52:27'),
+('bbc5a74b-4907-441d-9c48-5b20b48cdfae', '202b02fa-053d-48d5-a307-b52adb5525f4', 'moisescelis21@gmail.com', 'Administrator', 'Moises', '2025-10-12 21:56:48', NULL, NULL, 1, NULL, 'active', '::1', 'Unknown', 'Unknown', 'Unknown', 'Unknown', '0.0,0.0', 'DESKTOP-92VMM39', 'Windows 10', 'Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', NULL, 0, '2025-10-12 21:56:48');
 
 -- --------------------------------------------------------
 
@@ -692,6 +758,18 @@ ALTER TABLE `revisiones_servicio`
   ADD KEY `idx_revisiones_programada` (`fecha_programada`,`resultado`);
 
 --
+-- Indices de la tabla `session_config`
+--
+ALTER TABLE `session_config`
+  ADD PRIMARY KEY (`config_id`);
+
+--
+-- Indices de la tabla `session_management`
+--
+ALTER TABLE `session_management`
+  ADD PRIMARY KEY (`session_id`);
+
+--
 -- Indices de la tabla `system_users`
 --
 ALTER TABLE `system_users`
@@ -705,6 +783,16 @@ ALTER TABLE `users_permisos`
   ADD PRIMARY KEY (`users_permisos_id`),
   ADD UNIQUE KEY `uq_user_menu` (`user_id`,`menu_id`),
   ADD KEY `fk_up_menu` (`menu_id`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
+
+--
+-- AUTO_INCREMENT de la tabla `session_config`
+--
+ALTER TABLE `session_config`
+  MODIFY `config_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Restricciones para tablas volcadas

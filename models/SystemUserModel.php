@@ -63,27 +63,7 @@ class SystemUserModel
         $stmt->close();
         return $data;
     }
-        /* ============ Logout ============ */
-    public function logout(): bool
-    {
-        try {
-            // Si no hay sesión activa, la iniciamos para poder destruirla
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start();
-            }
 
-            // Limpiar todas las variables de sesión
-            $_SESSION = [];
-
-            // Destruir completamente la sesión
-            session_destroy();
-
-            return true;
-        } catch (Throwable $e) {
-            error_log("Error al cerrar sesión: " . $e->getMessage());
-            return false;
-        }
-    }
 
     public function obtenerPorId(string $userId): ?array
     {
@@ -266,26 +246,151 @@ class SystemUserModel
         return $ok;
     }
 /* ============ Login básico (sin sesiones) ============ */
-public function loginBasico(string $email, string $password): ?array
+// En models/SystemUserModel.php
+public function loginBasico(string $email, string $password): array
 {
-    $row = $this->obtenerPorEmail($email);
-    if (!$row) return null;                                // email no existe
-    if ($row['deleted_at'] !== null) return null;          // usuario eliminado/borrado lógico
+    $sql = "SELECT user_id, nombre, email, contrasena, nivel, estado
+            FROM system_users
+            WHERE email = ? AND deleted_at IS NULL
+            LIMIT 1";
+    $stmt = $this->db->prepare($sql);
+    if (!$stmt) {
+        throw new mysqli_sql_exception("Error preparando login: " . $this->db->error);
+    }
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $res = $stmt->get_result();
 
-    // Si está desactivado, avisamos explícitamente
-    if ((int)$row['estado'] === 0) {
-        throw new DomainException('USER_DISABLED', 1001);
+    if (!$res || $res->num_rows === 0) {
+        $stmt->close();
+        return [
+            'ok'   => false,
+            'code' => 'user_not_found'
+        ];
     }
 
-    if (!password_verify($password, $row['contrasena'])) return null; // contraseña inválida
+    $row = $res->fetch_assoc();
+    $stmt->close();
 
-    return [
+    $userLite = [
         'user_id' => $row['user_id'],
         'nombre'  => $row['nombre'],
         'email'   => $row['email'],
         'nivel'   => (int)$row['nivel'],
-        'estado'  => (int)$row['estado'],
+        'estado'  => (int)($row['estado'] ?? 1),
+    ];
+
+    // Estado desactivado
+    if ((int)$row['estado'] === 0) {
+        return [
+            'ok'   => false,
+            'code' => 'user_disabled',
+            'user' => $userLite
+        ];
+    }
+
+    // Contraseña incorrecta
+    $hash = (string)$row['contrasena'];
+    if (!password_verify($password, $hash)) {
+        return [
+            'ok'   => false,
+            'code' => 'invalid_password',
+            'user' => $userLite
+        ];
+    }
+
+    // (Opcional) Rehash si cambiaste el algoritmo/constantes
+    if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
+        $nuevoHash = password_hash($password, PASSWORD_DEFAULT);
+        $upd = $this->db->prepare("UPDATE system_users SET contrasena = ? WHERE user_id = ?");
+        if ($upd) {
+            $upd->bind_param("ss", $nuevoHash, $row['user_id']);
+            $upd->execute();
+            $upd->close();
+        }
+    }
+
+    return [
+        'ok'   => true,
+        'user' => $userLite
     ];
 }
+
+
+/**
+ * Verifica la contraseña del usuario. Acepta el array de usuario (con 'contrasena').
+ * Si el array no trae 'contrasena', reconsulta mínimo para obtener el hash y estado.
+ * Retorna true si coincide; false en caso contrario o usuario desactivado.
+ * Puede rehashear automáticamente si cambias el algoritmo por defecto.
+ */
+public function verificarPassword(array $usuario, string $password): bool
+{
+    // Si no viene el hash en $usuario, consultarlo
+    if (!isset($usuario['contrasena']) || $usuario['contrasena'] === null) {
+        if (empty($usuario['user_id'])) {
+            return false;
+        }
+        $stmt = $this->db->prepare("SELECT contrasena, estado FROM system_users WHERE user_id = ? AND deleted_at IS NULL LIMIT 1");
+        if (!$stmt) {
+            throw new mysqli_sql_exception("Error preparando verificarPassword: " . $this->db->error);
+        }
+        $stmt->bind_param("s", $usuario['user_id']);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if (!$res || $res->num_rows === 0) {
+            $stmt->close();
+            return false;
+        }
+        $row = $res->fetch_assoc();
+        $stmt->close();
+        $usuario['contrasena'] = $row['contrasena'] ?? null;
+        $usuario['estado']     = isset($row['estado']) ? (int)$row['estado'] : 1;
+    }
+
+    // Usuario desactivado
+    if (isset($usuario['estado']) && (int)$usuario['estado'] === 0) {
+        return false;
+    }
+
+    $hash = (string)($usuario['contrasena'] ?? '');
+    if ($hash === '' || !password_verify($password, $hash)) {
+        return false;
+    }
+
+    // Rehash opcional si cambiaste el algoritmo/constantes
+    if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
+        $nuevoHash = password_hash($password, PASSWORD_DEFAULT);
+        $upd = $this->db->prepare("UPDATE system_users SET contrasena = ? WHERE user_id = ? LIMIT 1");
+        if ($upd) {
+            $upd->bind_param("ss", $nuevoHash, $usuario['user_id']);
+            $upd->execute();
+            $upd->close();
+        }
+    }
+
+    return true;
+}
+
+        /* ============ Logout ============ */
+    public function logout(): bool
+    {
+        try {
+            // Si no hay sesión activa, la iniciamos para poder destruirla
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+
+            // Limpiar todas las variables de sesión
+            $_SESSION = [];
+
+            // Destruir completamente la sesión
+            session_destroy();
+
+            return true;
+        } catch (Throwable $e) {
+            error_log("Error al cerrar sesión: " . $e->getMessage());
+            return false;
+        }
+    }
 
 }
