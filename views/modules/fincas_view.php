@@ -279,6 +279,7 @@
           <div class="mb-3">
             <label class="form-label">Aprisco</label>
             <select class="form-select" id="area_aprisco_id" name="aprisco_id" required></select>
+            <div class="form-text text-danger no-options-message" style="display: none;"></div>
           </div>
           <div class="mb-3">
             <label class="form-label">Tipo</label>
@@ -336,10 +337,12 @@
           <div class="mb-3">
             <label class="form-label">Aprisco</label>
             <select class="form-select" id="recinto_aprisco_id" required></select>
+            <div class="form-text text-danger no-options-message" style="display: none;"></div>
           </div>
           <div class="mb-3">
             <label class="form-label">Área</label>
             <select class="form-select" id="recinto_area_id" name="area_id" required></select>
+            <div class="form-text text-danger no-options-message" style="display: none;"></div>
           </div>
 
           <div class="mb-3">

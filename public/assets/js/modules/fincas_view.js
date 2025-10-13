@@ -219,12 +219,6 @@ function initButtons() {
     $('#modalAreaLabel').text('Crear Nueva Área')
     new bootstrap.Modal('#modalArea').show()
   })
-
-  // ---- Envío de formularios (submit) ----
-  $('#formFinca').on('submit', submitFinca)
-  $('#formAprisco').on('submit', submitAprisco)
-  $('#formArea').on('submit', submitArea)
-
   $('#btnNuevoRecinto').on('click', async () => {
     resetRecintoForm()
     await cargarFincasSelect('#recinto_finca_id')
@@ -308,6 +302,27 @@ function wireCancelButtons() {
 /* =========================
    Carga dinámica de Selects
 ========================= */
+
+/**
+ * Habilita o deshabilita un select y muestra un mensaje si no tiene opciones.
+ * @param {string} selector - El selector del elemento select.
+ * @param {boolean} hasOptions - Si el select tiene o no opciones.
+ * @param {string} message - El mensaje a mostrar si no hay opciones.
+ */
+function toggleSelectState(selector, hasOptions, message) {
+  const $select = $(selector)
+  // Busca el div de mensaje que añadimos, que es hermano del select
+  const $message = $select.siblings('.no-options-message')
+
+  $select.prop('disabled', !hasOptions)
+
+  if (hasOptions) {
+    $message.hide().text('')
+  } else {
+    $message.text(message).show()
+  }
+}
+
 async function cargarFincasSelect(selector, includeEmpty = false) {
   try {
     const { data = [] } = await jget(api('fincas'))
@@ -324,6 +339,15 @@ async function cargarApriscosSelect(selector, fincaId, includeEmpty = false) {
   try {
     const url = fincaId ? api(`apriscos?finca_id=${fincaId}`) : api('apriscos')
     const { data = [] } = await jget(url)
+
+    // AÑADIDO: Lógica para habilitar/deshabilitar
+    const hasApriscos = data.length > 0
+    toggleSelectState(
+      selector,
+      hasApriscos,
+      'Esta finca no posee apriscos registrados.'
+    )
+
     const $sel = $(selector).empty()
     if (includeEmpty)
       $sel.append(new Option(selector.includes('filtro') ? 'Todos' : '', ''))
@@ -332,11 +356,19 @@ async function cargarApriscosSelect(selector, fincaId, includeEmpty = false) {
     showErrorToast({ message: err.message })
   }
 }
-
 async function cargarAreasSelect(selector, apriscoId, includeEmpty = false) {
   try {
     const url = apriscoId ? api(`areas?aprisco_id=${apriscoId}`) : api('areas')
     const { data = [] } = await jget(url)
+
+    // AÑADIDO: Lógica para habilitar/deshabilitar
+    const hasAreas = data.length > 0
+    toggleSelectState(
+      selector,
+      hasAreas,
+      'Este aprisco no posee áreas registradas.'
+    )
+
     const $sel = $(selector).empty()
     if (includeEmpty)
       $sel.append(new Option(selector.includes('filtro') ? 'Todas' : '', ''))
