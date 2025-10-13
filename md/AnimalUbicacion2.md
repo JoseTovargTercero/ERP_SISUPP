@@ -10,7 +10,7 @@ Descripción: Devuelve una lista de registros de ubicación, con múltiples opci
 
 Parámetros (Query):
 
-limit / offset (int, opcional): Para paginación.
+limit / offset (int, opcional): Para paginación (límite máximo 500).
 
 incluirEliminados (int, 1 o 0): Incluye registros borrados lógicamente.
 
@@ -35,11 +35,15 @@ Respuestas Posibles
       "finca_id": "uuid-finca-1",
       "nombre_finca": "Finca Principal",
       "aprisco_id": null,
+      "nombre_aprisco": null,
+      "area_id": null,
+      "nombre_area": null,
+      "recinto_id": null,
+      "codigo_recinto": null,
       "fecha_desde": "2023-10-01",
       "fecha_hasta": "2023-10-27",
       "motivo": "TRASLADO",
-      "estado": "INACTIVA",
-      // ... más campos
+      "estado": "INACTIVA"
     }
   ]
 }
@@ -51,14 +55,14 @@ Función: mostrar()
 
 Endpoint: GET /animal_ubicaciones/{animal_ubicacion_id}
 
-Descripción: Devuelve un registro de ubicación específico.
+Descripción: Devuelve un registro de ubicación específico con todos los nombres de las ubicaciones anidadas (finca, aprisco, etc.).
 
 Parámetros (URL):
 
 animal_ubicacion_id (string, requerido).
 
 Respuestas Posibles
-Éxito (200 OK): Devuelve el objeto de la ubicación.
+Éxito (200 OK): Devuelve el objeto completo de la ubicación.
 
 No Encontrado (404 Not Found): Si el ID no existe.
 
@@ -83,7 +87,7 @@ Función: crear()
 
 Endpoint: POST /animal_ubicaciones
 
-Descripción: Crea un nuevo registro de ubicación. El sistema valida que las ubicaciones (finca, aprisco, etc.) existan y que no se cree una ubicación activa si ya existe otra para el mismo animal. El campo estado se asigna automáticamente (ACTIVA si fecha_hasta es NULL, INACTIVA en caso contrario).
+Descripción: Crea un nuevo registro de ubicación. El sistema valida que las ubicaciones (finca, aprisco, etc.) existan y su jerarquía sea correcta. Impide crear una ubicación activa si ya existe otra para el mismo animal. El campo estado se asigna automáticamente (ACTIVA si fecha_hasta es NULL, INACTIVA en caso contrario).
 
 Parámetros (Cuerpo JSON):
 
@@ -91,7 +95,7 @@ animal_id (string, requerido)
 
 fecha_desde (string YYYY-MM-DD, requerido)
 
-finca_id / aprisco_id / area_id / recinto_id (string, al menos uno es recomendado)
+finca_id / aprisco_id / area_id / recinto_id (string, opcional): Al menos uno es recomendado.
 
 fecha_hasta (string YYYY-MM-DD, opcional)
 
@@ -100,18 +104,18 @@ motivo (string, opcional, por defecto OTRO): TRASLADO, INGRESO, EGRESO, AISLAMIE
 observaciones (string, opcional)
 
 Respuestas Posibles
-Éxito (200 OK): Devuelve el animal_ubicacion_id del nuevo registro.
+Éxito (201 Created): Devuelve el animal_ubicacion_id del nuevo registro.
 
-Error de Validación (400 Bad Request): Si faltan campos o las fechas son inválidas.
+Error de Validación (400 Bad Request): Si faltan campos, las fechas son inválidas o la jerarquía es incorrecta.
 
-Conflicto (409 Conflict): Si ya existe una ubicación activa para el animal.
+Conflicto (409 Conflict): Si una FK (animal, finca, etc.) no existe, o si ya existe una ubicación activa para el animal.
 
 5. Actualizar un Registro de Ubicación
 Función: actualizar()
 
 Endpoint: POST /animal_ubicaciones/{animal_ubicacion_id}
 
-Descripción: Actualiza un registro de ubicación. Similar a crear, el estado se ajusta automáticamente según fecha_hasta.
+Descripción: Actualiza un registro de ubicación existente. Similar a crear, el estado se ajusta automáticamente según fecha_hasta y se valida la jerarquía de las ubicaciones si estas cambian.
 
 Parámetros:
 
@@ -140,7 +144,7 @@ Cuerpo (JSON):
 fecha_hasta (string YYYY-MM-DD, opcional): Si no se envía, se usa la fecha actual.
 
 Respuestas Posibles
-Éxito (200 OK): Devuelve los datos actualizados.
+Éxito (200 OK): Devuelve un objeto confirmando el cierre.
 
 No Encontrado (404 Not Found): Si el ID no existe o la ubicación ya estaba cerrada.
 

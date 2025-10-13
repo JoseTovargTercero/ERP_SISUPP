@@ -272,12 +272,24 @@ document.addEventListener('DOMContentLoaded', function () {
       ? ''
       : '<tr><td colspan="5" class="text-center">No hay movimientos registrados.</td></tr>'
     movimientos.forEach((m) => {
+      console.log(m)
+
       const origen =
-        [m.finca_origen, m.aprisco_origen, m.area_origen, m.recinto_origen]
+        [
+          m.finca_origen,
+          m.aprisco_origen,
+          m.area_origen,
+          m.codigo_recinto_origen,
+        ]
           .filter(Boolean)
           .join(' / ') || 'Externo'
       const destino =
-        [m.finca_destino, m.aprisco_destino, m.area_destino, m.recinto_destino]
+        [
+          m.finca_destino,
+          m.aprisco_destino,
+          m.area_destino,
+          m.codigo_recinto_destino,
+        ]
           .filter(Boolean)
           .join(' / ') || 'Externo'
       movHtml += `<tr><td>${formatDate(m.fecha_mov)}</td><td>${
@@ -292,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function () {
       : '<tr><td colspan="5" class="text-center">No hay ubicaciones registradas.</td></tr>'
     ubicaciones.forEach((u) => {
       const ubicacion =
-        [u.nombre_finca, u.nombre_aprisco, u.nombre_area, u.nombre_recinto]
+        [u.nombre_finca, u.nombre_aprisco, u.nombre_area, u.codigo_recinto]
           .filter(Boolean)
           .join(' / ') || 'N/A'
       const estadoClass = u.estado === 'ACTIVA' ? 'success' : 'secondary'
@@ -639,7 +651,7 @@ document.addEventListener('DOMContentLoaded', function () {
           url: `${baseUrl}api/recintos?area_id=${areaId}`,
           placeholder: 'Seleccione Recinto',
           valueField: 'recinto_id',
-          textField: 'nombre',
+          textField: (item) => `${item.codigo_recinto || 'S/C'}`,
         })
       } else {
         $recintoSelect.html('<option value="">Seleccione Área primero</option>')
@@ -727,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function () {
           url: `${baseUrl}api/recintos?area_id=${areaId}`,
           placeholder: 'Seleccione Recinto',
           valueField: 'recinto_id',
-          textField: 'nombre',
+          textField: (item) => `${item.codigo_recinto || 'S/C'}`,
         })
       } else {
         $recintoSelect.html('<option value="">Seleccione Área primero</option>')
@@ -811,7 +823,7 @@ document.addEventListener('DOMContentLoaded', function () {
           url: `${baseUrl}api/recintos?area_id=${areaId}`,
           placeholder: 'Seleccione Recinto',
           valueField: 'recinto_id',
-          textField: 'nombre',
+          textField: (item) => `${item.codigo_recinto || 'S/C'}`,
         })
       } else {
         $recintoSelect.html('<option value="">Seleccione Área primero</option>')

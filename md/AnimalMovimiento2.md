@@ -10,7 +10,7 @@ Descripción: Devuelve una lista de movimientos con un sistema de filtrado muy e
 
 Parámetros (Query):
 
-limit / offset (int, opcional): Para paginación.
+limit / offset (int, opcional): Para paginación (límite máximo 500).
 
 incluirEliminados (int, 1 o 0): Incluye registros borrados.
 
@@ -99,7 +99,7 @@ documento_ref (string, opcional)
 observaciones (string, opcional)
 
 Respuestas Posibles
-Éxito (200 OK): Devuelve el animal_movimiento_id del nuevo registro.
+Éxito (201 Created): Devuelve el animal_movimiento_id del nuevo registro.
 
 Error de Validación (400 Bad Request): Si faltan campos, las fechas son inválidas, la jerarquía de ubicaciones es incorrecta, o no se cumplen las reglas de origen/destino para el tipo de movimiento.
 
@@ -110,7 +110,7 @@ Función: actualizar()
 
 Endpoint: POST /animal_movimientos/{animal_movimiento_id}
 
-Descripción: Actualiza uno o más campos de un movimiento existente.
+Descripción: Actualiza uno o más campos de un movimiento existente. Se aplican las mismas validaciones que en la creación.
 
 Parámetros:
 
