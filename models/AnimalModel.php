@@ -220,16 +220,22 @@ private function getAncestorsMap(string $animalId, int $maxGenerations): array
 /**
  * Etiqueta legible para ancestro directo a distancia d (1..N)
  */
-private function labelAncestor(int $d): string
+private function labelAncestor($d)
 {
-    return match ($d) {
-        1 => 'padre/madre',
-        2 => 'abuelo/abuela',
-        3 => 'bisabuelo/bisabuela',
-        4 => 'tatarabuelo/tatarabuela',
-        default => $d.' generaciones arriba'
-    };
+    switch ($d) {
+        case 1:
+            return 'padre/madre';
+        case 2:
+            return 'abuelo/abuela';
+        case 3:
+            return 'bisabuelo/bisabuela';
+        case 4:
+            return 'tatarabuelo/tatarabuela';
+        default:
+            return $d . ' generaciones arriba';
+    }
 }
+
 
 /**
  * Etiqueta legible para compartir ancestro con distancias (dA, dB)
