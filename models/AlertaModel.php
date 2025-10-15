@@ -206,25 +206,29 @@ class AlertaModel
             $uuid    = $this->generateUUIDv4();
             $actorId = $this->getActorIdFallback($uuid);
 
-            $sql = "INSERT INTO {$this->table}
-                    (alerta_id, tipo_alerta, periodo_id, animal_id, fecha_objetivo, estado_alerta, detalle,
-                     created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
-            $stmt = $this->db->prepare($sql);
-            if (!$stmt) throw new mysqli_sql_exception("Error preparando inserción: " . $this->db->error);
+    $sql = "INSERT INTO {$this->table}
+        (alerta_id, tipo_alerta, periodo_id, animal_id, fecha_objetivo, estado_alerta, detalle,
+         created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)";
 
-            $stmt->bind_param(
-                'ssssssss',
-                $uuid, $tipo, $periodoId, $animalId, $fechaObj, $estado, $detalle,
-                $now, $actorId
-            );
-            if (!$stmt->execute()) {
-                $err = $stmt->error;
-                $stmt->close();
-                $this->db->rollback();
-                throw new mysqli_sql_exception("Error al crear alerta: " . $err);
-            }
-            $stmt->close();
+$stmt = $this->db->prepare($sql);
+if (!$stmt) {
+    throw new mysqli_sql_exception("Error preparando inserción: " . $this->db->error);
+}
+
+$stmt->bind_param(
+    'sssssssss',
+    $uuid, $tipo, $periodoId, $animalId, $fechaObj, $estado, $detalle, $now, $actorId
+);
+
+if (!$stmt->execute()) {
+    $err = $stmt->error;
+    $stmt->close();
+    $this->db->rollback();
+    throw new mysqli_sql_exception("Error al crear alerta: " . $err);
+}
+$stmt->close();
+
 
             $this->db->commit();
             return $uuid;
