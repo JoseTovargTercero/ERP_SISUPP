@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 13-10-2025 a las 04:05:16
+-- Tiempo de generación: 15-10-2025 a las 15:29:29
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -316,12 +316,40 @@ CREATE TABLE `menu` (
 
 INSERT INTO `menu` (`menu_id`, `categoria`, `nombre`, `url`, `icono`, `user_level`, `orden`, `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
 ('1be82974-a797-4bea-aae1-0d7112727ec4', 'animales', 'Gestión de Rebaño', 'animales', 'mdi mdi-sheep', 1, 4, '2025-10-05 16:54:24', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 17:17:58', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
-('25d17a58-3186-48ed-81cc-8d396074b62d', 'usuarios', 'Modulos', 'modulos', 'mdi mdi-view-module', 0, 2, '2025-10-04 11:28:50', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 17:19:35', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
+('25d17a58-3186-48ed-81cc-8d396074b62d', 'usuarios', 'Modulos', 'modulos', 'mdi mdi-view-module', 0, 0, '2025-10-04 11:28:50', 'd7518474-2d2f-4634-823f-71936565c110', '2025-10-05 17:19:35', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
 ('35f8606a-a133-11f0-a92b-74d02b268d93', 'usuarios', 'Usuarios', 'users', 'mdi mdi-account-group', 0, 1, NULL, NULL, '2025-10-05 17:19:29', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
 ('6d583c24-a39e-11f0-8f58-2a144d1110c0', 'animales', 'Registro de montas', 'montas', 'mdi mdi-reproduction', 0, 0, NULL, NULL, NULL, NULL, NULL, NULL),
 ('920a038d-e341-4c61-9915-d35fb41d1a6b', 'area', 'Fincas', 'fincas', 'mdi mdi-office-building-marker', 1, 3, '2025-10-04 10:41:51', '920a038d-e341-4c61-9915-d35fb41d1a6b', '2025-10-12 21:31:16', 'd7518474-2d2f-4634-823f-71936565c110', NULL, NULL),
 ('95765136-0404-4810-8dc4-5b38751c8522', 'partos', 'asdasd', 'https://github.com/jesuszapataDev/digital-signature-form.git', '0', 1, 0, '2025-10-04 10:05:19', '95765136-0404-4810-8dc4-5b38751c8522', '2025-10-04 10:12:35', '95765136-0404-4810-8dc4-5b38751c8522', '2025-10-04 10:12:40', '95765136-0404-4810-8dc4-5b38751c8522'),
-('ba3b2b7e-a7d8-11f0-872b-00e04cf70151', 'usuarios', 'Gestor de Sesiones', 'sesiones', 'mdi mdi-account', 0, 3, NULL, NULL, NULL, NULL, NULL, NULL);
+('ba3b2b7e-a7d8-11f0-872b-00e04cf70151', 'usuarios', 'Gestor de Sesiones', 'sesiones', 'mdi mdi-account', 0, 2, NULL, NULL, NULL, NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `menu_categorias`
+--
+
+CREATE TABLE `menu_categorias` (
+  `categoria_id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `orden` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `menu_categorias`
+--
+
+INSERT INTO `menu_categorias` (`categoria_id`, `nombre`, `orden`) VALUES
+(1, 'area', 0),
+(2, 'finca', 3),
+(3, 'aprisco', 4),
+(4, 'animales', 1),
+(5, 'montas', 5),
+(6, 'partos', 6),
+(7, 'reporte_dano', 7),
+(8, 'alertas', 8),
+(9, 'usuarios', 2),
+(10, 'respaldos', 9);
 
 -- --------------------------------------------------------
 
@@ -539,6 +567,7 @@ CREATE TABLE `session_management` (
 
 INSERT INTO `session_management` (`session_id`, `user_id`, `user_name`, `user_type`, `full_name`, `login_time`, `logout_time`, `inactivity_duration`, `login_success`, `failure_reason`, `session_status`, `ip_address`, `city`, `region`, `country`, `zipcode`, `coordinates`, `hostname`, `os`, `browser`, `user_agent`, `device_id`, `device_type`, `created_at`) VALUES
 ('313aa437-66f1-40d1-a6f7-82baf418e3f4', '202b02fa-053d-48d5-a307-b52adb5525f4', 'moisescelis21@gmail.com', 'Administrator', 'Moises', '2025-10-12 21:52:25', NULL, NULL, 0, 'Contraseña incorrecta', 'failed', '::1', 'Unknown', 'Unknown', 'Unknown', 'Unknown', '0.0,0.0', 'DESKTOP-92VMM39', 'Windows 10', 'Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', NULL, 0, '2025-10-12 21:52:25'),
+('5bbdd522-1c3e-4593-a575-5f662449233c', 'd7518474-2d2f-4634-823f-71936565c110', 'zapatin@gmail.com', 'Administrator', 'Jesus Zapatin', '2025-10-15 09:28:48', NULL, NULL, 1, NULL, 'active', '::1', 'Unknown', 'Unknown', 'Unknown', 'Unknown', '0.0,0.0', 'DESKTOP-MK30BIG', 'Windows 10', 'Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', NULL, 0, '2025-10-15 09:28:48'),
 ('763ab6d5-7e6d-48da-bf67-9e365f373a6d', '202b02fa-053d-48d5-a307-b52adb5525f4', 'moisescelis21@gmail.com', 'Administrator', 'Moises', '2025-10-12 21:45:09', NULL, NULL, 1, NULL, 'active', '::1', 'Unknown', 'Unknown', 'Unknown', 'Unknown', '0.0,0.0', 'DESKTOP-92VMM39', 'Windows 10', 'Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', NULL, 0, '2025-10-12 21:45:09'),
 ('94f63bd1-a7a7-4d31-9765-a253a11aa160', '202b02fa-053d-48d5-a307-b52adb5525f4', 'moisescelis21@gmail.com', 'Administrator', 'Moises', '2025-10-12 21:52:27', NULL, NULL, 1, NULL, 'active', '::1', 'Unknown', 'Unknown', 'Unknown', 'Unknown', '0.0,0.0', 'DESKTOP-92VMM39', 'Windows 10', 'Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', NULL, 0, '2025-10-12 21:52:27'),
 ('bbc5a74b-4907-441d-9c48-5b20b48cdfae', '202b02fa-053d-48d5-a307-b52adb5525f4', 'moisescelis21@gmail.com', 'Administrator', 'Moises', '2025-10-12 21:56:48', NULL, NULL, 1, NULL, 'active', '::1', 'Unknown', 'Unknown', 'Unknown', 'Unknown', '0.0,0.0', 'DESKTOP-92VMM39', 'Windows 10', 'Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', NULL, 0, '2025-10-12 21:56:48');
@@ -710,6 +739,13 @@ ALTER TABLE `menu`
   ADD PRIMARY KEY (`menu_id`);
 
 --
+-- Indices de la tabla `menu_categorias`
+--
+ALTER TABLE `menu_categorias`
+  ADD PRIMARY KEY (`categoria_id`),
+  ADD UNIQUE KEY `nombre` (`nombre`);
+
+--
 -- Indices de la tabla `montas`
 --
 ALTER TABLE `montas`
@@ -787,6 +823,12 @@ ALTER TABLE `users_permisos`
 --
 -- AUTO_INCREMENT de las tablas volcadas
 --
+
+--
+-- AUTO_INCREMENT de la tabla `menu_categorias`
+--
+ALTER TABLE `menu_categorias`
+  MODIFY `categoria_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT de la tabla `session_config`
