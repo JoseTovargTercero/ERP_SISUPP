@@ -20,7 +20,8 @@ require_once __DIR__ . '/controllers/PeriodoMontaController.php';
 require_once __DIR__ . '/controllers/PartoController.php';
 require_once __DIR__ . '/controllers/PeriodoServicioController.php';
 require_once __DIR__ . '/controllers/RecintoController.php';
-
+require_once __DIR__ . '/controllers/RevisionesServicioController.php';
+require_once __DIR__ . '/controllers/AlertaController.php';
 
 use App\Core\ViewRenderer;
 
@@ -247,6 +248,24 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/recintos/{recinto_id}', ['controlador' => RecintoController::class, 'accion' => 'actualizar']);
     $router->post('/recintos/{recinto_id}/estado', ['controlador' => RecintoController::class, 'accion' => 'actualizarEstado']);
     $router->delete('/recintos/{recinto_id}', ['controlador' => RecintoController::class, 'accion' => 'eliminar']);
+
+
+    // endpoints de revisiones de servicio
+$router->get('/revisiones-servicio',                    ['controlador' => RevisionesServicioController::class, 'accion' => 'listar']);
+$router->get('/revisiones-servicio/{revision_id}',      ['controlador' => RevisionesServicioController::class, 'accion' => 'mostrar']);
+$router->get('/revisiones-servicio/periodo/{periodo_id}',['controlador' => RevisionesServicioController::class, 'accion' => 'listarPorPeriodo']);
+$router->post('/revisiones-servicio',                   ['controlador' => RevisionesServicioController::class, 'accion' => 'crear']);
+$router->post('/revisiones-servicio/{revision_id}',     ['controlador' => RevisionesServicioController::class, 'accion' => 'actualizar']);
+$router->delete('/revisiones-servicio/{revision_id}',   ['controlador' => RevisionesServicioController::class, 'accion' => 'eliminar']);
+
+// endpoints de alertas
+$router->get('/alertas', ['controlador' => AlertaController::class, 'accion' => 'listar']);
+$router->get('/alertas/{alerta_id}', ['controlador' => AlertaController::class, 'accion' => 'mostrar']);
+$router->post('/alertas', ['controlador' => AlertaController::class, 'accion' => 'crear']);
+$router->post('/alertas/{alerta_id}', ['controlador' => AlertaController::class, 'accion' => 'actualizar']);
+$router->post('/alertas/{alerta_id}/estado', ['controlador' => AlertaController::class, 'accion' => 'cambiarEstado']);
+$router->delete('/alertas/{alerta_id}', ['controlador' => AlertaController::class, 'accion' => 'eliminar']);
+
 });
 
 
