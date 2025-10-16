@@ -27,6 +27,7 @@ class AnimalSaludModel
         );
     }
 
+
     private function nowWithAudit(): array
     {
         $env = new ClientEnvironmentInfo(APP_ROOT . '/app/config/geolite.mmdb');
