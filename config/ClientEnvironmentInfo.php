@@ -19,8 +19,8 @@ final class ClientEnvironmentInfo
 
     public function getCurrentDatetime(): string
     {
-        $tz = new DateTimeZone($this->getTimezoneRegion());
-        return (new DateTime('now', $tz))->format('Y-m-d H:i:s');
+        $tz = new \DateTimeZone($this->getTimezoneRegion());
+        return (new \DateTime('now', $tz))->format('Y-m-d H:i:s');
     }
 
     public function getTimezoneRegion(): string
@@ -30,6 +30,8 @@ final class ClientEnvironmentInfo
 
     public function getClientIp(): string
     {
+        // Puedes ampliar esta lógica si usas proxies/reverse proxies
+        // (X-Forwarded-For, etc.) según tu entorno.
         return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
 
@@ -48,16 +50,17 @@ final class ClientEnvironmentInfo
         $ua = strtolower($this->userAgent);
         $osArray = [
             'windows nt 10.0' => 'Windows 10',
-            'mac os x' => 'Mac OS X',
-            'linux' => 'Linux',
-            'android' => 'Android',
-            'iphone' => 'iPhone',
-            'ipad' => 'iPad',
-            'ubuntu' => 'Ubuntu',
-            'cros' => 'Chrome OS'
+            'mac os x'        => 'Mac OS X',
+            'linux'           => 'Linux',
+            'android'         => 'Android',
+            'iphone'          => 'iPhone',
+            'ipad'            => 'iPad',
+            'ubuntu'          => 'Ubuntu',
+            'cros'            => 'Chrome OS'
         ];
+
         foreach ($osArray as $key => $label) {
-            if (str_contains($ua, $key)) {
+            if ($this->contains($ua, $key)) {
                 return $label;
             }
         }
@@ -68,17 +71,18 @@ final class ClientEnvironmentInfo
     {
         $ua = strtolower($this->userAgent);
         $browserArray = [
-            'edg' => 'Microsoft Edge',
-            'opr' => 'Opera',
-            'opera' => 'Opera',
-            'chrome' => 'Google Chrome',
-            'safari' => 'Safari',
+            'edg'     => 'Microsoft Edge',
+            'opr'     => 'Opera',
+            'opera'   => 'Opera',
+            'chrome'  => 'Google Chrome',
+            'safari'  => 'Safari',
             'firefox' => 'Mozilla Firefox',
-            'msie' => 'Internet Explorer',
+            'msie'    => 'Internet Explorer',
             'trident' => 'Internet Explorer'
         ];
+
         foreach ($browserArray as $key => $label) {
-            if (str_contains($ua, $key)) {
+            if ($this->contains($ua, $key)) {
                 return $label;
             }
         }
@@ -107,24 +111,32 @@ final class ClientEnvironmentInfo
             $reader = new Reader($this->geoDbPath);
             $record = $reader->city($ip);
 
+            $country = $record->country->name ?? 'Unknown';
+            $region  = isset($record->subdivisions[0]) ? ($record->subdivisions[0]->name ?? 'Unknown') : 'Unknown';
+            $city    = $record->city->name ?? 'Unknown';
+            $zip     = $record->postal->code ?? 'Unknown';
+            $lat     = $record->location->latitude ?? 0.0;
+            $lon     = $record->location->longitude ?? 0.0;
+
             return [
-                'client_country' => $record->country->name ?? 'Unknown',
-                'client_region' => $record->subdivisions[0]->name ?? 'Unknown',
-                'client_city' => $record->city->name ?? 'Unknown',
-                'client_zipcode' => $record->postal->code ?? 'Unknown',
-                'client_coordinates' => $record->location->latitude . ',' . $record->location->longitude
+                'client_country'     => $country,
+                'client_region'      => $region,
+                'client_city'        => $city,
+                'client_zipcode'     => $zip,
+                'client_coordinates' => $lat . ',' . $lon
             ];
         } catch (\Exception $e) {
             return [
-                'client_country' => 'Unknown',
-                'client_region' => 'Unknown',
-                'client_city' => 'Unknown',
-                'client_zipcode' => 'Unknown',
+                'client_country'     => 'Unknown',
+                'client_region'      => 'Unknown',
+                'client_city'        => 'Unknown',
+                'client_zipcode'     => 'Unknown',
                 'client_coordinates' => '0.0,0.0'
             ];
         }
     }
-    public function applyAuditContext(mysqli $mysqli, $userId): void
+
+    public function applyAuditContext(\mysqli $mysqli, $userId): void
     {
         require_once APP_ROOT . '/helpers/session_timezone_helper.php';
 
@@ -143,26 +155,37 @@ final class ClientEnvironmentInfo
         );
 
         $vars = [
-            'user_id' => $userId,
-            'user_type' => $_SESSION['roles_user'] ?? 'Unknown',
-            'full_name' => $_SESSION['user_name'] ?? 'Unknown',
-            'client_ip' => $this->getClientIp(),
-            'client_hostname' => $this->getClientHostname(),
-            'user_agent' => $this->getUserAgent(),
-            'client_os' => $this->getClientOs(),
-            'client_browser' => $this->getClientBrowser(),
-            'domain_name' => $this->getDomainName(),
-            'request_uri' => $this->getRequestUri(),
-            'server_hostname' => $this->getServerHostname(),
-            'action_timezone' => $this->getTimezoneRegion(),
-            'geo_ip_timezone' => $geoTimezone,
+            'user_id'          => $userId,
+            'user_type'        => $_SESSION['roles_user'] ?? 'Unknown',
+            'full_name'        => $_SESSION['user_name'] ?? 'Unknown',
+            'client_ip'        => $this->getClientIp(),
+            'client_hostname'  => $this->getClientHostname(),
+            'user_agent'       => $this->getUserAgent(),
+            'client_os'        => $this->getClientOs(),
+            'client_browser'   => $this->getClientBrowser(),
+            'domain_name'      => $this->getDomainName(),
+            'request_uri'      => $this->getRequestUri(),
+            'server_hostname'  => $this->getServerHostname(),
+            'action_timezone'  => $this->getTimezoneRegion(),
+            'geo_ip_timezone'  => $geoTimezone,
             'geo_ip_timestamp' => $geoTimestamp
         ] + $geo;
 
         foreach ($vars as $key => $value) {
-            $safeValue = addslashes($value);
+            $value     = (string)$value;
+            $safeValue = $mysqli->real_escape_string($value);
             $mysqli->query("SET @{$key} = '{$safeValue}'");
         }
     }
 
+    /**
+     * Polyfill interno para PHP 7.4 (equivalente a str_contains de PHP 8).
+     */
+    private function contains(string $haystack, string $needle): bool
+    {
+        if ($needle === '') {
+            return true;
+        }
+        return strpos($haystack, $needle) !== false;
+    }
 }
