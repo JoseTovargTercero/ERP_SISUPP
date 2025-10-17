@@ -590,6 +590,15 @@ $stmt->bind_param(
  * @param int         $maxGeneraciones Límite de niveles (>=1). Por defecto 6.
  * @return array { animal, ascendencia|null, descendencia|null }
  */
+/**
+ * Obtiene el árbol genealógico (formato por niveles).
+ * @param string      $animalId        ID del animal raíz.
+ * @param string|null $direccion       'ARRIBA'|'ASC' = ascendencia (padres, abuelos...),
+ *                                     'ABAJO'|'DESC' = descendencia (hijos, nietos...),
+ *                                     null            = ambos.
+ * @param int         $maxGeneraciones Límite de niveles (>=1). Por defecto 6.
+ * @return array { animal, ascendencia|null, descendencia|null }
+ */
 public function getArbolGenealogico(string $animalId, ?string $direccion = null, int $maxGeneraciones = 6): array
 {
     $animalId = trim($animalId);
@@ -602,7 +611,7 @@ public function getArbolGenealogico(string $animalId, ?string $direccion = null,
     }
     if ($maxGeneraciones < 1) $maxGeneraciones = 1;
 
-    // --- Helpers locales con caché por llamada ---
+    // --- Caché simple por llamada ---
     $cache = [];
 
     $fetchAnimal = function(string $id) use (&$cache) {
@@ -621,106 +630,189 @@ public function getArbolGenealogico(string $animalId, ?string $direccion = null,
         $stmt->close();
 
         if ($row) {
-            // Normalizamos fechas nulas a null explícito
             $row['fecha_nacimiento'] = $row['fecha_nacimiento'] ?: null;
             $cache[$id] = $row;
         }
         return $row;
     };
 
-    $buildAsc = function(string $id, int $nivel, int $max) use (&$buildAsc, $fetchAnimal): ?array {
-        $self = $fetchAnimal($id);
-        if (!$self) return null;
-        if ($nivel >= $max) {
-            return [
-                'animal' => $self,
-                'madre'  => null,
-                'padre'  => null,
-                'nivel'  => $nivel,
-            ];
+    // Etiquetas de parentesco (ascendencia)
+    $labelAsc = function(int $gen, ?string $sexo): string {
+        $sx = strtoupper((string)$sexo);
+        if ($gen === 1) {
+            return ($sx === 'HEMBRA') ? 'MADRE' : 'PADRE';
         }
-        $madre = !empty($self['madre_id']) ? $buildAsc($self['madre_id'], $nivel+1, $max) : null;
-        $padre = !empty($self['padre_id']) ? $buildAsc($self['padre_id'], $nivel+1, $max) : null;
-
-        return [
-            'animal' => $self,
-            'madre'  => $madre,
-            'padre'  => $padre,
-            'nivel'  => $nivel,
-        ];
+        if ($gen === 2) {
+            return ($sx === 'HEMBRA') ? 'ABUELA' : 'ABUELO';
+        }
+        if ($gen === 3) {
+            return ($sx === 'HEMBRA') ? 'BISABUELA' : 'BISABUELO';
+        }
+        if ($gen === 4) {
+            return ($sx === 'HEMBRA') ? 'TATARABUELA' : 'TATARABUELO';
+        }
+        // Generación 5+ (genérica)
+        return strtoupper($gen . ' GENERACIONES ARRIBA');
     };
 
-    $buildDesc = function(string $id, int $nivel, int $max) use (&$buildDesc, $fetchAnimal): array {
-        $self = $fetchAnimal($id);
-        if (!$self) return [];
-
-        if ($nivel >= $max) {
-            return [[
-                'animal' => $self,
-                'hijos'  => [],
-                'nivel'  => $nivel,
-            ]];
+    // Etiquetas de parentesco (descendencia) — opcional
+    $labelDesc = function(int $gen, ?string $sexo): string {
+        $sx = strtoupper((string)$sexo);
+        if ($gen === 1) {
+            return ($sx === 'HEMBRA') ? 'HIJA' : 'HIJO';
         }
-
-        // Buscar hijos donde este ID sea madre o padre
-        $sql = "SELECT animal_id
-                FROM {$this->table}
-                WHERE deleted_at IS NULL AND (madre_id = ? OR padre_id = ?)
-                ORDER BY fecha_nacimiento ASC, identificador ASC";
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt) throw new \mysqli_sql_exception("Error preparando hijos: ".$this->db->error);
-        $stmt->bind_param('ss', $id, $id);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $childIds = [];
-        while ($r = $res->fetch_assoc()) $childIds[] = $r['animal_id'];
-        $stmt->close();
-
-        $nodosHijos = [];
-        foreach ($childIds as $cid) {
-            $childSelf = $fetchAnimal($cid);
-            if (!$childSelf) continue;
-            $sub = $buildDesc($cid, $nivel+1, $max); // sub devuelve un array con el nodo del hijo como primer nivel
-            // Por claridad, el primer elemento de $sub es el propio hijo con su árbol
-            $nodosHijos[] = $sub[0] ?? ['animal'=>$childSelf, 'hijos'=>[], 'nivel'=>$nivel+1];
+        if ($gen === 2) {
+            return ($sx === 'HEMBRA') ? 'NIETA' : 'NIETO';
         }
-
-        return [[
-            'animal' => $self,
-            'hijos'  => $nodosHijos,
-            'nivel'  => $nivel,
-        ]];
+        if ($gen === 3) {
+            return ($sx === 'HEMBRA') ? 'BISNIETA' : 'BISNIETO';
+        }
+        if ($gen === 4) {
+            return ($sx === 'HEMBRA') ? 'TATARANIETA' : 'TATARANIETO';
+        }
+        return strtoupper($gen . ' GENERACIONES ABAJO');
     };
 
-    // --- Armar respuesta ---
+    // --- Raíz ---
     $root = $fetchAnimal($animalId);
     if (!$root) {
         throw new RuntimeException('El animal no existe o está eliminado.');
     }
 
-    $asc = null; $desc = null;
-
+    // --- Construir ascendencia por niveles ---
+    $asc = null;
     if ($dir === null || in_array($dir, ['ARRIBA','ASC'], true)) {
-        // Devolvemos el árbol SIN repetir el nodo raíz dos veces (convención: en ascendencia no duplicamos la raíz en 'animal')
-        $ascNodo = $buildAsc($animalId, 0, $maxGeneraciones);
-        // Para limpiar, removemos el nivel superior 'animal' si quieres solo ver ramas:
-        $asc = [
-            'madre' => $ascNodo['madre'] ?? null,
-            'padre' => $ascNodo['padre'] ?? null,
-        ];
-    }
-    if ($dir === null || in_array($dir, ['ABAJO','DESC'], true)) {
-        $descNodo = $buildDesc($animalId, 0, $maxGeneraciones);
-        // El primer elemento es el propio animal con su descendencia
-        $desc = $descNodo[0]['hijos'] ?? [];
+        // BFS por niveles ascendentes: nivel 1 = madre/padre
+        $niveles = []; // '1' => [ancestro, ancestro], '2' => [...]
+        $actual = [];
+        // Semilla: IDs de madre y padre si existen
+        if (!empty($root['madre_id'])) $actual[] = $root['madre_id'];
+        if (!empty($root['padre_id'])) $actual[] = $root['padre_id'];
+
+        $nivel = 1;
+        while (!empty($actual) && $nivel <= $maxGeneraciones) {
+            $siguiente = [];
+            $listaNivel = [];
+
+            foreach ($actual as $aid) {
+                $a = $fetchAnimal($aid);
+                if (!$a) continue;
+
+                $listaNivel[] = [
+                    'animal_id'        => $a['animal_id'],
+                    'identificador'    => $a['identificador'],
+                    'parentesco'       => $labelAsc($nivel, $a['sexo']),
+                    'sexo'             => $a['sexo'],
+                    'especie'          => $a['especie'],
+                    'raza'             => $a['raza'],
+                    'color'            => $a['color'],
+                    'fecha_nacimiento' => $a['fecha_nacimiento'],
+                    'madre_id'         => $a['madre_id'] ?: null,
+                    'padre_id'         => $a['padre_id'] ?: null,
+                    'fotografia_url'   => $a['fotografia_url'] ?: null,
+                ];
+
+                if ($nivel < $maxGeneraciones) {
+                    if (!empty($a['madre_id'])) $siguiente[] = $a['madre_id'];
+                    if (!empty($a['padre_id'])) $siguiente[] = $a['padre_id'];
+                }
+            }
+
+            if (!empty($listaNivel)) {
+                $niveles[(string)$nivel] = $listaNivel;
+            }
+
+            $actual = $siguiente;
+            $nivel++;
+        }
+
+        $asc = $niveles; // puede ser [] si no hay padres registrados
     }
 
+    // --- Construir descendencia por niveles (opcional) ---
+    $desc = null;
+    if ($dir === null || in_array($dir, ['ABAJO','DESC'], true)) {
+        $nivelesD = [];
+        // Semilla: hijos directos de la raíz
+        $actual = [];
+
+        // Buscar hijos (madre_id = root o padre_id = root)
+        $sqlH = "SELECT animal_id FROM {$this->table}
+                 WHERE deleted_at IS NULL AND (madre_id = ? OR padre_id = ?)
+                 ORDER BY fecha_nacimiento ASC, identificador ASC";
+        $stmt = $this->db->prepare($sqlH);
+        if (!$stmt) throw new \mysqli_sql_exception("Error preparando hijos raíz: ".$this->db->error);
+        $stmt->bind_param('ss', $animalId, $animalId);
+        $stmt->execute();
+        $rs = $stmt->get_result();
+        while ($r = $rs->fetch_assoc()) $actual[] = $r['animal_id'];
+        $stmt->close();
+
+        $nivel = 1;
+        while (!empty($actual) && $nivel <= $maxGeneraciones) {
+            $siguiente = [];
+            $listaNivel = [];
+
+            foreach ($actual as $cid) {
+                $c = $fetchAnimal($cid);
+                if (!$c) continue;
+
+                $listaNivel[] = [
+                    'animal_id'        => $c['animal_id'],
+                    'identificador'    => $c['identificador'],
+                    'parentesco'       => $labelDesc($nivel, $c['sexo']),
+                    'sexo'             => $c['sexo'],
+                    'especie'          => $c['especie'],
+                    'raza'             => $c['raza'],
+                    'color'            => $c['color'],
+                    'fecha_nacimiento' => $c['fecha_nacimiento'],
+                    'madre_id'         => $c['madre_id'] ?: null,
+                    'padre_id'         => $c['padre_id'] ?: null,
+                    'fotografia_url'   => $c['fotografia_url'] ?: null,
+                ];
+
+                if ($nivel < $maxGeneraciones) {
+                    // hijos del hijo (nietos del root)
+                    $stmt = $this->db->prepare($sqlH);
+                    if (!$stmt) throw new \mysqli_sql_exception("Error preparando descendientes: ".$this->db->error);
+                    $stmt->bind_param('ss', $cid, $cid);
+                    $stmt->execute();
+                    $rs2 = $stmt->get_result();
+                    while ($r2 = $rs2->fetch_assoc()) $siguiente[] = $r2['animal_id'];
+                    $stmt->close();
+                }
+            }
+
+            if (!empty($listaNivel)) {
+                $nivelesD[(string)$nivel] = $listaNivel;
+            }
+
+            $actual = $siguiente;
+            $nivel++;
+        }
+
+        $desc = $nivelesD;
+    }
+
+    // Respuesta final (alineada con tu ejemplo: el foco está en ascendencia)
     return [
-        'animal'       => $root,
-        'ascendencia'  => $asc,   // null si no se pidió
-        'descendencia' => $desc,  // null si no se pidió
+        'animal'       => [
+            'animal_id'        => $root['animal_id'],
+            'identificador'    => $root['identificador'],
+            'sexo'             => $root['sexo'],
+            'especie'          => $root['especie'],
+            'raza'             => $root['raza'],
+            'color'            => $root['color'],
+            'fecha_nacimiento' => $root['fecha_nacimiento'],
+            'madre_id'         => $root['madre_id'] ?: null,
+            'padre_id'         => $root['padre_id'] ?: null,
+            'fotografia_url'   => $root['fotografia_url'] ?: null,
+        ],
+        'ascendencia'  => $asc,   // ['1'=>[...], '2'=>[...]] o []
+        'descendencia' => $desc,  // ['1'=>[...], '2'=>[...]] o [], solo si se pidió
     ];
 }
+
  /**
  * Devuelve TODOS los árboles genealógicos (bosque), desde los más viejos (antiguos) a los más recientes.
  * Criterio de orden: fecha_nacimiento ASC (nulos al final), luego identificador ASC.

@@ -76,6 +76,13 @@ class AnimalController
 //   - animal_id (req.)
 //   - direccion: ARRIBA|ASC|ABAJO|DESC|null (opcional)
 //   - max_generaciones (int, opcional; por defecto 6)
+// POST /animales/arbol
+// Body (JSON o multipart):
+//  - animal_id           (string)        -> opcional si se envía animal_id_2 o animal_ids[]
+//  - animal_id_2         (string)        -> opcional; si viene, se devuelven 2 árboles
+//  - animal_ids[]        (array<string>) -> opcional; si trae 1 o 2, se prioriza sobre los anteriores
+//  - direccion: ARRIBA|ASC|ABAJO|DESC|null (opcional; por defecto null => ambos)
+//  - max_generaciones (int, opcional; por defecto 6)
 public function arbolGenealogico(): void
 {
     if (strcasecmp($_SERVER['REQUEST_METHOD'] ?? 'GET', 'POST') !== 0) {
@@ -83,30 +90,64 @@ public function arbolGenealogico(): void
     }
 
     try {
+        // 1) Leer entrada (multipart o JSON)
         if ($this->isMultipart()) {
-            $animalId  = $_POST['animal_id']         ?? '';
-            $direccion = $_POST['direccion']         ?? null;
-            $maxGen    = isset($_POST['max_generaciones']) ? (int)$_POST['max_generaciones'] : 6;
+            $animalId    = isset($_POST['animal_id']) ? trim((string)$_POST['animal_id']) : '';
+            $animalId2   = isset($_POST['animal_id_2']) ? trim((string)$_POST['animal_id_2']) : '';
+            $idsArray    = (isset($_POST['animal_ids']) && is_array($_POST['animal_ids']))
+                            ? array_map('strval', $_POST['animal_ids']) : [];
+            $direccion   = isset($_POST['direccion']) ? $_POST['direccion'] : null;
+            $maxGen      = isset($_POST['max_generaciones']) ? (int)$_POST['max_generaciones'] : 6;
         } else {
-            $in        = $this->getJsonInput();
-            $animalId  = (string)($in['animal_id'] ?? '');
-            $direccion = $in['direccion'] ?? null;
-            $maxGen    = isset($in['max_generaciones']) ? (int)$in['max_generaciones'] : 6;
+            $in          = $this->getJsonInput();
+            $animalId    = trim((string)($in['animal_id']  ?? ''));
+            $animalId2   = trim((string)($in['animal_id_2'] ?? ''));
+            $idsArray    = (isset($in['animal_ids']) && is_array($in['animal_ids']))
+                            ? array_map('strval', $in['animal_ids']) : [];
+            $direccion   = $in['direccion'] ?? null;
+            $maxGen      = isset($in['max_generaciones']) ? (int)$in['max_generaciones'] : 6;
         }
 
-        if ($animalId === '') {
-            $this->jsonResponse(false, 'Parámetro animal_id es obligatorio.', null, 400);
+        // 2) Normalizar los IDs admitiendo 1 o 2
+        $animalIds = [];
+        if (!empty($idsArray)) {
+            foreach ($idsArray as $v) {
+                $v = trim((string)$v);
+                if ($v !== '') { $animalIds[] = $v; }
+                if (count($animalIds) === 2) break; // tomar máximo 2
+            }
+        } else {
+            if ($animalId !== '')  $animalIds[] = $animalId;
+            if ($animalId2 !== '') $animalIds[] = $animalId2;
         }
 
-        $data = $this->model->getArbolGenealogico($animalId, $direccion, $maxGen);
-        $this->jsonResponse(true, 'Árbol genealógico obtenido correctamente.', $data, 200);
+        if (empty($animalIds)) {
+            $this->jsonResponse(false, 'Parámetro animal_id (o animal_id_2 / animal_ids[]) es obligatorio.', null, 400);
+        }
+
+        // 3) Construir árboles (1 o 2) — la **estructura** final la define el **modelo**
+        $data = [];
+        foreach ($animalIds as $aid) {
+            $data[] = $this->model->getArbolGenealogico($aid, $direccion, $maxGen);
+        }
+
+        // 4) Responder con tu helper y mensaje singular/plural
+        $this->jsonResponse(
+            true,
+            count($animalIds) === 2
+                ? 'Árboles genealógicos obtenidos correctamente.'
+                : 'Árbol genealógico obtenido correctamente.',
+            $data,
+            200
+        );
 
     } catch (InvalidArgumentException $e) {
         $this->jsonResponse(false, $e->getMessage(), null, 400);
     } catch (Throwable $e) {
-        $this->jsonResponse(false, 'Error al obtener árbol genealógico: '.$e->getMessage(), null, 500);
+        $this->jsonResponse(false, 'Error al obtener árboles genealógicos: ' . $e->getMessage(), null, 500);
     }
 }
+
 // POST /animales/arboles
 // Body (JSON o multipart):
 //   - max_generaciones (int, opcional; por defecto 6)
