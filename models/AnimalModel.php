@@ -837,14 +837,9 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
     }
     if ($maxGeneraciones < 1) $maxGeneraciones = 1;
 
-    // ======= CONFIG PLACEHOLDERS =======
-    // Emitir nodos cuando faltan datos (conserva la forma del árbol en D3)
-    $EMIT_PLACEHOLDERS = true;
-    // 'none' => no meta en placeholders
-    // 'slim' => meta mínima (solo flags)  ← recomendado
-    // 'full' => meta con todas las claves nulas (como antes)
-    $PLACEHOLDER_META_MODE = 'slim';
-    // ===================================
+    // Si prefieres colapsar repeticiones del MISMO animal en ramas distintas (no recomendado),
+    // cambia esto a false y se omitirá la segunda ocurrencia:
+    $ALLOW_DUPLICATE_OCCURRENCES = true;
 
     // --- Caché por llamada ---
     $cache = [];
@@ -871,7 +866,7 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         return $row;
     };
 
-    // Etiqueta por generación (regla solicitada)
+    // Etiqueta por generación EXACTA (según tu regla)
     $labelAsc = function (int $gen, ?string $sexo): string {
         $sx = strtoupper((string)$sexo);
         $mujer = ($sx === 'HEMBRA');
@@ -881,13 +876,12 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         if ($gen === 3) return $mujer ? 'BISABUELA' : 'BISABUELO';
 
         $base = $mujer ? 'TATARABUELA' : 'TATARABUELO';
-        $n = $gen - 3; // 4->1(sin sufijo), 5->2(N2), 6->3(N3)...
+        $n = $gen - 3; // 4->1 (sin sufijo), 5->2 (N2), 6->3 (N3)...
         return $n === 1 ? $base : $base . ' N' . $n;
     };
 
-    // Texto de tooltip
-    $makeInfo = function(?array $a, string $rol): string {
-        if (!$a) return $rol.' · (desconocido)';
+    // Info para tooltip (solo si existe registro)
+    $makeInfo = function(array $a, string $rol): string {
         $partes = [$rol];
         if (!empty($a['especie'])) $partes[] = $a['especie'];
         if (!empty($a['raza']))    $partes[] = $a['raza'];
@@ -897,79 +891,29 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         return implode(' · ', $partes);
     };
 
-    // Meta para placeholders
-    $makePlaceholderMeta = function(string $rolReal, int $gen, string $sexoInferido, string $mode) {
-        if ($mode === 'none') return null;
-        if ($mode === 'slim') {
-            return [
-                '_known'        => false,
-                '_generation'   => $gen,
-                '_relationship' => $rolReal,
-                '_sex_hint'     => $sexoInferido
-            ];
-        }
-        // 'full'
-        return [
-            '_known'            => false,
-            '_generation'       => $gen,
-            '_relationship'     => $rolReal,
-            'animal_id'         => null,
-            'identificador'     => null,
-            'sexo'              => $sexoInferido,
-            'especie'           => null,
-            'raza'              => null,
-            'color'             => null,
-            'fecha_nacimiento'  => null,
-            'madre_id'          => null,
-            'padre_id'          => null,
-            'fotografia_url'    => null,
-            'origen'            => null,
-            'categoria'         => null,
-            'estado'            => null,
-        ];
-    };
+    // Para evitar ciclos accidentales en la BD
+    $stackIds = [];
 
     /**
-     * Construye recursivamente la rama ascendente.
-     * $hint: 'PADRE' o 'MADRE' para inferir sexo cuando falta el registro.
+     * Rama ascendente: SOLO devuelve nodo si existe el animal.
+     * No crea placeholders. Si no hay padre/madre o no existe → no se agrega.
      */
-    $buildAscBranch = function(?string $id, string $hint, int $gen) use (
-        &$buildAscBranch, $fetchAnimal, $labelAsc, $makeInfo, $makePlaceholderMeta,
-        $maxGeneraciones, $EMIT_PLACEHOLDERS, $PLACEHOLDER_META_MODE
+    $buildAscBranch = function(?string $id, int $gen) use (
+        &$buildAscBranch, &$stackIds, $fetchAnimal, $labelAsc, $makeInfo, $maxGeneraciones, $ALLOW_DUPLICATE_OCCURRENCES
     ) {
-        $sexoInferido = (strtoupper($hint) === 'MADRE') ? 'HEMBRA' : 'MACHO';
+        if (!$id) return null;
 
-        // Sin ID
-        if (!$id) {
-            if (!$EMIT_PLACEHOLDERS) return null;
-            $rolReal = $labelAsc($gen, $sexoInferido);
-            return [
-                'name'        => $rolReal,
-                'info'        => $makeInfo(null, $rolReal),
-                'rel'         => $rolReal,
-                'meta'        => $makePlaceholderMeta($rolReal, $gen, $sexoInferido, $PLACEHOLDER_META_MODE),
-                'placeholder' => true,
-                'children'    => []
-            ];
+        // Detectar ciclo en la rama actual
+        if (in_array($id, $stackIds, true)) {
+            return null;
         }
 
         $a = $fetchAnimal($id);
+        if (!$a) return null; // sin registro → no se agrega nada
 
-        // Registro inexistente
-        if (!$a) {
-            if (!$EMIT_PLACEHOLDERS) return null;
-            $rolReal = $labelAsc($gen, $sexoInferido);
-            return [
-                'name'        => $rolReal,
-                'info'        => $makeInfo(null, $rolReal),
-                'rel'         => $rolReal,
-                'meta'        => $makePlaceholderMeta($rolReal, $gen, $sexoInferido, $PLACEHOLDER_META_MODE),
-                'placeholder' => true,
-                'children'    => []
-            ];
-        }
+        // Si no se permiten duplicados globales, podrías llevar un set global de vistos aquí.
+        // Por defecto permitimos duplicados porque un mismo animal puede ser ancestro por dos ramas distintas.
 
-        // Registro existente
         $rolReal = $labelAsc($gen, $a['sexo'] ?? null);
 
         $node = [
@@ -981,16 +925,20 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         ];
 
         if ($gen < $maxGeneraciones) {
-            $c1 = $buildAscBranch($a['padre_id'] ?? null, 'PADRE', $gen + 1);
-            $c2 = $buildAscBranch($a['madre_id'] ?? null, 'MADRE', $gen + 1);
+            $stackIds[] = $id; // push
+
+            $c1 = $buildAscBranch($a['padre_id'] ?? null, $gen + 1);
+            $c2 = $buildAscBranch($a['madre_id'] ?? null, $gen + 1);
             if ($c1 !== null) $node['children'][] = $c1;
             if ($c2 !== null) $node['children'][] = $c2;
+
+            array_pop($stackIds); // pop
         }
 
         return $node;
     };
 
-    // Nodo raíz
+    // Raíz (debe existir, si no lanzamos)
     $root = $fetchAnimal($animalId);
     if (!$root) {
         throw new RuntimeException('El animal no existe o está eliminado.');
@@ -1004,11 +952,11 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         'children' => []
     ];
 
-    // PADRE y MADRE
-    $c1 = $buildAscBranch($root['padre_id'] ?? null, 'PADRE', 1);
-    $c2 = $buildAscBranch($root['madre_id'] ?? null, 'MADRE', 1);
-    if ($c1 !== null) $rootNode['children'][] = $c1;
-    if ($c2 !== null) $rootNode['children'][] = $c2;
+    // Añadimos solo los padres que EXISTEN
+    $p = $buildAscBranch($root['padre_id'] ?? null, 1);
+    $m = $buildAscBranch($root['madre_id'] ?? null, 1);
+    if ($p !== null) $rootNode['children'][] = $p;
+    if ($m !== null) $rootNode['children'][] = $m;
 
     return $rootNode;
 }
