@@ -148,6 +148,188 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // --- LÓGICA DE DETALLES Y REGISTROS ANIDADOS ---
+  let verificacionGeneticaParentesco = false;
+
+  // ======================================
+  // SVG base
+  // ======================================
+  let width = 600,
+    height = 400;
+  let vis = d3
+    .select("#viz")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .append("g")
+    .attr("transform", "translate(60, 20)");
+
+  // ======================================
+  // Layout del árbol
+  // ======================================
+  let tree = d3.layout
+    .tree()
+    .size([width - 150, height - 100])
+    // 👇 aumenta la separación entre nodos hermanos y ramas
+    .separation(function (a, b) {
+      return a.parent === b.parent ? 1.8 : 2.5;
+    });
+
+  // Generador de líneas diagonales
+  let diagonal = d3.svg.diagonal().projection(function (d) {
+    return [d.x, -d.y + 320];
+  });
+
+  // VERIFICAR CRUCE
+  function verificarArbolGenealogico(verraco, hembra) {
+    console.log("Verraco:", verraco, "Hembra:", hembra);
+
+    if (verraco && hembra) {
+      $.ajax({
+        url: `${baseUrl}api/animales-verificar-cruce`,
+        method: "POST",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify({
+          animal_a: verraco,
+          animal_b: hembra,
+        }),
+        success: function (response) {
+          console.log("Respuesta del servidor:" + response);
+
+          // TODO: logica
+        },
+        error: function (xhr) {
+          console.error("Error AJAX:", xhr);
+          showErrorToast(
+            xhr.responseJSON?.message || "Error inesperado al verificar cruce."
+          );
+        },
+      });
+    }
+  }
+
+  $(
+    '#formPeriodoMonta select[name="verraco_id"], #formPeriodoMonta select[name="hembra_id"]'
+  ).on("change", function () {
+    const verracoId = $('#formPeriodoMonta select[name="verraco_id"]').val();
+    const hembraId = $('#formPeriodoMonta select[name="hembra_id"]').val();
+    verificarArbolGenealogico(verracoId, hembraId);
+  });
+
+  function ArbolGenealogicos(verraco, hembra) {
+    $.ajax({
+      url: `${baseUrl}api/animales/arbol/1`,
+      method: "POST",
+      contentType: "application/json",
+      dataType: "json",
+      data: JSON.stringify({
+        animal_id: verraco,
+        animal_id_2: hembra,
+      }),
+      success: function (response) {
+        // imprime response como texto con json.stringify
+        // document.write("<pre>" + JSON.stringify(response, null, 2) + "</pre>");
+
+        let treeData = {
+          name: "Cerdo base",
+          info: "... todos los datos del json original",
+          children: [
+            {
+              name: "Padre",
+              info: "cerdo comprado",
+            }, // sin padres conocidos (abuelos de cerdo base)
+            {
+              name: "Madre",
+              children: [
+                // Madre con padres conocidos
+                {
+                  name: "A311",
+                }, // abuelos de cerdo base
+                {
+                  name: "A312",
+                  children: [
+                    // abuelos de cerdo base
+                    {
+                      name: "A411",
+                      info: "",
+                    }, // bisabuelo de cerdo base
+                  ],
+                },
+              ],
+            },
+          ],
+        };
+
+        // ======================================
+        // Generar nodos y enlaces
+        // ======================================
+        // let nodes = tree.nodes(treeData); // Informacion del árbol
+        let nodes = tree.nodes(response); // Informacion del árbol
+        let links = tree.links(nodes);
+
+        // Enlaces (líneas)
+        vis
+          .selectAll("path.link")
+          .data(links)
+          .enter()
+          .append("path")
+          .attr("class", "link")
+          .attr("d", diagonal)
+          .style("fill", "none")
+          .style("stroke", "#ccc")
+          .style("stroke-width", "1.5px");
+
+        // Nodos
+        let node = vis
+          .selectAll("g.node")
+          .data(nodes)
+          .enter()
+          .append("g")
+          .attr("class", "node")
+          .attr("transform", function (d) {
+            return "translate(" + d.x + "," + (-d.y + 320) + ")";
+          });
+
+        node
+          .append("circle")
+          .attr("r", 4)
+          .style("fill", "#fff")
+          .style("stroke", "#000");
+
+        // Texto de los nodos
+        node
+          .append("foreignObject")
+          .attr("x", (d) => (d.children ? -20 : 5))
+          .attr("y", -8)
+          .attr("width", 100)
+          .attr("height", 40)
+          .append("xhtml:div")
+          .attr("class", "node-label")
+          .html((d) => `<small>ABUELO</small><br>${d.name}`);
+
+        // ======================================
+        // Colorear nodo A311
+        // ======================================
+        vis
+          .selectAll("g.node")
+          .filter(function (d) {
+            return d.name === "A311";
+          })
+          .select("circle")
+          .style("fill", "red");
+      },
+      error: function (xhr) {
+        console.error("Error AJAX:", xhr);
+        showErrorToast(
+          xhr.responseJSON?.message || "Error inesperado al verificar cruce."
+        );
+      },
+    });
+  }
+  ArbolGenealogicos(
+    "j01ae43e-324d-4d90-93f9-01f5316d1a44",
+    "r89b4e6a-b25d-4fcd-952e-f3b36cb2786f"
+  );
 
   let currentAnimalIdForDetails = null; // Variable para guardar el ID del animal en vista
 
@@ -190,8 +372,6 @@ document.addEventListener("DOMContentLoaded", function () {
       },
     });
   }
-
-  
 
   // --- FUNCIONES AUXILIARES DE EDICIÓN Y ELIMINACIÓN ---
   function agregarSevicio(animalId) {

@@ -189,7 +189,7 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->delete('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'eliminar']);
 
     // Verificación de cruce (POST, sin path param; body: animal_a/animalIdA y animal_b/animalIdB)
-    $router->post('/animales/verificar_cruce/{id}', ['controlador' => AnimalController::class, 'accion' => 'verificarCruce']);
+    $router->post('/animales/animales-verificar-cruce', ['controlador' => AnimalController::class, 'accion' => 'verificarCruce']);
 
     // Árbol genealógico (POST)
     $router->post('/animales/arbol/{id}', ['controlador' => AnimalController::class, 'accion' => 'arbolGenealogico']);
@@ -251,21 +251,20 @@ $router->group(['prefix' => '/api'], function ($router) {
 
 
     // endpoints de revisiones de servicio
-$router->get('/revisiones-servicio',                    ['controlador' => RevisionesServicioController::class, 'accion' => 'listar']);
-$router->get('/revisiones-servicio/{revision_id}',      ['controlador' => RevisionesServicioController::class, 'accion' => 'mostrar']);
-$router->get('/revisiones-servicio/periodo/{periodo_id}',['controlador' => RevisionesServicioController::class, 'accion' => 'listarPorPeriodo']);
-$router->post('/revisiones-servicio',                   ['controlador' => RevisionesServicioController::class, 'accion' => 'crear']);
-$router->post('/revisiones-servicio/{revision_id}',     ['controlador' => RevisionesServicioController::class, 'accion' => 'actualizar']);
-$router->delete('/revisiones-servicio/{revision_id}',   ['controlador' => RevisionesServicioController::class, 'accion' => 'eliminar']);
+    $router->get('/revisiones-servicio',                    ['controlador' => RevisionesServicioController::class, 'accion' => 'listar']);
+    $router->get('/revisiones-servicio/{revision_id}',      ['controlador' => RevisionesServicioController::class, 'accion' => 'mostrar']);
+    $router->get('/revisiones-servicio/periodo/{periodo_id}', ['controlador' => RevisionesServicioController::class, 'accion' => 'listarPorPeriodo']);
+    $router->post('/revisiones-servicio',                   ['controlador' => RevisionesServicioController::class, 'accion' => 'crear']);
+    $router->post('/revisiones-servicio/{revision_id}',     ['controlador' => RevisionesServicioController::class, 'accion' => 'actualizar']);
+    $router->delete('/revisiones-servicio/{revision_id}',   ['controlador' => RevisionesServicioController::class, 'accion' => 'eliminar']);
 
-// endpoints de alertas
-$router->get('/alertas', ['controlador' => AlertaController::class, 'accion' => 'listar']);
-$router->get('/alertas/{alerta_id}', ['controlador' => AlertaController::class, 'accion' => 'mostrar']);
-$router->post('/alertas', ['controlador' => AlertaController::class, 'accion' => 'crear']);
-$router->post('/alertas/{alerta_id}', ['controlador' => AlertaController::class, 'accion' => 'actualizar']);
-$router->post('/alertas/{alerta_id}/estado', ['controlador' => AlertaController::class, 'accion' => 'cambiarEstado']);
-$router->delete('/alertas/{alerta_id}', ['controlador' => AlertaController::class, 'accion' => 'eliminar']);
-
+    // endpoints de alertas
+    $router->get('/alertas', ['controlador' => AlertaController::class, 'accion' => 'listar']);
+    $router->get('/alertas/{alerta_id}', ['controlador' => AlertaController::class, 'accion' => 'mostrar']);
+    $router->post('/alertas', ['controlador' => AlertaController::class, 'accion' => 'crear']);
+    $router->post('/alertas/{alerta_id}', ['controlador' => AlertaController::class, 'accion' => 'actualizar']);
+    $router->post('/alertas/{alerta_id}/estado', ['controlador' => AlertaController::class, 'accion' => 'cambiarEstado']);
+    $router->delete('/alertas/{alerta_id}', ['controlador' => AlertaController::class, 'accion' => 'eliminar']);
 });
 
 

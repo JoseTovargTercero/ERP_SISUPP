@@ -5,6 +5,8 @@
 // - Estado de preñez: No preñada
 
 ?>
+
+
 <div class="container-fluid">
     <!-- Título y Botón de Nuevo Periodo -->
     <div class="row">
@@ -42,11 +44,14 @@
                             </tr>
                         </thead>
                     </table>
+
+
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 
 
 <!-- Modal: Registrar Periodo de Monta -->
@@ -89,11 +94,19 @@
 
                                     </select>
                                 </div>
+
+
+
                                 <div class="col-md-12">
                                     <div class="alert alert-info mt-2" id="infoCruce" style="display:none;">
                                         <strong>Origen Genético:</strong> <span id="origenGenetico"></span>
                                     </div>
                                 </div>
+
+
+
+
+
                             </div>
                             <div class="text-end">
                                 <button type="button" class="btn btn-primary" id="btnSiguientePaso">Siguiente</button>
@@ -125,6 +138,22 @@
         </div>
     </div>
 </div>
+
+<div id="viz"></div>
+<style>
+    .node-label {
+        font-size: 12px;
+        background: rgb(224, 224, 224, 0.5);
+        width: fit-content;
+        padding: 5px;
+        text-align: center;
+    }
+
+    .node-label small {
+        font-size: 10px;
+        color: rgb(183, 183, 183);
+    }
+</style>
 
 <!-- Modal: Registrar Servicio (Monta Individual) -->
 <div class="modal fade" id="modalServicio" tabindex="-1" aria-labelledby="modalServicioLabel" aria-hidden="true">
@@ -163,8 +192,25 @@
     </div>
 </div>
 
+<script src="https://d3js.org/d3.v3.min.js"></script>
+
 <script>
-    let verificacionGeneticaParentesco = false;
+    const baseUrl = "<?= BASE_URL ?>";
+
+
+
+    // Mapa de UUID a enteros
+    const uuidMap = new Map();
+    let nextId = 1;
+
+    function uuidToInt(uuid) {
+        if (!uuid) return null;
+        if (!uuidMap.has(uuid)) {
+            uuidMap.set(uuid, nextId++);
+        }
+        return uuidMap.get(uuid);
+    }
+
 
     // --- Wizard ---
     document.getElementById('btnSiguientePaso').addEventListener('click', () => {
@@ -185,26 +231,6 @@
         const paso1Tab = new bootstrap.Tab(document.querySelector('#paso1-tab'));
         paso1Tab.show();
     });
-
-
-
-
-    // --- Simulación de verificación genética ---
-    document.getElementById('hembra_id').addEventListener('change', function() {
-        const verraco = document.getElementById('verraco_id').value;
-        const hembra = this.value;
-        if (verraco && hembra) {
-            verificacionGeneticaParentesco = false;
-            document.getElementById('infoCruce').style.display = 'block';
-            document.getElementById('origenGenetico').innerText =
-                'Verificado: No hay parentesco genético directo.';
-        }
-    });
-
-
-
-
-    const baseUrl = "<?php echo BASE_URL; ?>";
 </script>
 
 
