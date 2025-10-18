@@ -837,10 +837,16 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
     }
     if ($maxGeneraciones < 1) $maxGeneraciones = 1;
 
-    // --- Opcional: rellena siempre meta/info en placeholders ---
-    $fillPlaceholderMeta = true;
+    // ======= CONFIG PLACEHOLDERS =======
+    // Emitir nodos cuando faltan datos (conserva la forma del árbol en D3)
+    $EMIT_PLACEHOLDERS = true;
+    // 'none' => no meta en placeholders
+    // 'slim' => meta mínima (solo flags)  ← recomendado
+    // 'full' => meta con todas las claves nulas (como antes)
+    $PLACEHOLDER_META_MODE = 'slim';
+    // ===================================
 
-    // --- Caché simple por llamada ---
+    // --- Caché por llamada ---
     $cache = [];
 
     $fetchAnimal = function(string $id) use (&$cache) {
@@ -879,21 +885,30 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         return $n === 1 ? $base : $base . ' N' . $n;
     };
 
-    // Texto para tooltips
-    $makeInfo = function(array $a = null, ?string $rol = null): ?string {
-        if (!$a) return $rol ? ($rol.' · (sin datos)') : '(sin datos)';
-        $partes = [];
-        if ($rol) $partes[] = $rol;
+    // Texto de tooltip
+    $makeInfo = function(?array $a, string $rol): string {
+        if (!$a) return $rol.' · (desconocido)';
+        $partes = [$rol];
         if (!empty($a['especie'])) $partes[] = $a['especie'];
         if (!empty($a['raza']))    $partes[] = $a['raza'];
         if (!empty($a['color']))   $partes[] = $a['color'];
         if (!empty($a['fecha_nacimiento'])) $partes[] = 'Nac. '.$a['fecha_nacimiento'];
         if (!empty($a['origen']))  $partes[] = 'Origen: '.$a['origen'];
-        return $partes ? implode(' · ', $partes) : ($rol ? ($rol.' · (sin datos)') : '(sin datos)');
+        return implode(' · ', $partes);
     };
 
-    // Meta mínima para placeholders (estructura consistente)
-    $placeholderMeta = function(string $rolReal, int $gen, string $sexoInferido) {
+    // Meta para placeholders
+    $makePlaceholderMeta = function(string $rolReal, int $gen, string $sexoInferido, string $mode) {
+        if ($mode === 'none') return null;
+        if ($mode === 'slim') {
+            return [
+                '_known'        => false,
+                '_generation'   => $gen,
+                '_relationship' => $rolReal,
+                '_sex_hint'     => $sexoInferido
+            ];
+        }
+        // 'full'
         return [
             '_known'            => false,
             '_generation'       => $gen,
@@ -919,18 +934,20 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
      * $hint: 'PADRE' o 'MADRE' para inferir sexo cuando falta el registro.
      */
     $buildAscBranch = function(?string $id, string $hint, int $gen) use (
-        &$buildAscBranch, $fetchAnimal, $labelAsc, $makeInfo, $placeholderMeta, $fillPlaceholderMeta, $maxGeneraciones
+        &$buildAscBranch, $fetchAnimal, $labelAsc, $makeInfo, $makePlaceholderMeta,
+        $maxGeneraciones, $EMIT_PLACEHOLDERS, $PLACEHOLDER_META_MODE
     ) {
         $sexoInferido = (strtoupper($hint) === 'MADRE') ? 'HEMBRA' : 'MACHO';
 
-        // Placeholder sin ID
+        // Sin ID
         if (!$id) {
+            if (!$EMIT_PLACEHOLDERS) return null;
             $rolReal = $labelAsc($gen, $sexoInferido);
             return [
                 'name'        => $rolReal,
                 'info'        => $makeInfo(null, $rolReal),
                 'rel'         => $rolReal,
-                'meta'        => $fillPlaceholderMeta ? $placeholderMeta($rolReal, $gen, $sexoInferido) : null,
+                'meta'        => $makePlaceholderMeta($rolReal, $gen, $sexoInferido, $PLACEHOLDER_META_MODE),
                 'placeholder' => true,
                 'children'    => []
             ];
@@ -938,21 +955,22 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
 
         $a = $fetchAnimal($id);
 
-        // Placeholder si no existe el registro
+        // Registro inexistente
         if (!$a) {
+            if (!$EMIT_PLACEHOLDERS) return null;
             $rolReal = $labelAsc($gen, $sexoInferido);
             return [
                 'name'        => $rolReal,
                 'info'        => $makeInfo(null, $rolReal),
                 'rel'         => $rolReal,
-                'meta'        => $fillPlaceholderMeta ? $placeholderMeta($rolReal, $gen, $sexoInferido) : null,
+                'meta'        => $makePlaceholderMeta($rolReal, $gen, $sexoInferido, $PLACEHOLDER_META_MODE),
                 'placeholder' => true,
                 'children'    => []
             ];
         }
 
-        // Registro existente → parentesco real por generación/sexo
-        $rolReal = $labelAsc($gen, $a['sexo']);
+        // Registro existente
+        $rolReal = $labelAsc($gen, $a['sexo'] ?? null);
 
         $node = [
             'name'     => ($a['identificador'] ?: $rolReal),
@@ -962,10 +980,11 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
             'children' => []
         ];
 
-        // Siguiente capa
         if ($gen < $maxGeneraciones) {
-            $node['children'][] = $buildAscBranch($a['padre_id'] ?? null, 'PADRE', $gen + 1);
-            $node['children'][] = $buildAscBranch($a['madre_id'] ?? null, 'MADRE', $gen + 1);
+            $c1 = $buildAscBranch($a['padre_id'] ?? null, 'PADRE', $gen + 1);
+            $c2 = $buildAscBranch($a['madre_id'] ?? null, 'MADRE', $gen + 1);
+            if ($c1 !== null) $node['children'][] = $c1;
+            if ($c2 !== null) $node['children'][] = $c2;
         }
 
         return $node;
@@ -985,9 +1004,11 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         'children' => []
     ];
 
-    // Hijos del consultado (ascendencia) = PADRE y MADRE
-    $rootNode['children'][] = $buildAscBranch($root['padre_id'] ?? null, 'PADRE', 1);
-    $rootNode['children'][] = $buildAscBranch($root['madre_id'] ?? null, 'MADRE', 1);
+    // PADRE y MADRE
+    $c1 = $buildAscBranch($root['padre_id'] ?? null, 'PADRE', 1);
+    $c2 = $buildAscBranch($root['madre_id'] ?? null, 'MADRE', 1);
+    if ($c1 !== null) $rootNode['children'][] = $c1;
+    if ($c2 !== null) $rootNode['children'][] = $c2;
 
     return $rootNode;
 }
