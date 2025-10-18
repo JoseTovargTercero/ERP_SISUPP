@@ -636,19 +636,24 @@ public function getArbolGenealogico(string $animalId, ?string $direccion = null,
         return $row;
     };
 
-$labelAsc = function (int $gen, ?string $sexo): string {
-    $sx = strtoupper((string)$sexo);
-    $mujer = ($sx === 'HEMBRA');
-
-    if ($gen === 1) return $mujer ? 'MADRE' : 'PADRE';
-    if ($gen === 2) return $mujer ? 'ABUELA' : 'ABUELO';
-    if ($gen === 3) return $mujer ? 'BISABUELA' : 'BISABUELO';
-
-    $base = $mujer ? 'TATARABUELA' : 'TATARABUELO';
-    $n = $gen - 3;
-    return $n === 1 ? $base : $base . ' N' . $n;
-};
-
+    // Etiquetas de parentesco (ascendencia)
+    $labelAsc = function(int $gen, ?string $sexo): string {
+        $sx = strtoupper((string)$sexo);
+        if ($gen === 1) {
+            return ($sx === 'HEMBRA') ? 'MADRE' : 'PADRE';
+        }
+        if ($gen === 2) {
+            return ($sx === 'HEMBRA') ? 'ABUELA' : 'ABUELO';
+        }
+        if ($gen === 3) {
+            return ($sx === 'HEMBRA') ? 'BISABUELA' : 'BISABUELO';
+        }
+        if ($gen === 4) {
+            return ($sx === 'HEMBRA') ? 'TATARABUELA' : 'TATARABUELO';
+        }
+        // Generación 5+ (genérica)
+        return strtoupper($gen . ' GENERACIONES ARRIBA');
+    };
 
     // Etiquetas de parentesco (descendencia) — opcional
     $labelDesc = function(int $gen, ?string $sexo): string {
@@ -857,22 +862,23 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         return $row;
     };
 
-    // Etiqueta por generación (para info/rel)
-    $labelAsc = function(int $gen, ?string $sexo): string {
+    // Etiqueta por generación (según sexo) con tu regla:
+    // 1: Padre/Madre, 2: Abuelo/Abuela, 3: Bisabuelo/a, 4: Tatarabuelo/a,
+    // 5+: Tatarabuelo/a N2, N3, N4...
+    $labelAsc = function (int $gen, ?string $sexo): string {
         $sx = strtoupper((string)$sexo);
-        if ($gen === 1) return ($sx === 'HEMBRA') ? 'MADRE' : 'PADRE';
-        if ($gen === 2) return ($sx === 'HEMBRA') ? 'ABUELA' : 'ABUELO';
-        if ($gen === 3) return ($sx === 'HEMBRA') ? 'BISABUELA' : 'BISABUELO';
-        if ($gen === 4) return ($sx === 'HEMBRA') ? 'TATARABUELA' : 'TATARABUELO';
-        // Para >=5 siempre devolvemos un parentesco explícito, no genérico:
-        // Usamos ordinal + ABUELO/ABUELA (ej.: "5º ABUELO") para evitar ambigüedades terminológicas.
-        $n = max(5, $gen); // a partir de 5
-        $suf = ($sx === 'HEMBRA') ? 'ABUELA' : 'ABUELO';
-        // ordinal simple sin superíndice para compatibilidad tipográfica
-        return $n . 'º ' . $suf;
+        $mujer = ($sx === 'HEMBRA');
+
+        if ($gen === 1) return $mujer ? 'MADRE' : 'PADRE';
+        if ($gen === 2) return $mujer ? 'ABUELA' : 'ABUELO';
+        if ($gen === 3) return $mujer ? 'BISABUELA' : 'BISABUELO';
+
+        $base = $mujer ? 'TATARABUELA' : 'TATARABUELO';
+        $n = $gen - 3; // gen=4 -> 1 (sin sufijo), gen=5 -> 2 => "N2", etc.
+        return $n === 1 ? $base : $base . ' N' . $n;
     };
 
-    // Texto compacto para tooltips (libre)
+    // Texto compacto para tooltips (ajústalo a gusto)
     $makeInfo = function(array $a = null, ?string $rol = null): ?string {
         if (!$a) return null;
         $partes = [];
@@ -887,16 +893,21 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
 
     /**
      * Construye recursivamente la rama ascendente.
-     * $hint indica si esta rama es de PADRE o MADRE cuando el ID no existe (placeholder).
+     * $hint es 'PADRE' o 'MADRE' para inferir sexo cuando falte registro.
      */
-    $buildAscBranch = function(?string $id, string $hint, int $gen) use (&$buildAscBranch, $fetchAnimal, $labelAsc, $makeInfo, $maxGeneraciones) {
+    $buildAscBranch = function(?string $id, string $hint, int $gen) use (
+        &$buildAscBranch, $fetchAnimal, $labelAsc, $makeInfo, $maxGeneraciones
+    ) {
+        // Si NO hay ID o el registro no existe → placeholder,
+        // pero con parentesco correcto (Abuelo, Bisabuelo, Tatarabuelo N2, ...)
+        $sexoInferido = (strtoupper($hint) === 'MADRE') ? 'HEMBRA' : 'MACHO';
 
-        // Placeholder cuando no hay registro para esta rama
         if (!$id) {
+            $rolReal = $labelAsc($gen, $sexoInferido);
             return [
-                'name'        => $hint,
+                'name'        => $rolReal,
                 'info'        => null,
-                'rel'         => $hint,   // muestra PADRE/MADRE según rama
+                'rel'         => $rolReal,
                 'meta'        => null,
                 'placeholder' => true,
                 'children'    => []
@@ -904,33 +915,31 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         }
 
         $a = $fetchAnimal($id);
-
         if (!$a) {
+            $rolReal = $labelAsc($gen, $sexoInferido);
             return [
-                'name'        => $hint,
+                'name'        => $rolReal,
                 'info'        => null,
-                'rel'         => $hint,
+                'rel'         => $rolReal,
                 'meta'        => null,
                 'placeholder' => true,
                 'children'    => []
             ];
         }
 
-        // ⬇️ AQUÍ está el cambio clave:
-        // En cada generación calculamos el parentesco REAL según generación y sexo.
+        // Registro existente → calcular parentesco real por generación/sexo
         $rolReal = $labelAsc($gen, $a['sexo']);
 
         $node = [
             'name'     => ($a['identificador'] ?: $rolReal),
             'info'     => $makeInfo($a, $rolReal),
-            'rel'      => $rolReal,   // <-- ahora sí muestra ABUELO, BISABUELO, etc.
+            'rel'      => $rolReal,
             'meta'     => $a,
             'children' => []
         ];
 
-        // Si no alcanzamos el límite, añadimos los padres de este ancestro
+        // Siguiente capa (si no alcanzamos el límite)
         if ($gen < $maxGeneraciones) {
-            // El hint de la siguiente capa es PADRE/MADRE (por si faltan IDs allí)
             $node['children'][] = $buildAscBranch($a['padre_id'] ?? null, 'PADRE', $gen + 1);
             $node['children'][] = $buildAscBranch($a['madre_id'] ?? null, 'MADRE', $gen + 1);
         }
@@ -952,7 +961,7 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         'children' => []
     ];
 
-    // Hijos del consultado (en ascendencia) = sus PADRE y MADRE
+    // Hijos del consultado (ascendencia) = PADRE y MADRE
     $rootNode['children'][] = $buildAscBranch($root['padre_id'] ?? null, 'PADRE', 1);
     $rootNode['children'][] = $buildAscBranch($root['madre_id'] ?? null, 'MADRE', 1);
 
