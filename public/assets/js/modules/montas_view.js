@@ -264,7 +264,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Generar nodos y enlaces
         // ======================================
         // let nodes = tree.nodes(treeData); // Informacion del árbol
-        let nodes = tree.nodes(response); // Informacion del árbol
+        let nodes = tree.nodes(response.data[0]); // Informacion del árbol
         let links = tree.links(nodes);
 
         // Enlaces (líneas)
