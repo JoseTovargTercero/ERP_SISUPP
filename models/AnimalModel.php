@@ -862,17 +862,22 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         return $row;
     };
 
-    // Etiqueta por generación (para info rápida)
+    // Etiqueta por generación (para info/rel)
     $labelAsc = function(int $gen, ?string $sexo): string {
         $sx = strtoupper((string)$sexo);
         if ($gen === 1) return ($sx === 'HEMBRA') ? 'MADRE' : 'PADRE';
         if ($gen === 2) return ($sx === 'HEMBRA') ? 'ABUELA' : 'ABUELO';
         if ($gen === 3) return ($sx === 'HEMBRA') ? 'BISABUELA' : 'BISABUELO';
         if ($gen === 4) return ($sx === 'HEMBRA') ? 'TATARABUELA' : 'TATARABUELO';
-        return strtoupper($gen . ' GENERACIONES ARRIBA');
+        // Para >=5 siempre devolvemos un parentesco explícito, no genérico:
+        // Usamos ordinal + ABUELO/ABUELA (ej.: "5º ABUELO") para evitar ambigüedades terminológicas.
+        $n = max(5, $gen); // a partir de 5
+        $suf = ($sx === 'HEMBRA') ? 'ABUELA' : 'ABUELO';
+        // ordinal simple sin superíndice para compatibilidad tipográfica
+        return $n . 'º ' . $suf;
     };
 
-    // Texto compacto para tooltips (libre, ajusta a gusto)
+    // Texto compacto para tooltips (libre)
     $makeInfo = function(array $a = null, ?string $rol = null): ?string {
         if (!$a) return null;
         $partes = [];
@@ -885,44 +890,52 @@ public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones 
         return $partes ? implode(' · ', $partes) : null;
     };
 
-    // Construye recursivamente la rama ascendente (nodo actual = ancestro)
-    $buildAscBranch = function(?string $id, string $rol, int $gen) use (&$buildAscBranch, $fetchAnimal, $labelAsc, $makeInfo, $maxGeneraciones) {
-        // Si no hay ID, devolvemos un placeholder con el rol (p.e. "PADRE"/"MADRE")
+    /**
+     * Construye recursivamente la rama ascendente.
+     * $hint indica si esta rama es de PADRE o MADRE cuando el ID no existe (placeholder).
+     */
+    $buildAscBranch = function(?string $id, string $hint, int $gen) use (&$buildAscBranch, $fetchAnimal, $labelAsc, $makeInfo, $maxGeneraciones) {
+
+        // Placeholder cuando no hay registro para esta rama
         if (!$id) {
             return [
-                'name'     => $rol,
-                'info'     => null,
-                'rel'      => $rol,
-                'meta'     => null,
+                'name'        => $hint,
+                'info'        => null,
+                'rel'         => $hint,   // muestra PADRE/MADRE según rama
+                'meta'        => null,
                 'placeholder' => true,
-                'children' => [] // sin padres conocidos
+                'children'    => []
             ];
         }
 
         $a = $fetchAnimal($id);
+
         if (!$a) {
-            // Registro inexistente/eliminado → placeholder con rol
             return [
-                'name'     => $rol,
-                'info'     => null,
-                'rel'      => $rol,
-                'meta'     => null,
+                'name'        => $hint,
+                'info'        => null,
+                'rel'         => $hint,
+                'meta'        => null,
                 'placeholder' => true,
-                'children' => []
+                'children'    => []
             ];
         }
 
+        // ⬇️ AQUÍ está el cambio clave:
+        // En cada generación calculamos el parentesco REAL según generación y sexo.
+        $rolReal = $labelAsc($gen, $a['sexo']);
+
         $node = [
-            'name'     => $a['identificador'] ?: $rol,
-            'info'     => $makeInfo($a, $labelAsc($gen, $a['sexo'])),
-            'rel'      => $rol,
-            'meta'     => $a, // útil para tooltips/fotos en el front
+            'name'     => ($a['identificador'] ?: $rolReal),
+            'info'     => $makeInfo($a, $rolReal),
+            'rel'      => $rolReal,   // <-- ahora sí muestra ABUELO, BISABUELO, etc.
+            'meta'     => $a,
             'children' => []
         ];
 
         // Si no alcanzamos el límite, añadimos los padres de este ancestro
         if ($gen < $maxGeneraciones) {
-            // Orden sugerido: primero PADRE, luego MADRE (ajústalo si quieres) 
+            // El hint de la siguiente capa es PADRE/MADRE (por si faltan IDs allí)
             $node['children'][] = $buildAscBranch($a['padre_id'] ?? null, 'PADRE', $gen + 1);
             $node['children'][] = $buildAscBranch($a['madre_id'] ?? null, 'MADRE', $gen + 1);
         }
