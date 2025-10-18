@@ -636,24 +636,19 @@ public function getArbolGenealogico(string $animalId, ?string $direccion = null,
         return $row;
     };
 
-    // Etiquetas de parentesco (ascendencia)
-    $labelAsc = function(int $gen, ?string $sexo): string {
-        $sx = strtoupper((string)$sexo);
-        if ($gen === 1) {
-            return ($sx === 'HEMBRA') ? 'MADRE' : 'PADRE';
-        }
-        if ($gen === 2) {
-            return ($sx === 'HEMBRA') ? 'ABUELA' : 'ABUELO';
-        }
-        if ($gen === 3) {
-            return ($sx === 'HEMBRA') ? 'BISABUELA' : 'BISABUELO';
-        }
-        if ($gen === 4) {
-            return ($sx === 'HEMBRA') ? 'TATARABUELA' : 'TATARABUELO';
-        }
-        // Generación 5+ (genérica)
-        return strtoupper($gen . ' GENERACIONES ARRIBA');
-    };
+$labelAsc = function (int $gen, ?string $sexo): string {
+    $sx = strtoupper((string)$sexo);
+    $mujer = ($sx === 'HEMBRA');
+
+    if ($gen === 1) return $mujer ? 'MADRE' : 'PADRE';
+    if ($gen === 2) return $mujer ? 'ABUELA' : 'ABUELO';
+    if ($gen === 3) return $mujer ? 'BISABUELA' : 'BISABUELO';
+
+    $base = $mujer ? 'TATARABUELA' : 'TATARABUELO';
+    $n = $gen - 3;
+    return $n === 1 ? $base : $base . ' N' . $n;
+};
+
 
     // Etiquetas de parentesco (descendencia) — opcional
     $labelDesc = function(int $gen, ?string $sexo): string {
