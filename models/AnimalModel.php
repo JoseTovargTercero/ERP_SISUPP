@@ -812,6 +812,145 @@ public function getArbolGenealogico(string $animalId, ?string $direccion = null,
         'descendencia' => $desc,  // ['1'=>[...], '2'=>[...]] o [], solo si se pidió
     ];
 }
+/**
+ * Árbol genealógico en formato jerárquico para D3 (ascendencia).
+ * children del nodo raíz = sus PADRE y MADRE; y así recursivamente (abuelos, bisabuelos...).
+ * 
+ * @param string $animalId
+ * @param int    $maxGeneraciones  >=1 (default 6)
+ * @return array  // Estructura lista para D3
+ * 
+ * Estructura de cada nodo:
+ *  [
+ *    'name'     => string,                    // etiqueta visible (identificador o rol)
+ *    'info'     => string|null,               // texto corto (opcional)
+ *    'rel'      => 'ANIMAL|PADRE|MADRE|...',  // parentesco desde el punto de vista del consultado
+ *    'meta'     => array|null,                // fila original del animal (opcional para tooltips)
+ *    'children' => array[]                    // hijos = padres en genealogía ascendente
+ *  ]
+ */
+public function getArbolGenealogicoD3Asc(string $animalId, int $maxGeneraciones = 6): array
+{
+    $animalId = trim($animalId);
+    if ($animalId === '') {
+        throw new InvalidArgumentException('animal_id requerido.');
+    }
+    if ($maxGeneraciones < 1) $maxGeneraciones = 1;
+
+    // --- Caché simple por llamada ---
+    $cache = [];
+
+    $fetchAnimal = function(string $id) use (&$cache) {
+        if (isset($cache[$id])) return $cache[$id];
+
+        $sql = "SELECT animal_id, identificador, sexo, especie, raza, color, fecha_nacimiento,
+                       madre_id, padre_id, fotografia_url, origen, categoria, estado
+                FROM {$this->table}
+                WHERE animal_id = ? AND deleted_at IS NULL";
+        $stmt = $this->db->prepare($sql);
+        if (!$stmt) throw new \mysqli_sql_exception("Error preparando fetchAnimal: ".$this->db->error);
+        $stmt->bind_param('s', $id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res->fetch_assoc() ?: null;
+        $stmt->close();
+
+        if ($row) {
+            $row['fecha_nacimiento'] = $row['fecha_nacimiento'] ?: null;
+            $cache[$id] = $row;
+        }
+        return $row;
+    };
+
+    // Etiqueta por generación (para info rápida)
+    $labelAsc = function(int $gen, ?string $sexo): string {
+        $sx = strtoupper((string)$sexo);
+        if ($gen === 1) return ($sx === 'HEMBRA') ? 'MADRE' : 'PADRE';
+        if ($gen === 2) return ($sx === 'HEMBRA') ? 'ABUELA' : 'ABUELO';
+        if ($gen === 3) return ($sx === 'HEMBRA') ? 'BISABUELA' : 'BISABUELO';
+        if ($gen === 4) return ($sx === 'HEMBRA') ? 'TATARABUELA' : 'TATARABUELO';
+        return strtoupper($gen . ' GENERACIONES ARRIBA');
+    };
+
+    // Texto compacto para tooltips (libre, ajusta a gusto)
+    $makeInfo = function(array $a = null, ?string $rol = null): ?string {
+        if (!$a) return null;
+        $partes = [];
+        if ($rol) $partes[] = $rol;
+        if (!empty($a['especie'])) $partes[] = $a['especie'];
+        if (!empty($a['raza']))    $partes[] = $a['raza'];
+        if (!empty($a['color']))   $partes[] = $a['color'];
+        if (!empty($a['fecha_nacimiento'])) $partes[] = 'Nac. '.$a['fecha_nacimiento'];
+        if (!empty($a['origen']))  $partes[] = 'Origen: '.$a['origen'];
+        return $partes ? implode(' · ', $partes) : null;
+    };
+
+    // Construye recursivamente la rama ascendente (nodo actual = ancestro)
+    $buildAscBranch = function(?string $id, string $rol, int $gen) use (&$buildAscBranch, $fetchAnimal, $labelAsc, $makeInfo, $maxGeneraciones) {
+        // Si no hay ID, devolvemos un placeholder con el rol (p.e. "PADRE"/"MADRE")
+        if (!$id) {
+            return [
+                'name'     => $rol,
+                'info'     => null,
+                'rel'      => $rol,
+                'meta'     => null,
+                'placeholder' => true,
+                'children' => [] // sin padres conocidos
+            ];
+        }
+
+        $a = $fetchAnimal($id);
+        if (!$a) {
+            // Registro inexistente/eliminado → placeholder con rol
+            return [
+                'name'     => $rol,
+                'info'     => null,
+                'rel'      => $rol,
+                'meta'     => null,
+                'placeholder' => true,
+                'children' => []
+            ];
+        }
+
+        $node = [
+            'name'     => $a['identificador'] ?: $rol,
+            'info'     => $makeInfo($a, $labelAsc($gen, $a['sexo'])),
+            'rel'      => $rol,
+            'meta'     => $a, // útil para tooltips/fotos en el front
+            'children' => []
+        ];
+
+        // Si no alcanzamos el límite, añadimos los padres de este ancestro
+        if ($gen < $maxGeneraciones) {
+            // Orden sugerido: primero PADRE, luego MADRE (ajústalo si quieres) 
+            $node['children'][] = $buildAscBranch($a['padre_id'] ?? null, 'PADRE', $gen + 1);
+            $node['children'][] = $buildAscBranch($a['madre_id'] ?? null, 'MADRE', $gen + 1);
+        }
+
+        return $node;
+    };
+
+    // Nodo raíz = animal consultado
+    $root = $fetchAnimal($animalId);
+    if (!$root) {
+        throw new RuntimeException('El animal no existe o está eliminado.');
+    }
+
+    $rootNode = [
+        'name'     => $root['identificador'] ?: 'ANIMAL',
+        'info'     => $makeInfo($root, 'ANIMAL'),
+        'rel'      => 'ANIMAL',
+        'meta'     => $root,
+        'children' => []
+    ];
+
+    // Hijos del consultado (en ascendencia) = sus PADRE y MADRE
+    $rootNode['children'][] = $buildAscBranch($root['padre_id'] ?? null, 'PADRE', 1);
+    $rootNode['children'][] = $buildAscBranch($root['madre_id'] ?? null, 'MADRE', 1);
+
+    return $rootNode;
+}
+
 
  /**
  * Devuelve TODOS los árboles genealógicos (bosque), desde los más viejos (antiguos) a los más recientes.

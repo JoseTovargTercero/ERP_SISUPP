@@ -189,10 +189,16 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->delete('/animales/{animal_id}', ['controlador' => AnimalController::class, 'accion' => 'eliminar']);
 
     // Verificación de cruce (POST, sin path param; body: animal_a/animalIdA y animal_b/animalIdB)
-    $router->post('/animales/animales-verificar-cruce', ['controlador' => AnimalController::class, 'accion' => 'verificarCruce']);
+    $router->post('/animales-verificar-cruce', ['controlador' => AnimalController::class, 'accion' => 'verificarCruce']);
 
     // Árbol genealógico (POST)
     $router->post('/animales/arbol/{id}', ['controlador' => AnimalController::class, 'accion' => 'arbolGenealogico']);
+    // Árbol genealógico (formato D3 - POST)
+$router->post('/animales/arbol_d3/{id}', [
+    'controlador' => AnimalController::class,
+    'accion'      => 'arbolGenealogicoD3'
+]);
+
 
     // Bosque de árboles genealógicos (POST)
     $router->post('/animales/arboles/{id}', ['controlador' => AnimalController::class, 'accion' => 'arbolesGenealogicos']);
